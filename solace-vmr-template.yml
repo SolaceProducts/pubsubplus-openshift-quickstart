@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: solace-vmr-template
+  namespace: prototype
+  annotations:
+    description: Creates a Solace VMR Pod
+    iconClass: icon-phalcon
+    tags: messaging
+objects:
+  - apiVersion: v1
+    kind: Pod
+    metadata:
+      name: '${POD_NAME}'
+    spec:
+      volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+      containers:
+        - env:
+            - name: ADMIN_USER
+              value: '${ADMIN_USER}'
+            - name: ADMIN_PASSWORD
+              value: '${ADMIN_USER}'
+            - name: SUPPORT_USER
+              value: '${SUPPORT_USER}'
+            - name: SUPPORT_PASSWORD
+              value: '${SUPPORT_PASSWORD}'
+            - name: SSHD_PORT
+              value: '22'
+            - name: ALWAYS_DIE_ON_FAILURE
+              value: '0'
+          image: '172.30.122.35:5000/prototype/solace-vmr'
+          name: vmr
+          volumeMounts:
+            - mountPath: /dev/shm
+              name: dshm
+          securityContext:
+            privileged: true
+          ports:
+            - containerPort: 80
+              protocol: TCP
+            - containerPort: 8080
+              protocol: TCP
+            - containerPort: 55555
+              protocol: TCP
+            - containerPort: 22
+              protocol: TCP
+parameters:
+  - name: POD_NAME
+    description: The name of the Solace Messaging service to create
+    generate: expression
+    from: '[A-Z0-9]{8}'
+  - name: ADMIN_USER
+    description: Username of the admin user
+    generate: expression
+    from: '[A-Z0-9]{8}'
+  - name: ADMIN_PASSWORD
+    description: Password of the admin user
+    generate: expression
+    from: '[A-Z0-9]{8}'
+  - name: SUPPORT_USER
+    description: Username of the support user
+    generate: expression
+    from: '[A-Z0-9]{8}'
+  - name: SUPPORT_PASSWORD
+    description: Password of the admin user
+    generate: expression
+    from: '[A-Z0-9]{8}'
