@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Template
 metadata:
   name: solace-springboot-autoconfig
-  namespace: spring-boot
+  namespace: vmr-openshift-demo
   annotations:
     description: Sample Spring Boot Application connecting to a Solace VMR using Auto Configuration
     iconClass: icon-jboss
@@ -52,6 +52,105 @@ objects:
   - kind: DeploymentConfig
     apiVersion: v1
     metadata:
+      name: '${APPLICATION_NAME}-vmr'
+    spec:
+      strategy:
+        type: Recreate
+      triggers:
+        - type: ConfigChange
+        - type: ImageChange
+          imageChangeParams:
+            automatic: true
+            containerNames:
+              - '${APPLICATION_NAME}-vmr'
+            from:
+              kind: ImageStreamTag
+              name: '${VMR_IMAGE_STREAM}:latest'
+      replicas: 1
+      selector:
+        name: '${APPLICATION_NAME}-vmr'
+      template:
+        metadata:
+          name: '${APPLICATION_NAME}-vmr'
+          labels:
+            name: '${APPLICATION_NAME}-vmr'
+        spec:
+          volumes:
+          - name: dshm
+            emptyDir:
+              medium: Memory
+          containers:
+            - name: "solace-vmr"
+              env:
+              - name: USERNAME_${ADMIN_USER}_PASSWORD
+                value: '${ADMIN_PASSWORD}'
+              - name: SERVICE_SSH_PORT
+                value: '22'
+              - name: ALWAYS_DIE_ON_FAILURE
+                value: '0'
+              image: "172.30.122.35:5000/vmr-openshift-demo/${VMR_IMAGE_STREAM}"
+              volumeMounts:
+              - mountPath: /dev/shm
+                name: dshm
+              securityContext:
+                privileged: true
+              ports:
+              - containerPort: 80
+                protocol: TCP
+              - containerPort: 8080
+                protocol: TCP
+              - containerPort: 443
+                protocol: TCP
+              - containerPort: 8443
+                protocol: TCP
+              - containerPort: 55555
+                protocol: TCP
+              - containerPort: 22
+                protocol: TCP
+              readinessProbe:
+                initialDelaySeconds: 30
+                periodSeconds: 5
+                tcpSocket:
+                  port: 55555
+              livenessProbe:
+                timeoutSeconds: 6
+                initialDelaySeconds: 300
+                periodSeconds: 60
+                tcpSocket:
+                  port: 55555
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      name: '${APPLICATION_NAME}-vmr'
+      annotations:
+        description: 'Exposes the VMR services'
+    spec:
+      ports:
+      - name: 'smf-web'
+        port: 80
+        targetPort: 80
+      - name: 'semp'
+        port: 8080
+        targetPort: 8080
+      - name: 'smf-ssl-web'
+        port: 443
+        targetPort: 443
+      - name: 'semp-ssl'
+        port: 8443
+        targetPort: 8443
+      - name: 'smf'
+        port: 55555
+        targetPort: 55555
+      - name: 'ssh'
+        port: 22
+        targetPort: 22
+      selector:
+        deploymentconfig: '${APPLICATION_NAME}-vmr'
+      type: ClusterIP
+      sessionAffinity: None
+  - kind: DeploymentConfig
+    apiVersion: v1
+    metadata:
       name: '${APPLICATION_NAME}'
     spec:
       strategy:
@@ -85,6 +184,19 @@ objects:
               ports:
                 - containerPort: 8080
                   protocol: TCP
+              env:
+              - name: 'SOLACE_JMS_HOST'
+                value: '${APPLICATION_NAME}-vmr'
+              - name: 'SOLACE_JMS_MSGVPN'
+                value: 'default'
+              - name: 'SOLACE_JMS_CLIENTUSERNAME'
+                value: 'default'
+              - name: 'SOLACE_JMS_CLIENTPASSWORD'
+                value: 'default'
+              - name: 'SOLACE_JMS_CLIENTNAME'
+                value: '${APPLICATION_NAME}'
+              - name: 'SOLACE_JMS_DIRECTTRANSPORT'
+                value: 'false'
               livenessProbe:
                 tcpSocket:
                   port: 8080
@@ -151,6 +263,19 @@ parameters:
     description: Generic build trigger secret
     generate: expression
     from: '[a-zA-Z0-9]{8}'
+  - name: VMR_IMAGE_STREAM
+    description: The image stream that contains VMR loads
+    value: solace-app
+  - name: ADMIN_USER
+    description: Username of the admin user
+    generate: expression
+    from: '[A-Z0-9]{8}'
+    value: admin
+  - name: ADMIN_PASSWORD
+    description: Password of the admin user
+    generate: expression
+    from: '[A-Z0-9]{8}'
+    value: admin
 labels:
-  application: springboot-helloworld-gradle
-  createdBy: template-springboot-helloworld-gradle
+  application: solace-springboot-autoconfig
+  createdBy: template-solace-springboot-autoconfig

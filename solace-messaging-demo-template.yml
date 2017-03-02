@@ -1,0 +1,365 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: solace-springboot-messaging-sample
+  namespace: vmr-openshift-demo
+  annotations:
+    description: Sample Spring Boot Application that demonstrate messaging with the Solace VMR
+    iconClass: icon-jboss
+    tags: 'instant-app,springboot,gradle,java'
+objects:
+  - kind: BuildConfig
+    apiVersion: v1
+    metadata:
+      name: '${APPLICATION_NAME}-aggregator'
+    spec:
+      triggers:
+        - type: GitHub
+          github:
+            secret: '${GITHUB_TRIGGER_SECRET}'
+        - type: Generic
+          generic:
+            secret: '${GENERIC_TRIGGER_SECRET}'
+        - type: ImageChange
+          imageChange: {}
+      source:
+        type: Git
+        git:
+          uri: '${GIT_URI}'
+          ref: '${GIT_REF}'
+        sourceSecret:
+          name: 'gitsshsecret'
+        contextDir: 'aggregator'
+      strategy:
+        type: Source
+        sourceStrategy:
+          from:
+            kind: ImageStreamTag
+            name: 's2i-java:latest'
+      output:
+        to:
+          kind: ImageStreamTag
+          name: '${APPLICATION_NAME}-aggregator:latest'
+      resources: {}
+  - kind: BuildConfig
+    apiVersion: v1
+    metadata:
+      name: '${APPLICATION_NAME}-worker'
+    spec:
+      triggers:
+        - type: GitHub
+          github:
+            secret: '${GITHUB_TRIGGER_SECRET}'
+        - type: Generic
+          generic:
+            secret: '${GENERIC_TRIGGER_SECRET}'
+        - type: ImageChange
+          imageChange: {}
+      source:
+        type: Git
+        git:
+          uri: '${GIT_URI}'
+          ref: '${GIT_REF}'
+        sourceSecret:
+          name: 'gitsshsecret'
+        contextDir: 'worker'
+      strategy:
+        type: Source
+        sourceStrategy:
+          from:
+            kind: ImageStreamTag
+            name: 's2i-java:latest'
+      output:
+        to:
+          kind: ImageStreamTag
+          name: '${APPLICATION_NAME}-worker:latest'
+      resources: {}
+  - kind: ImageStream
+    apiVersion: v1
+    metadata:
+      name: '${APPLICATION_NAME}-aggregator'
+    spec:
+      dockerImageRepository: ''
+      tags:
+        - name: latest
+  - kind: ImageStream
+    apiVersion: v1
+    metadata:
+      name: '${APPLICATION_NAME}-worker'
+    spec:
+      dockerImageRepository: ''
+      tags:
+        - name: latest
+  - kind: DeploymentConfig
+    apiVersion: v1
+    metadata:
+      name: '${APPLICATION_NAME}-vmr'
+    spec:
+      strategy:
+        type: Recreate
+      triggers:
+        - type: ConfigChange
+      replicas: 1
+      selector:
+        name: '${APPLICATION_NAME}-vmr'
+      template:
+        metadata:
+          name: '${APPLICATION_NAME}-vmr'
+          labels:
+            name: '${APPLICATION_NAME}-vmr'
+        spec:
+          volumes:
+          - name: dshm
+            emptyDir:
+              medium: Memory
+          containers:
+            - name: "solace-vmr"
+              env:
+              - name: USERNAME_${ADMIN_USER}_PASSWORD
+                value: '${ADMIN_PASSWORD}'
+              - name: USERNAME_${ADMIN_USER}_GLOBALACCESSLEVEL
+                value: 'admin'
+              - name: SERVICE_SSH_PORT
+                value: '22'
+              - name: ALWAYS_DIE_ON_FAILURE
+                value: '0'
+              image: "172.30.122.35:5000/vmr-openshift-demo/solace-app"
+              volumeMounts:
+              - mountPath: /dev/shm
+                name: dshm
+              securityContext:
+                privileged: true
+              ports:
+              - containerPort: 80
+                protocol: TCP
+              - containerPort: 8080
+                protocol: TCP
+              - containerPort: 443
+                protocol: TCP
+              - containerPort: 8443
+                protocol: TCP
+              - containerPort: 55555
+                protocol: TCP
+              - containerPort: 22
+                protocol: TCP
+              readinessProbe:
+                initialDelaySeconds: 30
+                periodSeconds: 5
+                tcpSocket:
+                  port: 55555
+              livenessProbe:
+                timeoutSeconds: 6
+                initialDelaySeconds: 300
+                periodSeconds: 60
+                tcpSocket:
+                  port: 55555
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      name: '${APPLICATION_NAME}-vmr'
+      annotations:
+        description: 'Exposes the VMR services'
+    spec:
+      ports:
+      - name: 'smf-web'
+        port: 80
+        targetPort: 80
+      - name: 'semp'
+        port: 8080
+        targetPort: 8080
+      - name: 'smf-ssl-web'
+        port: 443
+        targetPort: 443
+      - name: 'semp-ssl'
+        port: 8443
+        targetPort: 8443
+      - name: 'smf'
+        port: 55555
+        targetPort: 55555
+      - name: 'ssh'
+        port: 22
+        targetPort: 22
+      selector:
+        deploymentconfig: '${APPLICATION_NAME}-vmr'
+      type: ClusterIP
+      sessionAffinity: None
+  - kind: DeploymentConfig
+    apiVersion: v1
+    metadata:
+      name: '${APPLICATION_NAME}-aggregator'
+    spec:
+      strategy:
+        type: Rolling
+        rollingParams:
+          updatePeriodSeconds: 1
+          intervalSeconds: 1
+          timeoutSeconds: 600
+        resources: {}
+      triggers:
+        - type: ConfigChange
+        - type: ImageChange
+          imageChangeParams:
+            automatic: true
+            containerNames:
+              - '${APPLICATION_NAME}-aggregator'
+            from:
+              kind: ImageStreamTag
+              name: '${APPLICATION_NAME}-aggregator:latest'
+      replicas: 1
+      selector:
+        deploymentconfig: '${APPLICATION_NAME}-aggregator'
+      template:
+        metadata:
+          labels:
+            deploymentconfig: '${APPLICATION_NAME}-aggregator'
+        spec:
+          containers:
+            - name: '${APPLICATION_NAME}-aggregator'
+              image: '${APPLICATION_NAME}-aggregator'
+              ports:
+                - containerPort: 8080
+                  protocol: TCP
+              env:
+              - name: 'solace_java_host'
+                value: '${APPLICATION_NAME}-vmr'
+              - name: 'solace_java_msgVpn'
+                value: 'default'
+              - name: 'solace_java_clientUsername'
+                value: 'default'
+              - name: 'solace_java_clientPassword'
+                value: 'default'
+              livenessProbe:
+                tcpSocket:
+                  port: 8080
+                initialDelaySeconds: 30
+                timeoutSeconds: 1
+              resources: {}
+              terminationMessagePath: /dev/termination-log
+              imagePullPolicy: IfNotPresent
+              securityContext:
+                capabilities: {}
+                privileged: false
+          restartPolicy: Always
+          dnsPolicy: ClusterFirst
+  - kind: DeploymentConfig
+    apiVersion: v1
+    metadata:
+      name: '${APPLICATION_NAME}-worker'
+    spec:
+      strategy:
+        type: Rolling
+        rollingParams:
+          updatePeriodSeconds: 1
+          intervalSeconds: 1
+          timeoutSeconds: 600
+        resources: {}
+      triggers:
+        - type: ConfigChange
+        - type: ImageChange
+          imageChangeParams:
+            automatic: true
+            containerNames:
+              - '${APPLICATION_NAME}-worker'
+            from:
+              kind: ImageStreamTag
+              name: '${APPLICATION_NAME}-worker:latest'
+      replicas: 1
+      selector:
+        deploymentconfig: '${APPLICATION_NAME}-worker'
+      template:
+        metadata:
+          labels:
+            deploymentconfig: '${APPLICATION_NAME}-worker'
+        spec:
+          containers:
+            - name: '${APPLICATION_NAME}-worker'
+              image: '${APPLICATION_NAME}-worker'
+              ports:
+                - containerPort: 8080
+                  protocol: TCP
+              env:
+              - name: 'solace_java_host'
+                value: '${APPLICATION_NAME}-vmr'
+              - name: 'solace_java_msgVpn'
+                value: 'default'
+              - name: 'solace_java_clientUsername'
+                value: 'default'
+              - name: 'solace_java_clientPassword'
+                value: 'default'
+              livenessProbe:
+                tcpSocket:
+                  port: 8080
+                initialDelaySeconds: 30
+                timeoutSeconds: 1
+              resources: {}
+              terminationMessagePath: /dev/termination-log
+              imagePullPolicy: IfNotPresent
+              securityContext:
+                capabilities: {}
+                privileged: false
+          restartPolicy: Always
+          dnsPolicy: ClusterFirst
+  - kind: Route
+    apiVersion: v1
+    metadata:
+      name: '${APPLICATION_NAME}-aggregator'
+    spec:
+      host: 'aggregator.${APPLICATION_SUBDOMAIN}'
+      to:
+        kind: Service
+        name: '${APPLICATION_NAME}-aggregator'
+      tls:
+        termination: edge
+      wildcardPolicy: None
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      name: '${APPLICATION_NAME}-aggregator'
+    spec:
+      ports:
+        - name: '${APPLICATION_NAME}-aggregator-http'
+          port: 8080
+          targetPort: 8080
+      selector:
+        deploymentconfig: '${APPLICATION_NAME}-aggregator'
+      type: ClusterIP
+      sessionAffinity: None
+parameters:
+  - name: APPLICATION_NAME
+    displayName: Application name
+    description: The name for the application.
+    value: messaging-sample
+    required: true
+  - name: APPLICATION_SUBDOMAIN
+    displayName: Application subdomain
+    description: >-
+      Custom subdomain for service routes.  Leave blank for default subdomain,
+      This template creates two routes : aggregator.<subdomain> and workers.<subdomain>
+    value: apps.openshift.dickey.cloud
+  - name: GIT_URI
+    description: Git source URI for application
+    value: 'https://github.com/SolaceDev/sl-cf-solace-messaging-demo'
+  - name: GIT_REF
+    description: Git branch/tag reference
+    value: master
+  - name: GITHUB_TRIGGER_SECRET
+    description: Github trigger secret
+    generate: expression
+    from: '[a-zA-Z0-9]{8}'
+  - name: GENERIC_TRIGGER_SECRET
+    description: Generic build trigger secret
+    generate: expression
+    from: '[a-zA-Z0-9]{8}'
+  - name: ADMIN_USER
+    description: Username of the admin user
+    generate: expression
+    from: '[A-Z0-9]{8}'
+    value: admin
+  - name: ADMIN_PASSWORD
+    description: Password of the admin user
+    generate: expression
+    from: '[A-Z0-9]{8}'
+    value: admin
+labels:
+  application: solace-springboot-messaging-sample
+  createdBy: template-solace-springboot-messaging-sample

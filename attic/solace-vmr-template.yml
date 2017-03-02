@@ -18,21 +18,15 @@ objects:
           emptyDir:
             medium: Memory
       containers:
-        - env:
-            - name: ADMIN_USER
-              value: '${ADMIN_USER}'
-            - name: ADMIN_PASSWORD
-              value: '${ADMIN_USER}'
-            - name: SUPPORT_USER
-              value: '${SUPPORT_USER}'
-            - name: SUPPORT_PASSWORD
-              value: '${SUPPORT_PASSWORD}'
-            - name: SSHD_PORT
-              value: '22'
-            - name: ALWAYS_DIE_ON_FAILURE
-              value: '0'
           image: '172.30.122.35:5000/prototype/solace-vmr'
           name: vmr
+          env:
+          - name: USERNAME_${ADMIN_USER}_PASSWORD
+            value: '${ADMIN_PASSWORD}'
+          - name: SERVICE_SSH_PORT
+            value: '22'
+          - name: ALWAYS_DIE_ON_FAILURE
+            value: '0'
           volumeMounts:
             - mountPath: /dev/shm
               name: dshm
