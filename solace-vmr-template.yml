@@ -23,10 +23,11 @@ objects:
           env:
           - name: USERNAME_${ADMIN_USER}_PASSWORD
             value: '${ADMIN_PASSWORD}'
+          - name: USERNAME_${ADMIN_USER}_GLOBALACCESSLEVEL
+            value: 'admin'
           - name: SERVICE_SSH_PORT
             value: '22'
-          - name: ALWAYS_DIE_ON_FAILURE
-            value: '0'
+          - name:
           volumeMounts:
             - mountPath: /dev/shm
               name: dshm
@@ -51,14 +52,6 @@ parameters:
     generate: expression
     from: '[A-Z0-9]{8}'
   - name: ADMIN_PASSWORD
-    description: Password of the admin user
-    generate: expression
-    from: '[A-Z0-9]{8}'
-  - name: SUPPORT_USER
-    description: Username of the support user
-    generate: expression
-    from: '[A-Z0-9]{8}'
-  - name: SUPPORT_PASSWORD
     description: Password of the admin user
     generate: expression
     from: '[A-Z0-9]{8}'
