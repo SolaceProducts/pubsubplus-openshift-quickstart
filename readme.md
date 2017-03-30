@@ -29,13 +29,14 @@ For the VMR container to run properly as an Openshift Pod the following requirem
 ## VMR Container environment variables
 
 The VMR Container can be configured via these environment variables :
+
 | Environment Variable                  | Description |
 | ------------------------------------- | ----------- |
-| USERNAME_<userName>_PASSWORD          | Setting this environment variable will create a user with <userName> as its username and set its password to the value of the environment variable |
-| USERNAME_<userName>_ENCRYPTEDPASSWORD | Setting this environment variable will create a user with <userName> as its username and set its password to the value of the environment variable |
-| USERNAME_<userName>_GLOBALACCESSLEVEL | Setting this environment variable will assign the global access level to the user <userName>.  Global access level can be one of these values: "" for no global access, "read-only", "read-write" or "admin" |
-| SERVICE_SSH_PORT                      | The port used by the sshd process running within the VMR Docker Container. | 
-| SERVICE_SEMP_PORT                     | The port used by the SEMP service within the VMR Docker Container. |
+| USERNAME\_<userName>\_PASSWORD          | Setting this environment variable will create a user with <userName> as its username and set its password to the value of the environment variable |
+| USERNAME\_<userName>\_ENCRYPTEDPASSWORD | Setting this environment variable will create a user with <userName> as its username and set its password to the value of the environment variable |
+| USERNAME\_<userName>\_GLOBALACCESSLEVEL | Setting this environment variable will assign the global access level to the user <userName>.  Global access level can be one of these values: "" for no global access, "read-only", "read-write" or "admin" |
+| SERVICE\_SSH\_PORT                      | The port used by the sshd process running within the VMR Docker Container. | 
+| SERVICE\_SEMP\_PORT                     | The port used by the SEMP service within the VMR Docker Container. |
 
 ## VMR pod Template 
 
