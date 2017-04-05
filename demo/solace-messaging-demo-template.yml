@@ -60,8 +60,6 @@ objects:
         git:
           uri: '${GIT_URI}'
           ref: '${GIT_REF}'
-        sourceSecret:
-          name: 'gitsshsecret'
         contextDir: 'worker'
       strategy:
         type: Source
@@ -343,7 +341,7 @@ parameters:
     value: 172.30.122.35:5000/vmr-openshift-demo/solace-app
   - name: GIT_URI
     description: Git source URI for application
-    value: 'https://github.com/SolaceDev/sl-cf-solace-messaging-demo'
+    value: 'https://github.com/SolaceLabs/solace-messaging-demo.git'
   - name: GIT_REF
     description: Git branch/tag reference
     value: master

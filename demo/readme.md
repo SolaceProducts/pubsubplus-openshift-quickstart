@@ -87,15 +87,6 @@ Running this command will create the 'solace-springboot-messaging-sample' templa
 oc create -f solace-messaging-demo-template.yml
 ```
 
-### Upload SolaceDev's deploy key
-
-This key is required for the BuildConfig to gain access to the SolaceDev private GitHub repository.
-TODO: Make this public instead.
-
-```
-oc secrets new-sshauth gitsshsecret --ssh-privatekey=openshift_demo_deploy.key
-```
-
 ### Using the template
 
 The template can be used to instantiate the system and all of its components with this command :
