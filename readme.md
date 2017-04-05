@@ -10,6 +10,11 @@ the VMR used by a Demo application to distribute work to workers.
 * Access to an Openshift environment
 * Access to an Openshift project whose service account have the anyuid and privilege SCCs assigned to it
 
+## Openshift installation
+
+A guide was provided in order to assist you in creating a simple Openshift environment in AWS.  This guide is available
+part of this repositories here : [AWS Openshift install guide](openshift-install/readme.md)
+
 ## Assigning the SCCs to the Security Account
 
 To be able to assign SSCs your project's Service Account you will need cluster admin privilege.
@@ -38,7 +43,7 @@ The VMR Container can be configured via these environment variables :
 | SERVICE\_SSH\_PORT                        | The port used by the sshd process running within the VMR Docker Container. | 
 | SERVICE\_SEMP\_PORT                       | The port used by the SEMP service within the VMR Docker Container. |
 
-## VMR pod Template 
+## VMR pod Template
 
 A sample template of a VMR pod is provided here: [Solace VMR pod Template](solace-vmr-template.yml).
 
