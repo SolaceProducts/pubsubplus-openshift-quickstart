@@ -1,0 +1,5 @@
+This product includes software originally developed by Solace Inc.
+Copyright 2017 Solace Inc.
+
+This product includes software taken from the Docker BoshRelease project : https://github.com/cloudfoundry-community/docker-boshrelease
+Covered by Apache 2.0 License

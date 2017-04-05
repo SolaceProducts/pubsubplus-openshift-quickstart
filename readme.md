@@ -12,8 +12,8 @@ the VMR used by a Demo application to distribute work to workers.
 
 ## Openshift installation
 
-A guide was provided in order to assist you in creating a simple Openshift environment in AWS.  This guide is available
-part of this repositories here : [AWS Openshift install guide](openshift-install/readme.md)
+A guide is available to guide you in installing a minimalistic Openshift environment in AWS here :
+[AWS Openshift install guide](https://github.com/dickeyf/openshift-aws-install)
 
 ## Assigning the SCCs to the Security Account
 
