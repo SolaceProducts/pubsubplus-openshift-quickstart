@@ -6,7 +6,6 @@ the VMR used by a Demo application to distribute work to workers.
 ## Overview
 
 
-
 This demonstration consists of a single VMR used by two different Java Sprint Boot applications :
   * An aggregator which generates units of work.  A Unit of Work describes a task that takes some time to complete.
   * A worker which executes the task described by a unit of work.  When a task completes its unit of work is deemed
@@ -30,6 +29,8 @@ distribution of work is done in no particular pattern and is affected by the wor
 * Access to an Openshift environment
 * Have cluster admin privileges (Or ask someone to add anyuid and privileged SCCs to your project's service account)
 * Have an administrator make the internal registry externally accessible :
+* The VMR docker container (Available here : http://dev.solace.com/downloads/, under Docker in "VMR Community Edition")
+
 ```
 oc expose service docker-registry -n default
 ```
@@ -63,12 +64,29 @@ oadm policy add-scc-to-user anyuid system:serviceaccount:vmr-openshift-demo:defa
 Pushing the docker image to the internal registry requires the use of a machine running docker (IE. Docker machine).
 The image is then loaded locally, and tagged as a repository image.  Then login to the Openshift registry and push
 the image using these commands :
+
 ```
 docker load -i <image>.tar.gz
 docker login --username=<user> --password=`oc whoami -t` docker-registry-default.<domain>
 docker tag solace-app:<version-tag> docker-registry-default.<domain>/vmr-openshift-demo/solace-app:latest
 docker push docker-registry-default.<domain>/vmr-openshift-demo/solace-app
 ```
+
+### Learning the image stream fully qualified name
+
+After pushing the image to Openshift it is necessary to know the cluster IP of the docker registry :
+```
+oc get imagestreams solace-app
+```
+
+This will output something like this :
+```
+NAME         DOCKER REPO                                      TAGS      UPDATED
+solace-app   172.30.3.53:5000/vmr-openshift-demo/solace-app   latest    About an hour ago
+```
+
+The IP portion `172.30.3.53:5000` is specific to the environment and will be different in your case.  Note the
+full name, IE : here it is VMR_IMAGE = `172.30.3.53:5000/vmr-openshift-demo/solace-app`
 
 ### Create the Java App S2I ImageStream
 
@@ -91,8 +109,11 @@ oc create -f solace-messaging-demo-template.yml
 
 The template can be used to instantiate the system and all of its components with this command :
 
+Replace `172.30.3.53:5000/vmr-openshift-demo/solace-app` with the actual value from the [Learning the image stream fully qualified name](#Learning-the-image-stream-fully-qualified-name) section.
+Also replace openshift.example.com your wildcard subdomain (The wildcard DNS entry).
+
 ```
-oc process solace-springboot-messaging-sample | oc create -f -
+oc process solace-springboot-messaging-sample VMR_IMAGE=172.30.3.53:5000/vmr-openshift-demo/solace-app APPLICATION_SUBDOMAIN=openshift.example.com | oc create -f -
 ```
 
 ### Template description

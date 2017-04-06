@@ -213,7 +213,7 @@ objects:
             - name: '${APPLICATION_NAME}-aggregator'
               image: '${APPLICATION_NAME}-aggregator'
               ports:
-                - containerPort: 8080
+                - containerPort: 8090
                   protocol: TCP
               env:
               - name: 'solace_java_host'
@@ -226,7 +226,7 @@ objects:
                 value: 'default'
               livenessProbe:
                 tcpSocket:
-                  port: 8080
+                  port: 8090
                 initialDelaySeconds: 30
                 timeoutSeconds: 1
               resources: {}
@@ -306,8 +306,8 @@ objects:
     spec:
       ports:
         - name: '${APPLICATION_NAME}-aggregator-http'
-          port: 8080
-          targetPort: 8080
+          port: 8090
+          targetPort: 8090
       selector:
         deploymentconfig: '${APPLICATION_NAME}-aggregator'
       type: ClusterIP
