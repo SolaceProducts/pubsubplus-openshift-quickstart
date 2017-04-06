@@ -27,8 +27,6 @@ objects:
         git:
           uri: '${GIT_URI}'
           ref: '${GIT_REF}'
-        sourceSecret:
-          name: 'gitsshsecret'
         contextDir: 'aggregator'
       strategy:
         type: Source
@@ -272,9 +270,6 @@ objects:
           containers:
             - name: '${APPLICATION_NAME}-worker'
               image: '${APPLICATION_NAME}-worker'
-              ports:
-                - containerPort: 8080
-                  protocol: TCP
               env:
               - name: 'solace_java_host'
                 value: '${APPLICATION_NAME}-vmr'
@@ -284,11 +279,6 @@ objects:
                 value: 'default'
               - name: 'solace_java_clientPassword'
                 value: 'default'
-              livenessProbe:
-                tcpSocket:
-                  port: 8080
-                initialDelaySeconds: 30
-                timeoutSeconds: 1
               resources: {}
               terminationMessagePath: /dev/termination-log
               imagePullPolicy: IfNotPresent
@@ -333,12 +323,12 @@ parameters:
     description: >-
       Custom subdomain for service routes.  Leave blank for default subdomain,
       This template creates two routes : aggregator.<subdomain> and workers.<subdomain>
-    value: apps.openshift.dickey.cloud
+    value: openshift.example.com
   - name: VMR_IMAGE
     displayName: VMR Image
     description: >-
       Fully qualified VMR image name.
-    value: 172.30.122.35:5000/vmr-openshift-demo/solace-app
+    value: 172.30.3.53:5000/vmr-openshift-demo/solace-app
   - name: GIT_URI
     description: Git source URI for application
     value: 'https://github.com/SolaceLabs/solace-messaging-demo.git'
