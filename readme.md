@@ -9,6 +9,7 @@ the VMR used by a Demo application to distribute work to workers.
 
 * Access to an Openshift environment
 * Access to an Openshift project whose service account have the anyuid and privilege SCCs assigned to it
+* The VMR docker container (Available here : http://dev.solace.com/downloads/, under Docker in "VMR Community Edition")
 
 ## Openshift installation
 
