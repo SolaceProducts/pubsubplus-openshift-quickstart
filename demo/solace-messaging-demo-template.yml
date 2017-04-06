@@ -97,12 +97,13 @@ objects:
         - type: ConfigChange
       replicas: 1
       selector:
-        name: '${APPLICATION_NAME}-vmr'
+        deploymentconfig: '${APPLICATION_NAME}-vmr'
       template:
         metadata:
           name: '${APPLICATION_NAME}-vmr'
           labels:
             name: '${APPLICATION_NAME}-vmr'
+            deploymentconfig: '${APPLICATION_NAME}-vmr'
         spec:
           volumes:
           - name: dshm
