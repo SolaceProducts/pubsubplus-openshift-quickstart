@@ -28,7 +28,7 @@ queue to which the aggregator publishes Units of Work each serialized as a messa
 unit of work to the workers.  While the VMR distributes messages from the queue to consumers in a fair matter, the 
 distribution of work is done in no particular pattern and is affected by the worker's performance. 
 
-## Prerequesites
+## Prerequisites
 
 * Access to an Openshift environment
 * Have cluster admin privileges (Or ask someone to add anyuid and privileged SCCs to your project's service account)
