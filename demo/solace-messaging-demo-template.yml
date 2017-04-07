@@ -14,12 +14,6 @@ objects:
       name: '${APPLICATION_NAME}-aggregator'
     spec:
       triggers:
-        - type: GitHub
-          github:
-            secret: '${GITHUB_TRIGGER_SECRET}'
-        - type: Generic
-          generic:
-            secret: '${GENERIC_TRIGGER_SECRET}'
         - type: ImageChange
           imageChange: {}
       source:
@@ -45,12 +39,6 @@ objects:
       name: '${APPLICATION_NAME}-worker'
     spec:
       triggers:
-        - type: GitHub
-          github:
-            secret: '${GITHUB_TRIGGER_SECRET}'
-        - type: Generic
-          generic:
-            secret: '${GENERIC_TRIGGER_SECRET}'
         - type: ImageChange
           imageChange: {}
       source:
@@ -336,14 +324,6 @@ parameters:
   - name: GIT_REF
     description: Git branch/tag reference
     value: master
-  - name: GITHUB_TRIGGER_SECRET
-    description: Github trigger secret
-    generate: expression
-    from: '[a-zA-Z0-9]{8}'
-  - name: GENERIC_TRIGGER_SECRET
-    description: Generic build trigger secret
-    generate: expression
-    from: '[a-zA-Z0-9]{8}'
   - name: ADMIN_USER
     description: Username of the admin user
     generate: expression

@@ -52,6 +52,9 @@ Use this template as a reference to add a VMR pod to your Openshift application.
 
 ### Template header and metadata
 
+Templates are explained on the Openshift official documentation web site.  Templates are explained on that web site at
+[this location](https://docs.openshift.org/latest/dev_guide/templates.html).
+
 The template is a yaml document that starts with an header declaring that the object is a template (`kind: Template`)
 and is using the version `v1`.
 
