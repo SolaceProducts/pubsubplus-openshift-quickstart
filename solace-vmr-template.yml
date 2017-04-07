@@ -18,7 +18,7 @@ objects:
           emptyDir:
             medium: Memory
       containers:
-          image: '172.30.122.35:5000/prototype/solace-vmr'
+          image: '172.30.3.53:5000/vmr-openshift-demo/solace-app'
           name: vmr
           env:
           - name: USERNAME_${ADMIN_USER}_PASSWORD

@@ -11,6 +11,10 @@ This demonstration consists of a single VMR used by two different Java Sprint Bo
   * A worker which executes the task described by a unit of work.  When a task completes its unit of work is deemed
     consumed and is removed from the queue.
 
+## Application's Architecture
+
+![Architecture Diagram](https://github.com/SolaceLabs/solace-messaging-demo/blob/master/resources/demo-overview.png)
+
 The Aggregator is a singleton process, there will only be one instance of it running.  It serves a Web Application over
 port 8080 where the user will create the unit of work to be executed.  The unit of work are simply dummy work unit
 implemented as a sleep for the amount of time specified by the user.
@@ -24,7 +28,7 @@ queue to which the aggregator publishes Units of Work each serialized as a messa
 unit of work to the workers.  While the VMR distributes messages from the queue to consumers in a fair matter, the 
 distribution of work is done in no particular pattern and is affected by the worker's performance. 
 
-## Prerequesites
+## Prerequisites
 
 * Access to an Openshift environment
 * Have cluster admin privileges (Or ask someone to add anyuid and privileged SCCs to your project's service account)
@@ -109,14 +113,18 @@ oc create -f solace-messaging-demo-template.yml
 
 The template can be used to instantiate the system and all of its components with this command :
 
-Replace `172.30.3.53:5000/vmr-openshift-demo/solace-app` with the actual value from the [Learning the image stream fully qualified name](#Learning-the-image-stream-fully-qualified-name) section.
-Also replace openshift.example.com your wildcard subdomain (The wildcard DNS entry).
+Replace `172.30.3.53:5000/vmr-openshift-demo/solace-app` with the actual value from the
+[Learning the image stream fully qualified name](#Learning-the-image-stream-fully-qualified-name) section. Also replace
+openshift.example.com your wildcard subdomain (The wildcard DNS entry).
 
 ```
 oc process solace-springboot-messaging-sample VMR_IMAGE=172.30.3.53:5000/vmr-openshift-demo/solace-app APPLICATION_SUBDOMAIN=openshift.example.com | oc create -f -
 ```
 
 ### Template description
+
+Templates are explained on the Openshift official documentation web site.  Templates are explained on that web site at
+[this location](https://docs.openshift.org/latest/dev_guide/templates.html).
 
 The template is used to automate the creation of these objects :
 * A BuildConfig for the aggregator app.  It defines where the source code is and the output ImageStream.
@@ -149,3 +157,469 @@ The template also defines parameters that can be customized :
 | GENERIC_TRIGGER_SECRET       | Generic trigger secret.  Optional. |
 | ADMIN_USER                   | The username of the initial CLI user created at VMR startup. |
 | ADMIN_PASSWORD               | The password of the initial CLI user created at VMR startup. |
+
+### Template header and metadata
+
+The template yaml file starts with the header and metadata.  Here we specify that the object is a template and then
+assign metadata to that template.
+
+```
+apiVersion: v1
+kind: Template
+metadata:
+  name: solace-springboot-messaging-sample
+  namespace: vmr-openshift-demo
+  annotations:
+    description: Sample Spring Boot Application that demonstrate messaging with the Solace VMR
+    iconClass: icon-jboss
+    tags: 'instant-app,springboot,gradle,java'
+```
+
+### Object list
+
+The template defines a list of objects that must be instantiated when the template is used.  The list of objects is
+defined by the `objects:` section.
+
+### BuildConfig
+
+The first two objects in the `objects:` section are BuildConfigs.  A BuildConfig describe how to build an image from
+source code.  The Openshift documentation explains BuildConfig
+[here](https://docs.openshift.com/container-platform/3.4/dev_guide/builds/index.html).
+
+These are the two buildconfig used by this template :
+```
+  - kind: BuildConfig
+    apiVersion: v1
+    metadata:
+      name: '${APPLICATION_NAME}-aggregator'
+    spec:
+      triggers:
+        - type: GitHub
+          github:
+            secret: '${GITHUB_TRIGGER_SECRET}'
+        - type: Generic
+          generic:
+            secret: '${GENERIC_TRIGGER_SECRET}'
+        - type: ImageChange
+          imageChange: {}
+      source:
+        type: Git
+        git:
+          uri: '${GIT_URI}'
+          ref: '${GIT_REF}'
+        contextDir: 'aggregator'
+      strategy:
+        type: Source
+        sourceStrategy:
+          from:
+            kind: ImageStreamTag
+            name: 's2i-java:latest'
+      output:
+        to:
+          kind: ImageStreamTag
+          name: '${APPLICATION_NAME}-aggregator:latest'
+      resources: {}
+  - kind: BuildConfig
+    apiVersion: v1
+    metadata:
+      name: '${APPLICATION_NAME}-worker'
+    spec:
+      triggers:
+        - type: GitHub
+          github:
+            secret: '${GITHUB_TRIGGER_SECRET}'
+        - type: Generic
+          generic:
+            secret: '${GENERIC_TRIGGER_SECRET}'
+        - type: ImageChange
+          imageChange: {}
+      source:
+        type: Git
+        git:
+          uri: '${GIT_URI}'
+          ref: '${GIT_REF}'
+        contextDir: 'worker'
+      strategy:
+        type: Source
+        sourceStrategy:
+          from:
+            kind: ImageStreamTag
+            name: 's2i-java:latest'
+      output:
+        to:
+          kind: ImageStreamTag
+          name: '${APPLICATION_NAME}-worker:latest'
+      resources: {}
+```
+
+This defines the build for these application : The worker and the aggregator (As described in the
+[Application's Architecture](#Application's-Architecture) section).  Note that there are no default Source-to-image
+ImageStream that can build a standard java application based on Maven or Gradle.  Thus it was necessary to use a custom
+source-to-image ImageStream : `s2i-java:latest`.  Section
+[Create the Java App S2I ImageStream](#Create-the-Java-App-S2I-ImageStream) explains how that ImageStream was added to
+the project, so that this template can use it.  Those BuildConfig defines which repository are hosting the
+source code to be built.  Since both applications lives in the same repository, both BuildConfig refer to the same
+repository : `${GIT_URI}` and `${GIT_REF}` (Which defines which commit/branch/tag to get).  Both applications lives in
+their own subdirectory in that repo, and each BuildConfig will define the subdirectory via the `contextDir` attribute.
+The `output:` section defines the output ImageStream that receives the Build output which is in fact a Docker Image
+packing the built application.  This ImageStream can then be used by other parts of the template, to instantiate 
+containers running the application.
+
+### ImageStreams 
+
+This part of the template simply create two ImageStreams to receive the Docker images produced by the BuildConfig
+described in the [previous section](#BuildConfig).
+
+```
+  - kind: ImageStream
+    apiVersion: v1
+    metadata:
+      name: '${APPLICATION_NAME}-aggregator'
+    spec:
+      dockerImageRepository: ''
+      tags:
+        - name: latest
+  - kind: ImageStream
+    apiVersion: v1
+    metadata:
+      name: '${APPLICATION_NAME}-worker'
+    spec:
+      dockerImageRepository: ''
+      tags:
+        - name: latest
+```
+
+### Deployment Config for Solace's VMR
+
+A deployment describes how an application must be deployed in Openshift.  More information on them can be found
+[here](https://docs.openshift.com/container-platform/3.4/dev_guide/deployments/how_deployments_work.html) on Openshift's
+official documentation website.
+
+Solace's VMR requires the `recreate` strategy.  To upgrade, or replace the VMR, the old pod must be destroyed before the
+replacement pod starts.  This means that the `rolling` strategy cannot work for the VMR.  The POD that is declared
+by this DeploymentConfig will run a VMR container.  How this container must be setup is explained [here](/readme.md).
+
+```
+  - kind: DeploymentConfig
+    apiVersion: v1
+    metadata:
+      name: '${APPLICATION_NAME}-vmr'
+    spec:
+      strategy:
+        type: Recreate
+      triggers:
+        - type: ConfigChange
+      replicas: 1
+      selector:
+        deploymentconfig: '${APPLICATION_NAME}-vmr'
+      template:
+        metadata:
+          name: '${APPLICATION_NAME}-vmr'
+          labels:
+            name: '${APPLICATION_NAME}-vmr'
+            deploymentconfig: '${APPLICATION_NAME}-vmr'
+        spec:
+          volumes:
+          - name: dshm
+            emptyDir:
+              medium: Memory
+          containers:
+            - name: "solace-vmr"
+              env:
+              - name: USERNAME_${ADMIN_USER}_PASSWORD
+                value: '${ADMIN_PASSWORD}'
+              - name: USERNAME_${ADMIN_USER}_GLOBALACCESSLEVEL
+                value: 'admin'
+              - name: SERVICE_SSH_PORT
+                value: '22'
+              - name: ALWAYS_DIE_ON_FAILURE
+                value: '0'
+              image: "${VMR_IMAGE}"
+              volumeMounts:
+              - mountPath: /dev/shm
+                name: dshm
+              securityContext:
+                privileged: true
+              ports:
+              - containerPort: 80
+                protocol: TCP
+              - containerPort: 8080
+                protocol: TCP
+              - containerPort: 443
+                protocol: TCP
+              - containerPort: 8443
+                protocol: TCP
+              - containerPort: 55555
+                protocol: TCP
+              - containerPort: 22
+                protocol: TCP
+              readinessProbe:
+                initialDelaySeconds: 30
+                periodSeconds: 5
+                tcpSocket:
+                  port: 55555
+              livenessProbe:
+                timeoutSeconds: 6
+                initialDelaySeconds: 300
+                periodSeconds: 60
+                tcpSocket:
+                  port: 55555
+```
+
+### VMR Service
+
+Since a Pod's IP is not permanent having applications how about each Pod IPs address is not practical.  Applications
+thus connect to pod indirectly thru an object called `service` which are documented
+[here](https://kubernetes.io/docs/concepts/services-networking/service/) on Kubernete's official website.  A service
+act as a proxy between applications and the Pod offering a service.  A service also have a name and Kubernetes define
+will resolve the service's name to the service's IP.  The service IP is virtual as IP tables rules will translate that IP
+into a pod's internal IP in the PREROUTING table.
+
+Thus applications using the VMRwill simply connect to this hostname `${APPLICATION_NAME}-vmr`, and under the hood, a
+Kubernetes ensure that iptables always route requests to the VMR pod.  The service listen on these ports :
+* 443 (Web Messaging)
+* 80 (SSL Web Messaging)
+* 8080 (SEMP)
+* 8443 (SSL SEMP)
+* 55555 (Messaging)
+* 22 (Management CLI access via SSH)
+
+```
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      name: '${APPLICATION_NAME}-vmr'
+      annotations:
+        description: 'Exposes the VMR services'
+    spec:
+      ports:
+      - name: 'smf-web'
+        port: 80
+        targetPort: 80
+      - name: 'semp'
+        port: 8080
+        targetPort: 8080
+      - name: 'smf-ssl-web'
+        port: 443
+        targetPort: 443
+      - name: 'semp-ssl'
+        port: 8443
+        targetPort: 8443
+      - name: 'smf'
+        port: 55555
+        targetPort: 55555
+      - name: 'ssh'
+        port: 22
+        targetPort: 22
+      selector:
+        deploymentconfig: '${APPLICATION_NAME}-vmr'
+      type: ClusterIP
+      sessionAffinity: None
+```
+
+### Demo application's deployments
+
+One DeploymentConfig are defined for the aggregator, and also for the worker:
+
+```
+  - kind: DeploymentConfig
+    apiVersion: v1
+    metadata:
+      name: '${APPLICATION_NAME}-aggregator'
+    spec:
+      strategy:
+        type: Rolling
+        rollingParams:
+          updatePeriodSeconds: 1
+          intervalSeconds: 1
+          timeoutSeconds: 600
+        resources: {}
+      triggers:
+        - type: ConfigChange
+        - type: ImageChange
+          imageChangeParams:
+            automatic: true
+            containerNames:
+              - '${APPLICATION_NAME}-aggregator'
+            from:
+              kind: ImageStreamTag
+              name: '${APPLICATION_NAME}-aggregator:latest'
+      replicas: 1
+      selector:
+        deploymentconfig: '${APPLICATION_NAME}-aggregator'
+      template:
+        metadata:
+          labels:
+            deploymentconfig: '${APPLICATION_NAME}-aggregator'
+        spec:
+          containers:
+            - name: '${APPLICATION_NAME}-aggregator'
+              image: '${APPLICATION_NAME}-aggregator'
+              ports:
+                - containerPort: 8090
+                  protocol: TCP
+              env:
+              - name: 'solace_java_host'
+                value: '${APPLICATION_NAME}-vmr'
+              - name: 'solace_java_msgVpn'
+                value: 'default'
+              - name: 'solace_java_clientUsername'
+                value: 'default'
+              - name: 'solace_java_clientPassword'
+                value: 'default'
+              livenessProbe:
+                tcpSocket:
+                  port: 8090
+                initialDelaySeconds: 30
+                timeoutSeconds: 1
+              resources: {}
+              terminationMessagePath: /dev/termination-log
+              imagePullPolicy: IfNotPresent
+              securityContext:
+                capabilities: {}
+                privileged: false
+          restartPolicy: Always
+          dnsPolicy: ClusterFirst
+  - kind: DeploymentConfig
+    apiVersion: v1
+    metadata:
+      name: '${APPLICATION_NAME}-worker'
+    spec:
+      strategy:
+        type: Rolling
+        rollingParams:
+          updatePeriodSeconds: 1
+          intervalSeconds: 1
+          timeoutSeconds: 600
+        resources: {}
+      triggers:
+        - type: ConfigChange
+        - type: ImageChange
+          imageChangeParams:
+            automatic: true
+            containerNames:
+              - '${APPLICATION_NAME}-worker'
+            from:
+              kind: ImageStreamTag
+              name: '${APPLICATION_NAME}-worker:latest'
+      replicas: 1
+      selector:
+        deploymentconfig: '${APPLICATION_NAME}-worker'
+      template:
+        metadata:
+          labels:
+            deploymentconfig: '${APPLICATION_NAME}-worker'
+        spec:
+          containers:
+            - name: '${APPLICATION_NAME}-worker'
+              image: '${APPLICATION_NAME}-worker'
+              env:
+              - name: 'solace_java_host'
+                value: '${APPLICATION_NAME}-vmr'
+              - name: 'solace_java_msgVpn'
+                value: 'default'
+              - name: 'solace_java_clientUsername'
+                value: 'default'
+              - name: 'solace_java_clientPassword'
+                value: 'default'
+              resources: {}
+              terminationMessagePath: /dev/termination-log
+              imagePullPolicy: IfNotPresent
+              securityContext:
+                capabilities: {}
+                privileged: false
+          restartPolicy: Always
+          dnsPolicy: ClusterFirst
+```
+
+### Route
+
+The aggregator must expose its web UI to the public network.  To do so, it exposes a route, which the router will 
+forward to the aggregator.  The router will look at the HTTP host, or `SNI` for the case of HTTPS.
+
+Routes are documented [here](https://docs.openshift.com/container-platform/3.4/architecture/core_concepts/routes.html)
+on Openshift's official documentation website.
+
+The route for the aggregator will have the `aggregator.${APPLICATION_SUBDOMAIN}` hostname.  And the router will route
+HTTPS requests sent there to the service with the `deploymentconfig: '${APPLICATION_NAME}-aggregator'` selector.
+
+```
+  - kind: Route
+    apiVersion: v1
+    metadata:
+      name: '${APPLICATION_NAME}-aggregator'
+    spec:
+      host: 'aggregator.${APPLICATION_SUBDOMAIN}'
+      to:
+        kind: Service
+        name: 'aggregator'
+      tls:
+        termination: edge
+      wildcardPolicy: None
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      name: 'aggregator'
+    spec:
+      ports:
+        - name: '${APPLICATION_NAME}-aggregator-http'
+          port: 8090
+          targetPort: 8090
+      selector:
+        deploymentconfig: '${APPLICATION_NAME}-aggregator'
+      type: ClusterIP
+      sessionAffinity: None
+```    
+
+### Template parameters 
+
+Finally at the end of the template, we have all the parameters that the user can use to control aspects of the project
+that is instantiated by the tamplate:
+
+| Parameter              | Description                                                                                                                                                                                                                                          | Default value                                           |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| APPLICATION_NAME       | The name of the application.  This will be prefixing the names of the objects created by this template.                                                                                                                                              | messaging-sample                                        |
+| APPLICATION_SUBDOMAIN  | The subdomain assigned to the application.  DNS entries must already have been provisioned in this subdomain for the application's route to work.                                                                                                    | openshift.example.com                                   |
+| VMR_IMAGE              | The ImageStream that contains the VMR docker image.  Docker-machine can be used to push the VMR docker image to the project.  Note that the default value must be adjusted to match your environment's Docker registry clusterIP.                    | 172.30.3.53:5000/vmr-openshift-demo/solace-app          |
+| GIT_URI                | The location of the Aggregator and Worker applications.  The default value shouldn't be changed, unless you want to use a fork instead to experiment.                                                                                                | https://github.com/SolaceLabs/solace-messaging-demo.git |
+| GIT_REF                | Defines which branch, tag or commit to checkout.                                                                                                                                                                                                     | master                                                  |
+| ADMIN_USER             | Defines the initial administrative user of the VMR.                                                                                                                                                                                                  | admin                                                   |
+| ADMIN_PASSWORD         | Defines the initial password of the administrative user of the VMR.                                                                                                                                                                                  | admin                                                   |
+
+This part of the template describes these parameters :
+
+```
+parameters:
+  - name: APPLICATION_NAME
+    displayName: Application name
+    description: The name for the application.
+    value: messaging-sample
+    required: true
+  - name: APPLICATION_SUBDOMAIN
+    displayName: Application subdomain
+    description: >-
+      Custom subdomain for service routes.  Leave blank for default subdomain,
+      This template creates two routes : aggregator.<subdomain> and workers.<subdomain>
+    value: openshift.example.com
+  - name: VMR_IMAGE
+    displayName: VMR Image
+    description: >-
+      Fully qualified VMR image name.
+    value: 172.30.3.53:5000/vmr-openshift-demo/solace-app
+  - name: GIT_URI
+    description: Git source URI for application
+    value: 'https://github.com/SolaceLabs/solace-messaging-demo.git'
+  - name: GIT_REF
+    description: Git branch/tag reference
+    value: master
+  - name: ADMIN_USER
+    description: Username of the admin user
+    generate: expression
+    from: '[A-Z0-9]{8}'
+    value: admin
+  - name: ADMIN_PASSWORD
+    description: Password of the admin user
+    generate: expression
+    from: '[A-Z0-9]{8}'
+    value: admin
+```
