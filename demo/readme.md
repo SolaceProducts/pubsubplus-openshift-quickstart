@@ -623,3 +623,24 @@ parameters:
     from: '[A-Z0-9]{8}'
     value: admin
 ```
+
+## Contributing
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
+
+## Authors
+
+See the list of [contributors](https://github.com/SolaceLabs/solace-openshift-quickstart/graphs/contributors) who participated in this project.
+
+## License
+
+This project is licensed under the Apache License, Version 2.0. - See the [LICENSE](LICENSE) file for details.
+
+## References
+
+Here are some interesting links if you're new to these concepts:
+
+* [The Solace Developer Portal](http://dev.solace.com/)
+* [Openshift's Core concepts](https://docs.openshift.com/container-platform/3.4/architecture/core_concepts/index.html)
+* [Kubernetes Concepts](https://kubernetes.io/docs/concepts/)
+* [Docker Machine Overview](https://docs.docker.com/machine/overview/)
