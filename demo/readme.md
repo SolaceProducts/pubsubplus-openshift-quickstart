@@ -113,8 +113,9 @@ oc create -f solace-messaging-demo-template.yml
 
 The template can be used to instantiate the system and all of its components with this command :
 
-Replace `172.30.3.53:5000/vmr-openshift-demo/solace-app` with the actual value from the [Learning the image stream fully qualified name](#Learning-the-image-stream-fully-qualified-name) section.
-Also replace openshift.example.com your wildcard subdomain (The wildcard DNS entry).
+Replace `172.30.3.53:5000/vmr-openshift-demo/solace-app` with the actual value from the
+[Learning the image stream fully qualified name](#Learning-the-image-stream-fully-qualified-name) section. Also replace
+openshift.example.com your wildcard subdomain (The wildcard DNS entry).
 
 ```
 oc process solace-springboot-messaging-sample VMR_IMAGE=172.30.3.53:5000/vmr-openshift-demo/solace-app APPLICATION_SUBDOMAIN=openshift.example.com | oc create -f -
@@ -182,7 +183,8 @@ defined by the `objects:` section.
 ### BuildConfig
 
 The first two objects in the `objects:` section are BuildConfigs.  A BuildConfig describe how to build an image from
-source code.  The Openshift documentation explains BuildConfig [here](https://docs.openshift.com/container-platform/3.4/dev_guide/builds/index.html).
+source code.  The Openshift documentation explains BuildConfig
+[here](https://docs.openshift.com/container-platform/3.4/dev_guide/builds/index.html).
 
 These are the two buildconfig used by this template :
 ```
