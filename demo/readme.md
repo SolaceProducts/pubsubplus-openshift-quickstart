@@ -5,7 +5,6 @@ the VMR used by a Demo application to distribute work to workers.
 
 ## Overview
 
-
 This demonstration consists of a single VMR used by two different Java Sprint Boot applications :
   * An aggregator which generates units of work.  A Unit of Work describes a task that takes some time to complete.
   * A worker which executes the task described by a unit of work.  When a task completes its unit of work is deemed
@@ -22,18 +21,33 @@ implemented as a sleep for the amount of time specified by the user.
 The worker is horizontally scalable and a system's throughput (A metric measured in Unit of Work per second) will scale
 linearly with the number of worker instances.  This process offers no web interface and the user do not interact with it
 directly.
-  
+
 The VMR is used as a load balancer of Work Units that guarantees delivery of work.  This is done via a non-exclusive
 queue to which the aggregator publishes Units of Work each serialized as a message.  The queue will then distribute the
 unit of work to the workers.  While the VMR distributes messages from the queue to consumers in a fair matter, the 
 distribution of work is done in no particular pattern and is affected by the worker's performance. 
 
+## Openshift Project Architecture
+
+![Diagram of the Openshift VMR Demo Project](/resources/demo-openshift-project-diagram.png)
+
+The Aggregator will be reached from HTTPS request made from external users.  The Aggregator route will expose the
+aggregator as a HTTPS hostname.  The Aggregator service allows the route to reach the Pod hosting the Aggregator.  The
+aggregator initiates a TCP connection to the VMR Service's IP in order to reach the VMR.
+
+The Worker processes each runs in their own pod.  They initiates a TCP connection to the VMR Service's IP in order to
+reach the VMR.
+
+The Aggregator and Workers processes will exchange information thru messaging done thru the VMR.
+
+The VMR will be hosted in a Pod and its services are exposed by the VMR Service.  
+
 ## Prerequisites
 
 * Access to an Openshift environment
 * Have cluster admin privileges (Or ask someone to add anyuid and privileged SCCs to your project's service account)
+* The VMR docker container (Available here : [Solace Downloads Page](http://dev.solace.com/downloads/), under Docker in "VMR Community Edition")
 * Have an administrator make the internal registry externally accessible :
-* The VMR docker container (Available here : http://dev.solace.com/downloads/, under Docker in "VMR Community Edition")
 
 ```
 oc expose service docker-registry -n default
@@ -41,14 +55,24 @@ oc expose service docker-registry -n default
 
 ## Steps
 
+The steps in this section can be executed automatically with the following script :
+
+```
+./deploy.sh <ssh-host> <project-name> <app-subdomain>
+```
+IE:
+```
+./deploy.sh ec2-user@master.openshift.example.com demo-project demo.openshift.example.com
+```
+
+### Setup a new project
+
 It is assumed that you have logged in to Openshift :
 ```
 oc login <host>:<port> --username=<user> --password=<password>
 ```
 
-### Setup a new project
-
-The first step consists of creating the Openshift project for our demo application.  This commands will create the
+The first step consists of creating the Openshift project for our demo application.  This command will create the
 project :
 
 ```
@@ -121,7 +145,7 @@ openshift.example.com your wildcard subdomain (The wildcard DNS entry).
 oc process solace-springboot-messaging-sample VMR_IMAGE=172.30.3.53:5000/vmr-openshift-demo/solace-app APPLICATION_SUBDOMAIN=openshift.example.com | oc create -f -
 ```
 
-### Template description
+## Template description
 
 Templates are explained on the Openshift official documentation web site.  Templates are explained on that web site at
 [this location](https://docs.openshift.org/latest/dev_guide/templates.html).
@@ -306,7 +330,11 @@ by this DeploymentConfig will run a VMR container.  How this container must be s
       name: '${APPLICATION_NAME}-vmr'
     spec:
       strategy:
-        type: Recreate
+        type: Rolling
+        rollingParams:
+          timeoutSeconds: 1200
+          maxSurge: 0
+          maxUnavailable: 1
       triggers:
         - type: ConfigChange
       replicas: 1
@@ -334,6 +362,10 @@ by this DeploymentConfig will run a VMR container.  How this container must be s
                 value: '22'
               - name: ALWAYS_DIE_ON_FAILURE
                 value: '0'
+              - name: ROUTERNAME
+                value: '${ROUTER_NAME}'
+              - name: NODETYPE
+                value: 'message_routing'
               image: "${VMR_IMAGE}"
               volumeMounts:
               - mountPath: /dev/shm
@@ -341,15 +373,33 @@ by this DeploymentConfig will run a VMR container.  How this container must be s
               securityContext:
                 privileged: true
               ports:
-              - containerPort: 80
-                protocol: TCP
               - containerPort: 8080
+                protocol: TCP
+              - containerPort: 943
+                protocol: TCP
+              - containerPort: 55555
+                protocol: TCP
+              - containerPort: 55003
+                protocol: TCP
+              - containerPort: 55556
+                protocol: TCP
+              - containerPort: 55443
+                protocol: TCP
+              - containerPort: 80
                 protocol: TCP
               - containerPort: 443
                 protocol: TCP
+              - containerPort: 1883
+                protocol: TCP
+              - containerPort: 8883
+                protocol: TCP
+              - containerPort: 8000
+                protocol: TCP
               - containerPort: 8443
                 protocol: TCP
-              - containerPort: 55555
+              - containerPort: 9000
+                protocol: TCP
+              - containerPort: 9443
                 protocol: TCP
               - containerPort: 22
                 protocol: TCP
@@ -393,21 +443,48 @@ Kubernetes ensure that iptables always route requests to the VMR pod.  The servi
         description: 'Exposes the VMR services'
     spec:
       ports:
-      - name: 'smf-web'
-        port: 80
-        targetPort: 80
       - name: 'semp'
         port: 8080
         targetPort: 8080
-      - name: 'smf-ssl-web'
-        port: 443
-        targetPort: 443
-      - name: 'semp-ssl'
-        port: 8443
-        targetPort: 8443
+      - name: 'semp-secure'
+        port: 943
+        targetPort: 943
       - name: 'smf'
         port: 55555
         targetPort: 55555
+      - name: 'smf-zip'
+        port: 55003
+        targetPort: 55003
+      - name: 'smf-routing'
+        port: 55556
+        targetPort: 55556
+      - name: 'smf-secure'
+        port: 55443
+        targetPort: 55443
+      - name: 'smf-http'
+        port: 80
+        targetPort: 80
+      - name: 'smf-https'
+        port: 443
+        targetPort: 443
+      - name: 'mqtt'
+        port: 1883
+        targetPort: 1883
+      - name: 'mqtt-secure'
+        port: 8883
+        targetPort: 8883
+      - name: 'mqtt-http'
+        port: 8000
+        targetPort: 8000
+      - name: 'mqtt-https'
+        port: 8443
+        targetPort: 8443
+      - name: 'rest'
+        port: 9000
+        targetPort: 9000
+      - name: 'rest-secure'
+        port: 9443
+        targetPort: 9443
       - name: 'ssh'
         port: 22
         targetPort: 22
@@ -569,7 +646,7 @@ HTTPS requests sent there to the service with the `deploymentconfig: '${APPLICAT
         deploymentconfig: '${APPLICATION_NAME}-aggregator'
       type: ClusterIP
       sessionAffinity: None
-```    
+```
 
 ### Template parameters 
 
