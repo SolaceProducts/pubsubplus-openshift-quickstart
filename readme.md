@@ -16,33 +16,67 @@ the VMR used by a Demo application to distribute work to workers.
 A guide is available to guide you in installing a minimalistic Openshift environment in AWS here :
 [AWS Openshift install guide](https://github.com/dickeyf/openshift-aws-install)
 
-## Assigning the SCCs to the Security Account
+## Deploying the VMR Template
 
-To be able to assign SSCs your project's Service Account you will need cluster admin privilege.
+After making sure you have all the [prerequisites](prerequisites) met, copy the VMR Docker image to the directory that
+contains the `deploy.sh` script.  Also place at that location the `id_rsa` file that contains your ssh private key for
+the openshift master node.
 
-In order to do this, you will have to be logged on one of the Openshift Master Node and run these commands :
+Once these two files have been copied, execute the `deploy.sh` script :
+
 ```
-oadm policy add-scc-to-user privileged system:serviceaccount:vmr-openshift-demo:default
-oadm policy add-scc-to-user anyuid system:serviceaccount:vmr-openshift-demo:default
+./deploy.sh <ssh-host> <project-name> <app-subdomain>
 ```
+IE:
+```
+./deploy.sh ec2-user@master.openshift.example.com demo-project demo.openshift.example.com
+```
+
+The script will automate these steps for you :
+* Log you in Openshift (If you are not logged in yet)
+* Create the project if it doesn't exists yet.
+* Assign the required SCCs to the project's service account.
+* Push the docker image to the Openshift's project docker repository.
+* Install the VMR template and instantiate it.
+
+At the end you should have the VMR's DeploymentConfig created, and it will be instantiating a VMR pod.
+
+## Using the VMR into your own application template
+
+Copy the objects from the `solace-vmr-template.yml` into your template, and also add the parameters.  These objects will
+instantiate a VMR pod with a Service and HTTP/HTTPS routes.  You can then adjust the service and router objects to your
+needs.  For example if giving public access to the web services of the VMR is not desirable, then you should remove the
+route objects from the template.
+
+Your application should be configured to connect to the VMR by using the service.
+
+An example of an application template embedding `solace-vmr-template.yml` can be found here
+[Solace Messaging demonstration application](demo/).
 
 ## VMR Pod Requirements
 
 For the VMR container to run properly as an Openshift Pod the following requirements must be met :
 * The container needs to running in privileged mode
+* The container processes have to run as root
 * The container needs to have a `Memory` emptyDir mounted at `/dev/shm`
+
+For these reasons, the project will requires the `anyuid` and `privileged` SCCs.
+
+NOTE: These requirements are temporary and won't be necessary in a future load.
 
 ## VMR Container environment variables
 
 The VMR Container can be configured via these environment variables :
 
-| Environment Variable                  | Description |
-| ------------------------------------- | ----------- |
-| USERNAME\_\<userName\>\_PASSWORD          | Setting this environment variable will create a user with \<userName\> as its username and set its password to the value of the environment variable |
-| USERNAME\_\<userName\>\_ENCRYPTEDPASSWORD | Setting this environment variable will create a user with \<userName\> as its username and set its password to the value of the environment variable |
-| USERNAME\_\<userName\>\_GLOBALACCESSLEVEL | Setting this environment variable will assign the global access level to the user \<userName\>.  Global access level can be one of these values: "" for no global access, "read-only", "read-write" or "admin" |
+| Environment Variable                      | Description |
+| ----------------------------------------- | ----------- |
+| USERNAME\_\<userName\>\_PASSWORD          | Setting this environment variable will create a user with \<userName\> as its username and set its password to the value of the environment variable. |
+| USERNAME\_\<userName\>\_ENCRYPTEDPASSWORD | Setting this environment variable will create a user with \<userName\> as its username and set its password to the value of the environment variable. |
+| USERNAME\_\<userName\>\_GLOBALACCESSLEVEL | Setting this environment variable will assign the global access level to the user \<userName\>.  Global access level can be one of these values: "" for no global access, "read-only", "read-write" or "admin". |
 | SERVICE\_SSH\_PORT                        | The port used by the sshd process running within the VMR Docker Container. | 
-| SERVICE\_SEMP\_PORT                       | The port used by the SEMP service within the VMR Docker Container. |
+| SERVICE\_SEMP\_PORT                       | The port used by the SEMP service within the VMR Docker Container.         |
+| ROUTERNAME                                | The SolOS router name.                                                     |
+| NODETYPE                                  | High-availability (HA) group node type.  Default value is message_routing. |
 
 ## VMR pod Template
 
@@ -59,14 +93,13 @@ The template is a yaml document that starts with an header declaring that the ob
 and is using the version `v1`.
 
 The metadata block is used to associate information to the template.  The metadata here includes the template name, 
-it's namespace, and annotations (Used by Openshift's web console to display the template).
+and annotations (Used by Openshift's web console to display the template).
 
 ```
 apiVersion: v1
 kind: Template
 metadata:
   name: solace-vmr-template
-  namespace: prototype
   annotations:
     description: Creates a Solace VMR Pod
     iconClass: icon-phalcon
@@ -75,71 +108,108 @@ metadata:
 
 ### Object List
 
-A template defines a list of object to be created when the template is instantiated.  For this template only one Pod is
-to be created, and the pod name is also a parameter `POD_NAME` :  
+A template defines a list of object to be created when the template is instantiated.  For this template these objects
+will be created :
+* A `DeploymentConfig` that creates the VMR pod.
+* A `Service` that exposes the VMR's ports on a cluster IP.
+* Routes which exposes the various VMR HTTP/HTTPS services.
 
+This is how the template define the VMR DeploymentConfig:
 ```
-objects:
-  - apiVersion: v1
-    kind: Pod
+  - kind: DeploymentConfig
+    apiVersion: v1
     metadata:
-      name: '${POD_NAME}'
-```
-
-This pod must declare one Memory empty dir that will be used by the VMR for its `/dev/shm`. This is required to have
-more than 64meg available to /dev/shm (Kubernetes forces all containers to have 64 megs only.
-IE. it sets `shm-size=64`).  This is how the Emptydir for `/dev/shm` is defined, and it is named `dshm`:
-```
+      name: '${APPLICATION_NAME}-vmr'
     spec:
-      volumes:
-        - name: dshm
-          emptyDir:
-            medium: Memory
+      strategy:
+        type: Rolling
+        rollingParams:
+          timeoutSeconds: 1200
+          maxSurge: 0
+          maxUnavailable: 1
+      triggers:
+        - type: ConfigChange
+      replicas: 1
+      selector:
+        deploymentconfig: '${APPLICATION_NAME}-vmr'
+      template:
+        metadata:
+          name: '${APPLICATION_NAME}-vmr'
+          labels:
+            name: '${APPLICATION_NAME}-vmr'
+            deploymentconfig: '${APPLICATION_NAME}-vmr'
+        spec:
+          volumes:
+          - name: dshm
+            emptyDir:
+              medium: Memory
+          containers:
+            - name: "solace-vmr"
+              env:
+              - name: USERNAME_${ADMIN_USER}_PASSWORD
+                value: '${ADMIN_PASSWORD}'
+              - name: USERNAME_${ADMIN_USER}_GLOBALACCESSLEVEL
+                value: 'admin'
+              - name: SERVICE_SSH_PORT
+                value: '22'
+              - name: ALWAYS_DIE_ON_FAILURE
+                value: '0'
+              - name: ROUTERNAME
+                value: '${ROUTER_NAME}'
+              - name: NODETYPE
+                value: '${NODE_TYPE}'
+              image: "${VMR_IMAGE}"
+              volumeMounts:
+              - mountPath: /dev/shm
+                name: dshm
+              securityContext:
+                privileged: true
+              ports:
+              - containerPort: 8080
+                protocol: TCP
+              - containerPort: 943
+                protocol: TCP
+              - containerPort: 55555
+                protocol: TCP
+              - containerPort: 55003
+                protocol: TCP
+              - containerPort: 55556
+                protocol: TCP
+              - containerPort: 55443
+                protocol: TCP
+              - containerPort: 80
+                protocol: TCP
+              - containerPort: 443
+                protocol: TCP
+              - containerPort: 1883
+                protocol: TCP
+              - containerPort: 8883
+                protocol: TCP
+              - containerPort: 8000
+                protocol: TCP
+              - containerPort: 8443
+                protocol: TCP
+              - containerPort: 9000
+                protocol: TCP
+              - containerPort: 9443
+                protocol: TCP
+              - containerPort: 22
+                protocol: TCP
+              readinessProbe:
+                initialDelaySeconds: 30
+                periodSeconds: 5
+                tcpSocket:
+                  port: 55555
+              livenessProbe:
+                timeoutSeconds: 6
+                initialDelaySeconds: 300
+                periodSeconds: 60
+                tcpSocket:
+                  port: 55555
 ```
 
-Finally, the pod also define the VMR container.  It specify the Docker image used to instantiate the container.  Note
-that the `172.30.3.53:5000` address refers to the Docker registry, and this address must be changed to match your
-Openshift environment.  If you have imagestreams in your Openshift repository that you want to use, you will need to 
-discover the address by typing this command `oc get imagestreams`.  IE:
-```
-➜  demo git:(master) oc get imagestreams
-NAME                          DOCKER REPO                                                       TAGS      UPDATED
-messaging-sample-aggregator   172.30.3.53:5000/vmr-openshift-demo/messaging-sample-aggregator   latest    21 hours ago
-messaging-sample-worker       172.30.3.53:5000/vmr-openshift-demo/messaging-sample-worker       latest    22 hours ago
-s2i-java                      jorgemoralespou/s2i-java                                          latest    22 hours ago
-solace-app                    172.30.3.53:5000/vmr-openshift-demo/solace-app                    latest    22 hours ago
-```
+__NOTE__: A dshm volume is required to be mounted at /dev/shm to give the VMR process enough space in /dev/shm.
 
-In this case, the image must be `172.30.3.53:5000/vmr-openshift-demo/solace-app`.
-
-This is how the template define the container's:
-```
-      containers:
-          image: '172.30.3.53:5000/vmr-openshift-demo/solace-app'
-          name: vmr
-          env:
-          - name: USERNAME_${ADMIN_USER}_PASSWORD
-            value: '${ADMIN_PASSWORD}'
-          - name: USERNAME_${ADMIN_USER}_GLOBALACCESSLEVEL
-            value: 'admin'
-          - name: SERVICE_SSH_PORT
-            value: '22'
-          - name:
-          volumeMounts:
-            - mountPath: /dev/shm
-              name: dshm
-          securityContext:
-            privileged: true
-          ports:
-            - containerPort: 80
-              protocol: TCP
-            - containerPort: 8080
-              protocol: TCP
-            - containerPort: 55555
-              protocol: TCP
-            - containerPort: 22
-              protocol: TCP
-```
 
 It also define's the container's name : `vmr`, and environment variables that are explained in section
 [VMR Container environment variables](#VMR-Container-environment-variables) above.  It also mount the Emptydir volume
@@ -148,29 +218,104 @@ It also define's the container's name : `vmr`, and environment variables that ar
 ### Template's parameter list
 
 Finally, the template must defines all parameters there was used throughout the template document :
-* POD_NAME
+* APPLICATION_NAME
+* APPLICATION_SUBDOMAIN
+* VMR_IMAGE
+* ROUTER_NAME
+* NODE_TYPE
 * ADMIN_USER
 * ADMIN_PASSWORD
 
 This is how these parameters are defined :
 ```
-    - name: POD_NAME
-      description: The name of the Solace Messaging service to create
-      generate: expression
-      from: '[A-Z0-9]{8}'
-    - name: ADMIN_USER
-      description: Username of the admin user
-      generate: expression
-      from: '[A-Z0-9]{8}'
-    - name: ADMIN_PASSWORD
-      description: Password of the admin user
-      generate: expression
-      from: '[A-Z0-9]{8}'
+  - name: APPLICATION_NAME
+    displayName: Application Name
+    description: The suffix to use for object names
+    generate: expression
+    from: '[A-Z0-9]{8}'
+    value: example
+    required: true
+  - name: APPLICATION_SUBDOMAIN
+    displayName: Application Subdomain
+    description: The subdomain the template uses for its routes hostnames.
+    value: vmr1.openshift.exampledomain.com
+  - name: VMR_IMAGE
+    displayName: VMR Image
+    description: >-
+      Fully qualified VMR image name.
+    value: 172.30.3.53:5000/vmr-openshift-demo/solace-app
+  - name: ROUTER_NAME
+    displayName: Router Name
+    description: The name of the router to instantiate.
+    value: vmr1
+  - name: NODE_TYPE
+    displayName: VMR Node Type
+    description: The role of this VMR Node : message_routing or monitoring.  Monitoring is used only in HA group.
+    value: message_routing
+  - name: ADMIN_USER
+    description: Username of the admin user
+    generate: expression
+    from: '[A-Z0-9]{8}'
+    value: admin
+  - name: ADMIN_PASSWORD
+    description: Password of the admin user
+    generate: expression
+    from: '[A-Z0-9]{8}'
+    value: admin
 ```
 
 When the user instantiate the template, he can specify a value for each parameter.  For instance the user would pick
 the initial admin user's username by assigning the username to the `ADMIN_USER` parameter.  The name of the pod and the
 initial admin user's password can be controller in the same way.
+
+## Instantiating the example VMR Template
+
+NOTE: The `deploy.sh` script automates these steps it is recommended to use it instead of manually executing these
+commands.  This section purpose is to explain what the scripts does.
+
+If your Openshift project hasn't been created yet you will need to create it like so :
+```
+oc new-project vmr-openshift-demo
+```
+
+To be able to assign SSCs your project's Service Account you will need cluster admin privilege.
+
+In order to do this, you will have to be logged on one of the Openshift Master Node and run these commands :
+```
+oadm policy add-scc-to-user privileged system:serviceaccount:vmr-openshift-demo:default
+oadm policy add-scc-to-user anyuid system:serviceaccount:vmr-openshift-demo:default
+```
+
+Download the VMR Container image from [Solace Downloads page](http://dev.solace.com/downloads/).  You can download
+either the `Community Edition` or the `Evaluation Edition` as both will work.  The `Community Edition` is free and
+never expires but contains less features (See the Edition Comparision chart on the downloads page).
+
+Pushing the docker image to the internal registry requires the use of a machine running docker (IE. Docker machine).
+The image is then loaded locally, and tagged as a repository image.  Then login to the Openshift registry and push
+the image using these commands :
+```
+docker load -i <image>.tar.gz
+docker login --username=<user> --password=`oc whoami -t` docker-registry-default.<domain>
+docker tag solace-app:<version-tag> docker-registry-default.<domain>/vmr-openshift-demo/solace-app:latest
+docker push docker-registry-default.<domain>/vmr-openshift-demo/solace-app
+```
+
+List the imagestreams named `solaceapp` to learn the full VMR Image name :
+```
+➜  openshift git:(master) ✗ oc get imagestreams solace-app
+NAME         DOCKER REPO                                      TAGS      UPDATED
+solace-app   172.30.3.53:5000/vmr-openshift-demo/solace-app   latest    48 minutes ago
+```
+
+In this case, the image must be `172.30.3.53:5000/vmr-openshift-demo/solace-app`.
+
+The application subdomain should be a DNS wildcard entry which maps to the openshift router.  Routes will be
+created based on that subdomain and should all resolve to the router.
+
+```
+oc create -f solace-vmr-template.yml
+oc process solace-vmr-template VMR_IMAGE=<ImageStream> APPLICATION_SUBDOMAIN=<Subdomain> | oc create -f -
+```
 
 ## Demo Openshift Application
 
@@ -178,11 +323,13 @@ A demonstration of the VMR in use by sample application is available here : [Ope
 
 ## Contributing
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull
+requests to us.
 
 ## Authors
 
-See the list of [contributors](https://github.com/SolaceLabs/solace-openshift-quickstart/graphs/contributors) who participated in this project.
+See the list of [contributors](https://github.com/SolaceLabs/solace-openshift-quickstart/graphs/contributors) who
+participated in this project.
 
 ## License
 
