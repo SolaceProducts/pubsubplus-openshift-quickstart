@@ -38,16 +38,16 @@ else
 fi
 
 echo "Assigning these SCCs: privileged and anyuid to project's service account."
-ssh -i id_rsa $SSH_HOST "oadm policy add-scc-to-user privileged system:serviceaccount:vmr-openshift-demo:default"
-ssh -i id_rsa $SSH_HOST "oadm policy add-scc-to-user anyuid system:serviceaccount:vmr-openshift-demo:default"
+ssh -i id_rsa $SSH_HOST "oadm policy add-scc-to-user privileged system:serviceaccount:$PROJECT_NAME:default"
+ssh -i id_rsa $SSH_HOST "oadm policy add-scc-to-user anyuid system:serviceaccount:$PROJECT_NAME:default"
 
 if [ -z "`docker images solace-app -q`" ]; then
   echo "Pushing docker image in `ls soltr-*-docker.tar.gz` to Openshift's Docker repository"
   docker load -i `ls soltr-*-docker.tar.gz`
 fi
 docker login --username=`oc whoami` --password=`oc whoami -t` docker-registry-default.$DOMAIN
-docker tag `docker images -q solace-app` docker-registry-default.$DOMAIN/vmr-openshift-demo/solace-app:latest
-docker push docker-registry-default.$DOMAIN/vmr-openshift-demo/solace-app
+docker tag `docker images -q solace-app` docker-registry-default.$DOMAIN/$PROJECT_NAME/solace-app:latest
+docker push docker-registry-default.$DOMAIN/$PROJECT_NAME/solace-app
 
 echo "Adding the java s2i imagestream to the Openshift project"
 oc create -f https://raw.githubusercontent.com/jorgemoralespou/s2i-java/master/ose3/s2i-java-imagestream.json
