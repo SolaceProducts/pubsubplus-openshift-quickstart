@@ -25,11 +25,11 @@ the openshift master node.
 Once these two files have been copied, execute the `deploy.sh` script :
 
 ```
-./deploy.sh <ssh-host> <project-name> <app-subdomain>
+./deploy.sh <ssh-host> <project-name> <openshift-domain>
 ```
 IE:
 ```
-./deploy.sh ec2-user@master.openshift.example.com demo-project demo.openshift.example.com
+./deploy.sh ec2-user@master.openshift.example.com demo-project openshift.example.com
 ```
 
 The script will automate these steps for you :
