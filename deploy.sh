@@ -29,7 +29,7 @@ else
     echo "Already logged in as `oc whoami`"
 fi
 
-oc project &> /dev/null
+oc project $PROJECT_NAME &> /dev/null
 if [ $? -ne 0 ]; then
     echo "Creating new Openshift project : $PROJECT_NAME"
     oc new-project $PROJECT_NAME
@@ -38,8 +38,8 @@ else
 fi
 
 echo "Assigning these SCCs: privileged and anyuid to project's service account."
-ssh -i id_rsa $SSH_HOST "oadm policy add-scc-to-user privileged system:serviceaccount:$PROJECT_NAME:default"
-ssh -i id_rsa $SSH_HOST "oadm policy add-scc-to-user anyuid system:serviceaccount:$PROJECT_NAME:default"
+ssh -i id_rsa $SSH_HOST "sudo oadm policy add-scc-to-user privileged system:serviceaccount:$PROJECT_NAME:default"
+ssh -i id_rsa $SSH_HOST "sudo oadm policy add-scc-to-user anyuid system:serviceaccount:$PROJECT_NAME:default"
 
 if [ -z "`docker images solace-app -q`" ]; then
   echo "Pushing docker image in `ls soltr-*-docker.tar.gz` to Openshift's Docker repository"
