@@ -107,7 +107,7 @@ objects:
       ports:
       - name: 'semp'
         port: 8080
-        targetPort: ${SERVICE_SEMP_PORT}
+        targetPort: 8080
       - name: 'semp-secure'
         port: 943
         targetPort: 943
@@ -149,7 +149,7 @@ objects:
         targetPort: 9443
       - name: 'ssh'
         port: 22
-        targetPort: ${SERVICE_SSH_PORT}
+        targetPort: 22
       selector:
         deploymentconfig: '${APPLICATION_NAME}-vmr'
       type: ClusterIP
