@@ -58,11 +58,11 @@ oc expose service docker-registry -n default
 The steps in this section can be executed automatically with the following script :
 
 ```
-./deploy.sh <ssh-host> <project-name> <app-subdomain>
+./deploy.sh <ssh-host> <project-name> <openshift-domain>
 ```
 IE:
 ```
-./deploy.sh ec2-user@master.openshift.example.com demo-project demo.openshift.example.com
+./deploy.sh ec2-user@master.openshift.example.com demo-project openshift.example.com
 ```
 
 ### Setup a new project
