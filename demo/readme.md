@@ -44,16 +44,17 @@ The VMR will be hosted in a Pod and its services are exposed by the VMR Service.
 
 ## Prerequisites
 
-* Access to an Openshift environment
-* Have cluster admin privileges (Or ask someone to add anyuid and privileged SCCs to your project's service account)
-* The VMR docker container (Available here : [Solace Downloads Page](http://dev.solace.com/downloads/), under Docker in "VMR Community Edition")
+* A target OpenShift environment
+* A host with OpenShift client and Docker tools installed (IE. to run the Quick Start example)
+* Have cluster admin privileges
+* The VMR docker container (Available here : http://dev.solace.com/downloads/, under Docker in "VMR Community Edition")
 * Have an administrator make the internal registry externally accessible :
 
 ```
 oc expose service docker-registry -n default
 ```
 
-## Steps
+## Deploying the Messaging Demo Template
 
 The steps in this section can be executed automatically with the following script :
 
@@ -65,14 +66,23 @@ IE:
 ./deploy.sh ec2-user@master.openshift.example.com demo-project openshift.example.com
 ```
 
+The script will automate these steps for you : 
+* Log you in OpenShift (If you are not logged in yet)
+* Create the project if it doesn't exists yet.
+* Assign the required SCCs to the project's service account.
+* Push the docker image to the OpenShift's project docker repository.
+* Install the VMR template and instantiate it.
+
+The following sections describes how to complete the above steps manually.
+
 ### Setup a new project
 
-It is assumed that you have logged in to Openshift :
+It is assumed that you have logged in to OpenShift :
 ```
 oc login <host>:<port> --username=<user> --password=<password>
 ```
 
-The first step consists of creating the Openshift project for our demo application.  This command will create the
+The first step consists of creating the OpenShift project for our demo application.  This command will create the
 project :
 
 ```
@@ -87,10 +97,10 @@ oadm policy add-scc-to-user privileged system:serviceaccount:vmr-openshift-demo:
 oadm policy add-scc-to-user anyuid system:serviceaccount:vmr-openshift-demo:default
 ```
 
-### Upload the VMR docker image to Openshift's internal docker registry
+### Upload the VMR docker image to OpenShift's internal docker registry
 
 Pushing the docker image to the internal registry requires the use of a machine running docker (IE. Docker machine).
-The image is then loaded locally, and tagged as a repository image.  Then login to the Openshift registry and push
+The image is then loaded locally, and tagged as a repository image.  Then login to the OpenShift registry and push
 the image using these commands :
 
 ```
@@ -102,7 +112,7 @@ docker push docker-registry-default.<domain>/vmr-openshift-demo/solace-app
 
 ### Learning the image stream fully qualified name
 
-After pushing the image to Openshift it is necessary to know the cluster IP of the docker registry :
+After pushing the image to OpenShift it is necessary to know the cluster IP of the docker registry :
 ```
 oc get imagestreams solace-app
 ```
@@ -147,7 +157,7 @@ oc process solace-springboot-messaging-sample VMR_IMAGE=172.30.3.53:5000/vmr-ope
 
 ## Template description
 
-Templates are explained on the Openshift official documentation web site.  Templates are explained on that web site at
+Templates are explained on the OpenShift official documentation web site.  Templates are explained on that web site at
 [this location](https://docs.openshift.org/latest/dev_guide/templates.html).
 
 The template is used to automate the creation of these objects :
@@ -160,7 +170,7 @@ The template is used to automate the creation of these objects :
 * A DeploymentConfig for the aggregator app.
 * A DeploymentConfig for the worker app.
 * A Service for the VMR.  The service fronts a group of pods providing the same service over a set of TCP ports.  The 
-  Service have a single cluster IP associated to it, and a hostname.  The applications needing the service will connect
+  Service has a single cluster IP associated with it, and a hostname.  The applications needing the service will connect
   to the hostname of the service instead of connection directly to the pods offering the service.  The service can
   load balance connections, and failover to pods that are healthy.
 * A service for the aggregator application.  The aggregator application serves a web app over port 8080 and this service
@@ -207,7 +217,7 @@ defined by the `objects:` section.
 ### BuildConfig
 
 The first two objects in the `objects:` section are BuildConfigs.  A BuildConfig describe how to build an image from
-source code.  The Openshift documentation explains BuildConfig
+source code.  The OpenShift documentation explains BuildConfig
 [here](https://docs.openshift.com/container-platform/3.4/dev_guide/builds/index.html).
 
 These are the two buildconfig used by this template :
@@ -315,8 +325,8 @@ described in the [previous section](#BuildConfig).
 
 ### Deployment Config for Solace's VMR
 
-A deployment describes how an application must be deployed in Openshift.  More information on them can be found
-[here](https://docs.openshift.com/container-platform/3.4/dev_guide/deployments/how_deployments_work.html) on Openshift's
+A deployment describes how an application must be deployed in OpenShift.  More information on them can be found
+[here](https://docs.openshift.com/container-platform/3.4/dev_guide/deployments/how_deployments_work.html) on OpenShift's
 official documentation website.
 
 Solace's VMR requires the `recreate` strategy.  To upgrade, or replace the VMR, the old pod must be destroyed before the
@@ -418,7 +428,7 @@ by this DeploymentConfig will run a VMR container.  How this container must be s
 
 ### VMR Service
 
-Since a Pod's IP is not permanent having applications how about each Pod IPs address is not practical.  Applications
+Since a Pod's IP is not permanent having applications know about each Pod IPs address is not practical.  Applications
 thus connect to pod indirectly thru an object called `service` which are documented
 [here](https://kubernetes.io/docs/concepts/services-networking/service/) on Kubernete's official website.  A service
 act as a proxy between applications and the Pod offering a service.  A service also have a name and Kubernetes define
@@ -615,7 +625,7 @@ The aggregator must expose its web UI to the public network.  To do so, it expos
 forward to the aggregator.  The router will look at the HTTP host, or `SNI` for the case of HTTPS.
 
 Routes are documented [here](https://docs.openshift.com/container-platform/3.4/architecture/core_concepts/routes.html)
-on Openshift's official documentation website.
+on OpenShift's official documentation website.
 
 The route for the aggregator will have the `aggregator.${APPLICATION_SUBDOMAIN}` hostname.  And the router will route
 HTTPS requests sent there to the service with the `deploymentconfig: '${APPLICATION_NAME}-aggregator'` selector.
@@ -718,6 +728,6 @@ This project is licensed under the Apache License, Version 2.0. - See the [LICEN
 Here are some interesting links if you're new to these concepts:
 
 * [The Solace Developer Portal](http://dev.solace.com/)
-* [Openshift's Core concepts](https://docs.openshift.com/container-platform/3.4/architecture/core_concepts/index.html)
+* [OpenShift's Core concepts](https://docs.openshift.com/container-platform/3.4/architecture/core_concepts/index.html)
 * [Kubernetes Concepts](https://kubernetes.io/docs/concepts/)
 * [Docker Machine Overview](https://docs.docker.com/machine/overview/)

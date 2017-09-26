@@ -2,25 +2,35 @@
 
 ## Overview
 
-This repository contains Openshift templates to use the VMR in Openshift.  It also contains a template to demonstrate
+This repository contains OpenShift templates to use the VMR in OpenShift.  It also contains a template to demonstrate
 the VMR used by a Demo application to distribute work to workers.
 
 ## Prerequisites
 
-* Access to an Openshift environment
-* Access to an Openshift project whose service account have the anyuid and privilege SCCs assigned to it
+* A target OpenShift environment
+* A host with OpenShift client and Docker tools installed (IE. to run the Quick Start example)
+* Have cluster admin privileges
 * The VMR docker container (Available here : http://dev.solace.com/downloads/, under Docker in "VMR Community Edition")
+* Have an administrator make the internal registry externally accessible :
 
-## Openshift installation
+```
+oc expose service docker-registry -n default
+```
 
-A guide is available to guide you in installing a minimalistic Openshift environment in AWS here :
+## OpenShift installation
+
+A guide is available to guide you in installing a minimalistic OpenShift environment in AWS here :
 [AWS Openshift install guide](https://github.com/dickeyf/openshift-aws-install)
+
+### Creating the OpenShift user
+
+[AWS Openshift install guide - Creating Users](https://github.com/dickeyf/openshift-aws-install#creating-users-and-the-admin-user)
 
 ## Deploying the VMR Template
 
 After making sure you have all the [prerequisites](prerequisites) met, copy the VMR Docker image to the directory that
 contains the `deploy.sh` script.  Also place at that location the `id_rsa` file that contains your ssh private key for
-the openshift master node.
+the OpenShift master node.
 
 Once these two files have been copied, execute the `deploy.sh` script :
 
@@ -28,15 +38,16 @@ Once these two files have been copied, execute the `deploy.sh` script :
 ./deploy.sh <ssh-host> <project-name> <openshift-domain>
 ```
 IE:
+
 ```
 ./deploy.sh ec2-user@master.openshift.example.com demo-project openshift.example.com
 ```
 
 The script will automate these steps for you :
-* Log you in Openshift (If you are not logged in yet)
+* Log you in OpenShift (If you are not logged in yet)
 * Create the project if it doesn't exists yet.
 * Assign the required SCCs to the project's service account.
-* Push the docker image to the Openshift's project docker repository.
+* Push the docker image to the OpenShift's project docker repository.
 * Install the VMR template and instantiate it.
 
 At the end you should have the VMR's DeploymentConfig created, and it will be instantiating a VMR pod.
@@ -55,8 +66,8 @@ An example of an application template embedding `solace-vmr-template.yml` can be
 
 ## VMR Pod Requirements
 
-For the VMR container to run properly as an Openshift Pod the following requirements must be met :
-* The container needs to running in privileged mode
+For the VMR container to run properly as an OpenShift Pod the following requirements must be met :
+* The container needs to be running in privileged mode
 * The container processes have to run as root
 * The container needs to have a `Memory` emptyDir mounted at `/dev/shm`
 
@@ -82,18 +93,18 @@ The VMR Container can be configured via these environment variables :
 
 A sample template of a VMR pod is provided here: [Solace VMR pod Template](solace-vmr-template.yml).
 
-Use this template as a reference to add a VMR pod to your Openshift application.
+Use this template as a reference to add a VMR pod to your OpenShift application.
 
 ### Template header and metadata
 
-Templates are explained on the Openshift official documentation web site.  Templates are explained on that web site at
+Templates are explained on the OpenShift official documentation web site.  Templates are explained on that web site at
 [this location](https://docs.openshift.org/latest/dev_guide/templates.html).
 
-The template is a yaml document that starts with an header declaring that the object is a template (`kind: Template`)
+The template is a yaml document that starts with a header declaring that the object is a template (`kind: Template`)
 and is using the version `v1`.
 
 The metadata block is used to associate information to the template.  The metadata here includes the template name, 
-and annotations (Used by Openshift's web console to display the template).
+and annotations (Used by OpenShift's web console to display the template).
 
 ```
 apiVersion: v1
@@ -114,7 +125,7 @@ will be created :
 * A `Service` that exposes the VMR's ports on a cluster IP.
 * Routes which exposes the various VMR HTTP/HTTPS services.
 
-This is how the template define the VMR DeploymentConfig:
+This is how the template defines the VMR DeploymentConfig:
 ```
   - kind: DeploymentConfig
     apiVersion: v1
@@ -210,14 +221,13 @@ This is how the template define the VMR DeploymentConfig:
 
 __NOTE__: A dshm volume is required to be mounted at /dev/shm to give the VMR process enough space in /dev/shm.
 
-
-It also define's the container's name : `vmr`, and environment variables that are explained in section
+It also defines the container's name : `vmr`, and environment variables that are explained in section
 [VMR Container environment variables](#VMR-Container-environment-variables) above.  It also mount the Emptydir volume
 `dshm` onto `/dev/shm`, give the container privilege access, and then defines ports that must be exposed.
 
 ### Template's parameter list
 
-Finally, the template must defines all parameters there was used throughout the template document :
+Finally, the template must define all parameters that were used throughout the template document :
 * APPLICATION_NAME
 * APPLICATION_SUBDOMAIN
 * VMR_IMAGE
@@ -273,14 +283,14 @@ initial admin user's password can be controller in the same way.
 NOTE: The `deploy.sh` script automates these steps it is recommended to use it instead of manually executing these
 commands.  This section purpose is to explain what the scripts does.
 
-If your Openshift project hasn't been created yet you will need to create it like so :
+If your OpenShift project hasn't been created yet you will need to create it like so :
 ```
 oc new-project vmr-openshift-demo
 ```
 
 To be able to assign SSCs your project's Service Account you will need cluster admin privilege.
 
-In order to do this, you will have to be logged on one of the Openshift Master Node and run these commands :
+In order to do this, you will have to be logged on one of the OpenShift Master Node and run these commands :
 ```
 oadm policy add-scc-to-user privileged system:serviceaccount:vmr-openshift-demo:default
 oadm policy add-scc-to-user anyuid system:serviceaccount:vmr-openshift-demo:default
@@ -291,7 +301,7 @@ either the `Community Edition` or the `Evaluation Edition` as both will work.  T
 never expires but contains less features (See the Edition Comparision chart on the downloads page).
 
 Pushing the docker image to the internal registry requires the use of a machine running docker (IE. Docker machine).
-The image is then loaded locally, and tagged as a repository image.  Then login to the Openshift registry and push
+The image is then loaded locally, and tagged as a repository image.  Then login to the OpenShift registry and push
 the image using these commands :
 ```
 docker load -i <image>.tar.gz
@@ -309,7 +319,7 @@ solace-app   172.30.3.53:5000/vmr-openshift-demo/solace-app   latest    48 minut
 
 In this case, the image must be `172.30.3.53:5000/vmr-openshift-demo/solace-app`.
 
-The application subdomain should be a DNS wildcard entry which maps to the openshift router.  Routes will be
+The application subdomain should be a DNS wildcard entry which maps to the OpenShift router.  Routes will be
 created based on that subdomain and should all resolve to the router.
 
 ```
@@ -320,6 +330,31 @@ oc process solace-vmr-template VMR_IMAGE=<ImageStream> APPLICATION_SUBDOMAIN=<Su
 ## Demo Openshift Application
 
 A demonstration of the VMR in use by sample application is available here : [Openshift VMR Demo](demo/)
+
+## Using SolAdmin to connect to the VMR pod
+
+SolAdmin can be used to connect to the VMR and administer it.  SolAdmin can be downloaded from [Solace's Download Page](http://dev.solace.com/downloads/).
+
+Follow these steps to connect to the VMR:
+1. Navigate to semp.<openshift-domain> with your browser and accept the server certificate.
+1. Export the certificate from your system trust-store and import the certificate into a Java Key Store (JKS) file.
+1. Connect to VMR from SolAdmin, these are the fields that must be filled:
+
+| Field                      | Value |
+| ----------------------------------------- | -------------- |
+| Management IP Address/Host | semp.<APPLICATION_SUBDOMAIN>  |
+| Management Port            | 443                           |
+| Username                   | <ADMIN_USER>                  |
+| Password                   | <ADMIN_PASSWORD>              | 
+| Use Secure Session         | This field must be checked    |
+| Trust Store File           | <Path to .jks file>           |
+| Trust Store Password       | <jks file password>           |
+
+<APPLICATION_SUBDOMAIN>: The subdomain that was chosen when the VMR template was deployed.
+<ADMIN_USER>: The admin username that was chosen when the VMR template was deployed. 
+<ADMIN_PASSWORD>: The admin password that was chosen when the VMR template was deployed.
+<Path to .jks file>: This is the JKS file into which you imported the VMR certificate.
+<jks file password>: This is the password you used to encrypt and temper-proof the JKS file. 
 
 ## Contributing
 
@@ -340,6 +375,6 @@ This project is licensed under the Apache License, Version 2.0. - See the [LICEN
 Here are some interesting links if you're new to these concepts:
 
 * [The Solace Developer Portal](http://dev.solace.com/)
-* [Openshift's Core concepts](https://docs.openshift.com/container-platform/3.4/architecture/core_concepts/index.html)
+* [OpenShift's Core concepts](https://docs.openshift.com/container-platform/3.4/architecture/core_concepts/index.html)
 * [Kubernetes Concepts](https://kubernetes.io/docs/concepts/)
 * [Docker Machine Overview](https://docs.docker.com/machine/overview/)
