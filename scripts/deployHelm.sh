@@ -24,7 +24,7 @@ function helmVersion() {
     helm version
     if [ $? -ne 0 ]; then
       echo "There was a problem retrieving helm details.  Ensure you have the following environment variables defined:"
-      echo "  HELM_HOME=\$HOME/.helm"
+      echo "  HELM_HOME=\${HOME}/.helm"
       echo "  TILLER_NAMESPACE=${TILLER_PROJECT}"
     fi
   fi
@@ -51,6 +51,12 @@ function deployHelmClient () {
   
     echo "export PATH=\$PATH:\$HOME/linux-amd64"
     export PATH=$PATH:~/linux-amd64
+
+    echo "export HELM_HOME=\$HOME/.helm"
+    export HELM_HOME=$HOME/.helm
+
+    echo "export TILLER_NAMESPACE=${TILLER_PROJECT}"
+    export TILLER_NAMESPACE=$TILLER_PROJECT
   else
     echo "Skipping Helm client installation, Helm is already installed"
     echo "  helm executable found in --> $(which helm)"
@@ -68,7 +74,7 @@ function deployHelmServer() {
       echo "export HELM_HOME=\$HOME/.helm"
       export HELM_HOME=$HOME/.helm
 
-      echo "export TILLER_NAMESPACE=\$TILLER_PROJECT"
+      echo "export TILLER_NAMESPACE=${TILLER_PROJECT}"
       export TILLER_NAMESPACE=$TILLER_PROJECT
  
       oc new-project $TILLER_PROJECT
