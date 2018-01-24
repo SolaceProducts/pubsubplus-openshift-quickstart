@@ -99,10 +99,30 @@ docker load -i <Solace VMR tarball>
   * **Note:** Ensure your ECR registry is created in the AWS Region where you have deployed your OpenShift environment.
 
 ### **Step 7:** Deploy the Solace VMR message router software 
-* Deploy VMR software using the Solace OpenShift HA QuickStart templates:
+* **(Option 1)** Deploy VMR software using the Solace OpenShift HA QuickStart templates:
   * Deploy VMR in a single-node configuration
-  * Deploy VMR in a high-availability configuration
-* **(Optional)** Deploy VMR software using the Solace Kubernetes QuickStart project
+    * Open the 'vmr_singleNode_template.yaml' file and substitute the following strings with values for the VMR image from your Docker Registry:
+      * REPOSITORY_URL - Substitute with your Docker registry's URL
+      * VMR_IMAGE_TAG - Substitute with your VMR image tag in your respective Docker Registry
+    * Process the OpenShift template to deploy the Solace VMR in a single-node configuration
+```
+oc project vmrha
+cd  ~/workspace/solace-openshift-quickstart/templates
+sed -i 's/REPOSITORY_URL/replaceWithYourValueHere/g' vmr_ha_template.yaml
+sed -i 's/VMR_IMAGE_TAG/replaceWithYourValueHere/g' vmr_ha_template.yaml
+oc create -f vmr_singleNode_template.yaml
+```
+  * OR, Deploy VMR in a high-availability configuration
+    * Open the 'vmr_ha_template.yaml' file and substitute the strings REPOSITORY_URL and VMR_IMAGE_TAG as indicated above
+```
+oc project vmrha
+cd  ~/workspace/solace-openshift-quickstart/templates
+sed -i 's/REPOSITORY_URL/replaceWithYourValueHere/g' vmr_ha_template.yaml
+sed -i 's/VMR_IMAGE_TAG/replaceWithYourValueHere/g' vmr_ha_template.yaml
+oc create -f vmr_ha_template.yaml
+```    
+
+* **(Option 2)** Deploy VMR software using the Solace Kubernetes QuickStart project
 Update the Solace Kubernetes values.yaml configuration file for your target deployment (Please refer to the Solace Kubernetes QuickStart project for further details):
   * Configure the values.yaml file to deploy the Solace VMR software in either a single-node or Highly-Available configuration. 
 ```
@@ -121,6 +141,115 @@ helm install . -f values.yaml
   |storage / persistent    |true                 |Set to ‘true’ to configure persistent disks to store Solace VMR data|
   |storage / type          |standard             |Set to ‘standard’ to use lower-cost / standard performance disk types (AWS GP2)|
   |storage / size          |30Gi                 |Set to the minimum number of gigabytes for VMR data storage.  Refer to Solace VMR documentation for further details.|
+
+## Validating the Deployment
+
+Now you can validate your deployment from the OpenShift client shell:
+```
+[ec2-user@ip-10-0-23-198 ~]$ oc get statefulset,service
+NAME                                   DESIRED   CURRENT   AGE
+statefulsets/oppulent-catfish-solace   3         3         17m
+
+NAME                                    CLUSTER-IP       EXTERNAL-IP        PORT(S)                                                                                                                   AGE
+svc/oppulent-catfish-solace             172.30.146.232   af12bcd7b0098...   22:31437/TCP,1883:32259/TCP,5672:32020/TCP,8000:31829/TCP,8080:32479/TCP,9000:32726/TCP,55003:31871/TCP,55555:30659/TCP   17m
+svc/oppulent-catfish-solace-discovery   None             <none>             8080/TCP                                                                                                                  17m
+[ec2-user@ip-10-0-23-198 ~]$
+[ec2-user@ip-10-0-23-198 ~]$
+[ec2-user@ip-10-0-23-198 ~]$
+[ec2-user@ip-10-0-23-198 ~]$
+[ec2-user@ip-10-0-23-198 ~]$
+[ec2-user@ip-10-0-23-198 ~]$ oc get statefulset,service,pods,pvc,pv
+NAME                                   DESIRED   CURRENT   AGE
+statefulsets/oppulent-catfish-solace   3         3         17m
+
+NAME                                    CLUSTER-IP       EXTERNAL-IP        PORT(S)                                                                                                                   AGE
+svc/oppulent-catfish-solace             172.30.146.232   af12bcd7b0098...   22:31437/TCP,1883:32259/TCP,5672:32020/TCP,8000:31829/TCP,8080:32479/TCP,9000:32726/TCP,55003:31871/TCP,55555:30659/TCP   17m
+svc/oppulent-catfish-solace-discovery   None             <none>             8080/TCP                                                                                                                  17m
+
+NAME                           READY     STATUS    RESTARTS   AGE
+po/oppulent-catfish-solace-0   1/1       Running   0          17m
+po/oppulent-catfish-solace-1   1/1       Running   0          16m
+po/oppulent-catfish-solace-2   1/1       Running   0          15m
+
+NAME                                 STATUS    VOLUME                                     CAPACITY   ACCESSMODES   STORAGECLASS                AGE
+pvc/data-oppulent-catfish-solace-0   Bound     pvc-f12f15c0-0098-11e8-8ed4-02a152ed1b12   30Gi       RWO           oppulent-catfish-standard   17m
+pvc/data-oppulent-catfish-solace-1   Bound     pvc-0fa5577e-0099-11e8-8ed4-02a152ed1b12   30Gi       RWO           oppulent-catfish-standard   16m
+pvc/data-oppulent-catfish-solace-2   Bound     pvc-2e1daed6-0099-11e8-8ed4-02a152ed1b12   30Gi       RWO           oppulent-catfish-standard   15m
+
+NAME                                          CAPACITY   ACCESSMODES   RECLAIMPOLICY   STATUS    CLAIM                                  STORAGECLASS                REASON    AGE
+pv/pvc-0fa5577e-0099-11e8-8ed4-02a152ed1b12   30Gi       RWO           Delete          Bound     vmrha/data-oppulent-catfish-solace-1   oppulent-catfish-standard             16m
+pv/pvc-2e1daed6-0099-11e8-8ed4-02a152ed1b12   30Gi       RWO           Delete          Bound     vmrha/data-oppulent-catfish-solace-2   oppulent-catfish-standard             15m
+pv/pvc-f12f15c0-0098-11e8-8ed4-02a152ed1b12   30Gi       RWO           Delete          Bound     vmrha/data-oppulent-catfish-solace-0   oppulent-catfish-standard             17m
+[ec2-user@ip-10-0-23-198 ~]$
+[ec2-user@ip-10-0-23-198 ~]$
+[ec2-user@ip-10-0-23-198 ~]$ oc describe svc
+Name:                   oppulent-catfish-solace
+Namespace:              vmrha
+Labels:                 app=solace
+                        chart=solace-0.2.0
+                        heritage=Tiller
+                        release=oppulent-catfish
+Annotations:            <none>
+Selector:               active=true,app=solace,release=oppulent-catfish
+Type:                   LoadBalancer
+IP:                     172.30.146.232
+LoadBalancer Ingress:   af12bcd7b009811e8a44106dd6bcb75d-1520996963.us-east-2.elb.amazonaws.com
+Port:                   ssh     22/TCP
+NodePort:               ssh     31437/TCP
+Endpoints:              10.128.4.8:22
+Port:                   mqtt    1883/TCP
+NodePort:               mqtt    32259/TCP
+Endpoints:              10.128.4.8:1883
+Port:                   amqp    5672/TCP
+NodePort:               amqp    32020/TCP
+Endpoints:              10.128.4.8:5672
+Port:                   mqttws  8000/TCP
+NodePort:               mqttws  31829/TCP
+Endpoints:              10.128.4.8:8000
+Port:                   semp    8080/TCP
+NodePort:               semp    32479/TCP
+Endpoints:              10.128.4.8:8080
+Port:                   rest    9000/TCP
+NodePort:               rest    32726/TCP
+Endpoints:              10.128.4.8:9000
+Port:                   smfc    55003/TCP
+NodePort:               smfc    31871/TCP
+Endpoints:              10.128.4.8:55003
+Port:                   smf     55555/TCP
+NodePort:               smf     30659/TCP
+Endpoints:              10.128.4.8:55555
+Session Affinity:       None
+Events:
+  FirstSeen     LastSeen        Count   From                    SubObjectPath   Type            Reason                  Message
+  ---------     --------        -----   ----                    -------------   --------        ------                  -------
+  17m           17m             1       service-controller                      Normal          CreatingLoadBalancer    Creating load balancer
+  17m           17m             1       service-controller                      Normal          CreatedLoadBalancer     Created load balancer
+
+
+Name:                   oppulent-catfish-solace-discovery
+Namespace:              vmrha
+Labels:                 app=solace
+                        chart=solace-0.2.0
+                        heritage=Tiller
+                        release=oppulent-catfish
+Annotations:            service.alpha.kubernetes.io/tolerate-unready-endpoints=true
+Selector:               app=solace,release=oppulent-catfish
+Type:                   ClusterIP
+IP:                     None
+Port:                   semp    8080/TCP
+Endpoints:              10.128.4.8:8080,10.130.2.4:8080,10.131.2.4:8080
+Session Affinity:       None
+Events:                 <none>
+```
+
+Note, the **'LoadBalancer Ingress'** value listed in the service description above.  This is the Solace Connection URL for messaging clients (AWS Load Balancer example).  
+
+### Viewing bringup logs
+
+It is possible to watch the VMR come up via logs in the OpenShift UI log stack for individual VMR pods.  You can access the log stack for individual VMR pods from the OpenShift UI, by navigating to:
+* OpenShift UI > Stateful Sets > (Stateful Set) > Pods > (VMR Pod) > Logs
+
+![alt text](/resources/VMR-Pod-Log-Stack.png "VMR Pod Log Stack")
 
 ## Gaining admin and ssh access to the VMR
 
