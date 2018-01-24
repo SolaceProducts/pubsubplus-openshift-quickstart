@@ -146,18 +146,6 @@ helm install . -f values.yaml
 
 Now you can validate your deployment from the OpenShift client shell:
 ```
-[ec2-user@ip-10-0-23-198 ~]$ oc get statefulset,service
-NAME                                   DESIRED   CURRENT   AGE
-statefulsets/oppulent-catfish-solace   3         3         17m
-
-NAME                                    CLUSTER-IP       EXTERNAL-IP        PORT(S)                                                                                                                   AGE
-svc/oppulent-catfish-solace             172.30.146.232   af12bcd7b0098...   22:31437/TCP,1883:32259/TCP,5672:32020/TCP,8000:31829/TCP,8080:32479/TCP,9000:32726/TCP,55003:31871/TCP,55555:30659/TCP   17m
-svc/oppulent-catfish-solace-discovery   None             <none>             8080/TCP                                                                                                                  17m
-[ec2-user@ip-10-0-23-198 ~]$
-[ec2-user@ip-10-0-23-198 ~]$
-[ec2-user@ip-10-0-23-198 ~]$
-[ec2-user@ip-10-0-23-198 ~]$
-[ec2-user@ip-10-0-23-198 ~]$
 [ec2-user@ip-10-0-23-198 ~]$ oc get statefulset,service,pods,pvc,pv
 NAME                                   DESIRED   CURRENT   AGE
 statefulsets/oppulent-catfish-solace   3         3         17m
