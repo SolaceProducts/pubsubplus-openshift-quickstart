@@ -100,19 +100,26 @@ docker load -i <Solace VMR tarball>
 
 ### **Step 7:** Deploy the Solace VMR message router software 
 * **(Option 1)** Deploy VMR software using the Solace OpenShift HA QuickStart templates:
+  * Prerequisites:
+    * Determine your VMR disk space requirements.  We recommend a minimum of 30 gigabytes of disk space.
+    * Define a strong password for the Solace VMR 'admin' user and then base64 encode the value.  This value will be specified as a parameter when processing the Solace VMR OpenShift template:
+    
+```
+echo -n 'strong@dminPw!' | base64
+```
   * Deploy VMR in a **single-node** configuration
-    * Process the Solace 'Single Node' OpenShift template to deploy the Solace VMR in a single-node configuration.  Specify values for the DOCKER_REGISTRY_URL and VMR_IMAGE_TAG parameters (from your respective Docker Registry):
+    * Process the Solace 'Single Node' OpenShift template to deploy the Solace VMR in a single-node configuration.  Specify values for the DOCKER_REGISTRY_URL, VMR_IMAGE_TAG, VMR_STORAGE_SIZE, and VMR_ADMIN_PASSWORD parameters:
 ```
 oc project vmrha
 cd  ~/workspace/solace-openshift-quickstart/templates
-oc process -f vmr_singleNode_template.yaml DEPLOYMENT_NAME=single-node-vmr DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> VMR_IMAGE_TAG=<replace with your Solace VMR docker image tag> | oc create -f -
+oc process -f vmr_singleNode_template.yaml DEPLOYMENT_NAME=single-node-vmr DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> VMR_IMAGE_TAG=<replace with your Solace VMR docker image tag> VMR_STORAGE_SIZE=30Gi VMR_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
 ```
   * OR, Deploy VMR in a **high-availability** configuration
     * Process the Solace 'HA' OpenShift template to deploy the Solace VMR in a high-availability configuration.  Specify values for the DOCKER_REGISTRY_URL and VMR_IMAGE_TAG parameters (from your respective Docker Registry):
 ```
 oc project vmrha
 cd  ~/workspace/solace-openshift-quickstart/templates
-oc process -f vmr_ha_template.yaml DEPLOYMENT_NAME=single-node-vmr DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> VMR_IMAGE_TAG=<replace with your Solace VMR docker image tag> | oc create -f -
+oc process -f vmr_ha_template.yaml DEPLOYMENT_NAME=single-node-vmr DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> VMR_IMAGE_TAG=<replace with your Solace VMR docker image tag> VMR_STORAGE_SIZE=30Gi VMR_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
 ```    
 
 * **(Option 2)** Deploy VMR software using the [Solace Kubernetes QuickStart project](https://github.com/SolaceProducts/solace-kubernetes-quickstart).
