@@ -258,6 +258,8 @@ Once you have launched the Terminal emulator to the Solace VMR pod you may acces
 /usr/sw/loads/currentload/bin/cli -A
 ```
 
+![alt text](/resources/VMR-Primary-Pod-Terminal-VMR-CLI.png "VMR CLI via OpenShift UI Terminal emulator")
+
 See the [Solace Kubernetes Quickstart README](https://github.com/SolaceProducts/solace-kubernetes-quickstart/tree/master#gaining-admin-access-to-the-vmr ) for more details including admin and ssh access to the individual VMRs.
 
 ## Testing Data access to the VMR
