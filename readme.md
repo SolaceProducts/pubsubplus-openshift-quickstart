@@ -122,7 +122,7 @@ sed -i 's/VMR_IMAGE_TAG/replaceWithYourValueHere/g' vmr_ha_template.yaml
 oc create -f vmr_ha_template.yaml
 ```    
 
-* **(Option 2)** Deploy VMR software using the Solace Kubernetes QuickStart project
+* **(Option 2)** Deploy VMR software using the [Solace Kubernetes QuickStart project](https://github.com/SolaceProducts/solace-kubernetes-quickstart)
 Update the Solace Kubernetes values.yaml configuration file for your target deployment (Please refer to the Solace Kubernetes QuickStart project for further details):
   * Configure the values.yaml file to deploy the Solace VMR software in either a single-node or Highly-Available configuration. 
 ```
