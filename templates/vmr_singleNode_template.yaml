@@ -21,7 +21,7 @@ objects:
       "helm.sh/hook-weight": "5"
   type: Opaque
   data:
-    username_admin_password: U09MT1NfQURNSU5fUEFTU1dPUkQ=
+    username_admin_password: "${VMR_ADMIN_PASSWORD}"
   MANIFEST:
 
 
@@ -318,7 +318,7 @@ objects:
         accessModes: [ "ReadWriteOnce" ]
         resources:
           requests:
-            storage: 30Gi #end storage
+            storage: "${VMR_STORAGE_SIZE}"
 
 parameters:
   - name: DEPLOYMENT_NAME
@@ -337,4 +337,14 @@ parameters:
     displayName: Solace VMR Docker Image Tag
     description: The Docker image tag for the Solace VMR docker image from your Docker registry
     value: solace_vmr_image_tag
+    required: true
+  - name: VMR_ADMIN_PASSWORD
+    displayName: Base64 encoded password for Solace username 'admin'
+    description: The VMR 'admin' user's password (base64 encoded).  This Solace OpenShift template will create an administrative user with username 'admin' with specified password.
+    value: "cEBzc3cwcmQ=" # password 'p@ssw0rd'
+    required: true
+  - name: VMR_STORAGE_SIZE
+    displayName: Solace VMR Persistent Storage Disk Size
+    description: The size in gigabytes for a VMR Pod's persistent volume (with suffix 'Gi'), example 30Gi for 30 gigabytes
+    value: 30Gi
     required: true
