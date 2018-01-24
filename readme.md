@@ -86,7 +86,7 @@ git clone https://github.com/SolaceProducts/solace-kubernetes-quickstart.git
 cd solace-kubernetes-quickstart
 ```
 
-### **Step 6:** Download and deploy Solace VMR software (Docker image) to a Docker Registry:
+### **Step 6:** Download and deploy Solace VMR software (Docker image) to your Docker Registry:
 * **(Part I)** Download a copy of the Solace VMR Software.  Follow Step 2 from the [Solace Kubernetes QuickStart](https://github.com/SolaceProducts/solace-kubernetes-quickstart) to download the VMR software (Community Edition for single-node deployments, Evaluation Edition for VMR HA deployments)
 * **(Part II)** Deploy the VMR docker image your Docker registry
 ```
@@ -100,31 +100,25 @@ docker load -i <Solace VMR tarball>
 
 ### **Step 7:** Deploy the Solace VMR message router software 
 * **(Option 1)** Deploy VMR software using the Solace OpenShift HA QuickStart templates:
-  * Deploy VMR in a single-node configuration
-    * Open the 'vmr_singleNode_template.yaml' file and substitute the following strings with values for the VMR image from your Docker Registry:
-      * REPOSITORY_URL - Substitute with your Docker registry's URL
-      * VMR_IMAGE_TAG - Substitute with your VMR image tag in your respective Docker Registry
-    * Process the OpenShift template to deploy the Solace VMR in a single-node configuration
+  * Deploy VMR in a **single-node** configuration
+    * Process the Solace 'Single Node' OpenShift template to deploy the Solace VMR in a single-node configuration.  Specify values for the DOCKER_REGISTRY_URL and VMR_IMAGE_TAG parameters (from your respective Docker Registry):
 ```
 oc project vmrha
 cd  ~/workspace/solace-openshift-quickstart/templates
-sed -i 's/REPOSITORY_URL/replaceWithYourValueHere/g' vmr_ha_template.yaml
-sed -i 's/VMR_IMAGE_TAG/replaceWithYourValueHere/g' vmr_ha_template.yaml
-oc create -f vmr_singleNode_template.yaml
+oc process -f vmr_singleNode_template.yaml DEPLOYMENT_NAME=single-node-vmr DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> VMR_IMAGE_TAG=<replace with your Solace VMR docker image tag> | oc create -f -
 ```
-  * OR, Deploy VMR in a high-availability configuration
-    * Open the 'vmr_ha_template.yaml' file and substitute the strings REPOSITORY_URL and VMR_IMAGE_TAG as indicated above
+  * OR, Deploy VMR in a **high-availability** configuration
+    * Process the Solace 'HA' OpenShift template to deploy the Solace VMR in a high-availability configuration.  Specify values for the DOCKER_REGISTRY_URL and VMR_IMAGE_TAG parameters (from your respective Docker Registry):
 ```
 oc project vmrha
 cd  ~/workspace/solace-openshift-quickstart/templates
-sed -i 's/REPOSITORY_URL/replaceWithYourValueHere/g' vmr_ha_template.yaml
-sed -i 's/VMR_IMAGE_TAG/replaceWithYourValueHere/g' vmr_ha_template.yaml
-oc create -f vmr_ha_template.yaml
+oc process -f vmr_ha_template.yaml DEPLOYMENT_NAME=single-node-vmr DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> VMR_IMAGE_TAG=<replace with your Solace VMR docker image tag> | oc create -f -
 ```    
 
-* **(Option 2)** Deploy VMR software using the [Solace Kubernetes QuickStart project](https://github.com/SolaceProducts/solace-kubernetes-quickstart)
-Update the Solace Kubernetes values.yaml configuration file for your target deployment (Please refer to the Solace Kubernetes QuickStart project for further details):
-  * Configure the values.yaml file to deploy the Solace VMR software in either a single-node or Highly-Available configuration. 
+* **(Option 2)** Deploy VMR software using the [Solace Kubernetes QuickStart project](https://github.com/SolaceProducts/solace-kubernetes-quickstart).
+
+  * Update the Solace Kubernetes values.yaml configuration file for your target deployment (Please refer to the Solace Kubernetes QuickStart project for further details):
+    * Configure the values.yaml file to deploy the Solace VMR software in either a single-node or Highly-Available configuration. 
 ```
 cd ~/workspace/solace-kubernetes-quickstart/solace
 vi values.yaml
