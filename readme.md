@@ -33,7 +33,7 @@ Steps to deploy the Solace VMR software:
   * [OpenShift > Configuring for AWS](https://docs.openshift.com/container-platform/3.6/install_config/configuring_aws.html)
 
 ### Step 2: Retrieve the Solace OpenShift QuickStart from GitHub
-* The Solace OpenShift QuickStart project contains useful scripts to help you prepare an OpenShift project for deploying Solace VMR.  You should retrieve the project on a host having the OpenShift client tools and a host that can reach your OpenShift cluster nodes.
+* The Solace OpenShift QuickStart project contains useful scripts to help you prepare an OpenShift project for deployment of the Solace VMR.  You should retrieve the project on a host having the OpenShift client tools and a host that can reach your OpenShift cluster nodes.
 ```
 mkdir ~/workspace
 cd ~/workspace
@@ -78,12 +78,9 @@ sudo ./addECRsecret.sh vmrha
 ### **Step 5:** Download and deploy Solace VMR software (Docker image) to your Docker Registry:
 * **(Part I)** Download a copy of the Solace VMR Software.  Follow Step 2 from the [Solace Kubernetes QuickStart](https://github.com/SolaceProducts/solace-kubernetes-quickstart) to download the VMR software (Community Edition for single-node deployments, Evaluation Edition for VMR HA deployments)
 * **(Part II)** Deploy the VMR docker image to your Docker registry of choice
+  * **(Optional / AWS)** You can utilize the AWS Elastic Container Registry to host the VMR Docker image. For more information, refer to [Amazon Elastic Container Registry](https://aws.amazon.com/ecr/).
 
-* **(Part II - Optional / AWS)** Utilize the AWS Elastic Container Registry to host your VMR docker image.  Deploy the VMR docker image to the AWS ECR registry.  You can launch the ECR management page from the AWS Console, search for ‘Elastic Container Service’, then select the ‘Repositories’ link on the left navigation pane.
-[Amazon Elastic Container Registry](https://aws.amazon.com/ecr/)
-  * **Note:** Ensure your ECR registry is created in the AWS Region where you have deployed your OpenShift environment.
-
-### **Step 6:** Deploy the Solace VMR message router using the OpenShift templates included in this project
+### **Step 6 (Option 1)** Deploy the Solace VMR message router using the OpenShift templates included in this project
 
 **Prerequisites:**
 1. Determine your VMR disk space requirements.  We recommend a minimum of 30 gigabytes of disk space.
@@ -110,7 +107,7 @@ cd  ~/workspace/solace-openshift-quickstart/templates
 oc process -f vmr_ha_template.yaml DEPLOYMENT_NAME=vmr-ha DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> VMR_IMAGE_TAG=<replace with your Solace VMR docker image tag> VMR_STORAGE_SIZE=30Gi VMR_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
 ```    
 
-### **Step 7 (Optional)** Deploy the Solace VMR software using the **Solace Kubernetes QuickStart**.
+### **Step 6 (Option 2)** Deploy the Solace VMR software using the **Solace Kubernetes QuickStart**.
 
 If you require more flexibility in terms of Solace VMR deployment options (compared to those offered by the OpenShift templates provided by this project) then utilize the [Solace Kubernetes QuickStart](https://github.com/SolaceProducts/solace-kubernetes-quickstart) to deploy the Solace VMR software:
 
