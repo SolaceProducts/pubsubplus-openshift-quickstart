@@ -107,7 +107,7 @@ oc process -f vmr_singleNode_template.yaml DEPLOYMENT_NAME=single-node-vmr DOCKE
 ```
 oc project vmrha
 cd  ~/workspace/solace-openshift-quickstart/templates
-oc process -f vmr_ha_template.yaml DEPLOYMENT_NAME=single-node-vmr DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> VMR_IMAGE_TAG=<replace with your Solace VMR docker image tag> VMR_STORAGE_SIZE=30Gi VMR_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
+oc process -f vmr_ha_template.yaml DEPLOYMENT_NAME=vmr-ha DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> VMR_IMAGE_TAG=<replace with your Solace VMR docker image tag> VMR_STORAGE_SIZE=30Gi VMR_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
 ```    
 
 ### **Step 7 (Optional)** Deploy the Solace VMR software using the **Solace Kubernetes QuickStart**.
