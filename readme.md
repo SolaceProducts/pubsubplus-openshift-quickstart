@@ -1,8 +1,8 @@
-# Install Solace Message Router HA deployment onto an OpenShift 3.6 cluster deployed on Amazon AWS
+# Install Solace Message Router HA deployment onto an OpenShift 3.6 cluster
 
 ## Purpose of this repository
 
-This repository expands on [Solace Kubernetes Quickstart](https://github.com/SolaceProducts/solace-kubernetes-quickstart) to provide a concrete example of how to deploy redundant Solace VMRs in an HA configuration on the OpenShift platform running in AWS.  We utilize the [RedHat OpenShift on AWS QuickStart](https://aws.amazon.com/quickstart/architecture/openshift/) project to deploy OpenShift on AWS in a highly redundant configuration spanning 3 zones.
+This repository expands on the [Solace Kubernetes Quickstart](https://github.com/SolaceProducts/solace-kubernetes-quickstart) to provide a concrete example of how to deploy redundant Solace VMRs in an HA configuration on the OpenShift platform running in AWS.  We utilize the [RedHat OpenShift on AWS QuickStart](https://aws.amazon.com/quickstart/architecture/openshift/) project to deploy OpenShift on AWS in a highly redundant configuration spanning 3 zones.
 
 ![alt text](/resources/network_diagram.jpg "Network Diagram")
 
@@ -12,24 +12,28 @@ Solace Virtual Message Router (VMR) software provides enterprise-grade messaging
 
 ## How to Deploy a VMR onto OpenShift / AWS
 
-The following steps describe how to utilize the Solace OpenShift HA QuickStart project to deploy the Solace VMR software onto an OpenShift environment.  Additional optional steps are included if you are deploying OpenShift onto Amazon AWS infrastructure.  
+The following steps describe how to utilize the Solace OpenShift QuickStart to deploy the Solace VMR software onto an OpenShift environment.  Additional optional steps are included if you are deploying OpenShift onto Amazon AWS infrastructure.  
 
 There are two options for deploying the Solace VMR software onto your OpenShift deployment.
 * Execute the OpenShift templates included in this project for installing the VMR software in a limited number of configurations 
-* Use the Solace Kubernetes QuickStart project to deploy the Solace VMR software onto your OpenShift environment.  The Solace Kubernetes project utilizes Helm to automate the process of deploying the Solace VMR software using a wide range of configuration options.
+* Use the Solace Kubernetes QuickStart to deploy the Solace VMR software onto your OpenShift environment.  The Solace Kubernetes QuickStart utilizes Helm to automate the process of deploying the Solace VMR software using a wide range of configuration options.
 
 Steps to deploy the Solace VMR software:
 
-### Step 1 (Optional / AWS) Deploy OpenShift onto AWS using the RedHat OpenShift on AWS QuickStart Project
+* **Note:** You may skip Step 1 if you already have your own OpenShift environment deployed.
 
-* (Part I) Log into the AWS Web Console and run the [OpenShift AWS QuickStart project](https://aws.amazon.com/quickstart/architecture/openshift/).  We recommend you deploy OpenShift across 3 AWS Availability Zones for maximum redundancy.  Please refer to the RedHat OpenShift AWS QuickStart guide and supporting documentation.
-[Deploying and Managing OpenShift Container Platform 3.6 on Amazon Web Services](https://access.redhat.com/documentation/en-us/reference_architectures/2017/html-single/deploying_and_managing_openshift_container_platform_3.6_on_amazon_web_services/index)
+### Step 1 (Optional / AWS) Deploy OpenShift onto AWS using the RedHat OpenShift AWS QuickStart Project
 
-* (Part II) Once you have deployed OpenShift using the AWS QuickStart you will have to perform additional steps to re-configure OpenShift to integrate fully with AWS.  Please refer to the RedHat OpenShift documentation for configuring OpenShift for AWS.
-[OpenShift > Configuring for AWS](https://docs.openshift.com/container-platform/3.6/install_config/configuring_aws.html)
+* (Part I) Log into the AWS Web Console and run the [OpenShift AWS QuickStart project](https://aws.amazon.com/quickstart/architecture/openshift/).  We recommend you deploy OpenShift across 3 AWS Availability Zones for maximum redundancy.  Please refer to the RedHat OpenShift AWS QuickStart guide and supporting documentation:
 
-### Step 2: Retrieve the Solace OpenShift HA QuickStart project from GitHub
-* The Solace OpenShift HA QuickStart project contains useful scripts to help you prepare an OpenShift project for deploying Solace VMR.  You should retrieve the project on a host having the OpenShift client tools and a host that can reach your OpenShift cluster nodes.
+  * [Deploying and Managing OpenShift Container Platform 3.6 on Amazon Web Services](https://access.redhat.com/documentation/en-us/reference_architectures/2017/html-single/deploying_and_managing_openshift_container_platform_3.6_on_amazon_web_services/index)
+
+* (Part II) Once you have deployed OpenShift using the AWS QuickStart you will have to perform additional steps to re-configure OpenShift to integrate fully with AWS.  Please refer to the RedHat OpenShift documentation for configuring OpenShift for AWS:
+
+  * [OpenShift > Configuring for AWS](https://docs.openshift.com/container-platform/3.6/install_config/configuring_aws.html)
+
+### Step 2: Retrieve the Solace OpenShift QuickStart from GitHub
+* The Solace OpenShift QuickStart project contains useful scripts to help you prepare an OpenShift project for deploying Solace VMR.  You should retrieve the project on a host having the OpenShift client tools and a host that can reach your OpenShift cluster nodes.
 ```
 mkdir ~/workspace
 cd ~/workspace
@@ -38,7 +42,7 @@ cd solace-openshift-quickstart
 git checkout highavail
 ```
 
-### Step 3: (Optional / AWS) If you are going to use the Solace Kubernetes Project to deploy the Solace VMR software onto your OpenShift deployment then you must deploy the Helm client and server-side tools:
+### Step 3: (Optional / AWS) If you are going to use the Solace Kubernetes QuickStart to deploy the Solace VMR software onto your OpenShift deployment then you must deploy the Helm client and server-side tools:
 * **(Part I)** Utilize the ‘deployHelm.sh’ script to deploy the Helm client and server-side components.  Begin by installing the Helm client tool:
 ```
 cd ~/workspace/solace-openshift-quickstart/scripts
@@ -71,67 +75,49 @@ cd ~/workspace/solace-openshift-quickstart/scripts
 sudo ./addECRsecret.sh vmrha
 ```
 
-### **Step 5:** (Optional) If you require more flexibility in terms of Solace VMR deployment options (compared to those offered by templates in this project) then utilize the [Solace Kubernetes QuickStart project](https://github.com/SolaceProducts/solace-kubernetes-quickstart):
-For now:
-```
-cd ~/workspace
-git clone https://github.com/KenBarr/solace-kubernetes-quickstart.git
-cd solace-kubernetes-quickstart
-git checkout reliability
-```
-Should be:
-```
-cd ~/workspace
-git clone https://github.com/SolaceProducts/solace-kubernetes-quickstart.git
-cd solace-kubernetes-quickstart
-```
-
-### **Step 6:** Download and deploy Solace VMR software (Docker image) to your Docker Registry:
+### **Step 5:** Download and deploy Solace VMR software (Docker image) to your Docker Registry:
 * **(Part I)** Download a copy of the Solace VMR Software.  Follow Step 2 from the [Solace Kubernetes QuickStart](https://github.com/SolaceProducts/solace-kubernetes-quickstart) to download the VMR software (Community Edition for single-node deployments, Evaluation Edition for VMR HA deployments)
-* **(Part II)** Deploy the VMR docker image your Docker registry
-```
-docker load -i <Solace VMR tarball>
-```
-* Follow any necessary steps to deploy the VMR docker image to your Docker Registry
+* **(Part II)** Deploy the VMR docker image to your Docker registry of choice
 
 * **(Part II - Optional / AWS)** Utilize the AWS Elastic Container Registry to host your VMR docker image.  Deploy the VMR docker image to the AWS ECR registry.  You can launch the ECR management page from the AWS Console, search for ‘Elastic Container Service’, then select the ‘Repositories’ link on the left navigation pane.
 [Amazon Elastic Container Registry](https://aws.amazon.com/ecr/)
   * **Note:** Ensure your ECR registry is created in the AWS Region where you have deployed your OpenShift environment.
 
-### **Step 7:** Deploy the Solace VMR message router software 
-* **(Option 1)** Deploy VMR software using the Solace OpenShift HA QuickStart templates:
-  * Prerequisites:
-    * Determine your VMR disk space requirements.  We recommend a minimum of 30 gigabytes of disk space.
-    * Define a strong password for the Solace VMR 'admin' user and then base64 encode the value.  This value will be specified as a parameter when processing the Solace VMR OpenShift template:
-    
+### **Step 6:** Deploy the Solace VMR message router using the OpenShift templates included in this project
+
+** Prerequisites: **
+  * Determine your VMR disk space requirements.  We recommend a minimum of 30 gigabytes of disk space.
+  * Define a strong password for the Solace VMR 'admin' user and then base64 encode the value.  This value will be specified as a parameter when processing the Solace VMR OpenShift template:
 ```
 echo -n 'strong@dminPw!' | base64
 ```
-  * Deploy VMR in a **single-node** configuration
-    * Process the Solace 'Single Node' OpenShift template to deploy the Solace VMR in a single-node configuration.  Specify values for the DOCKER_REGISTRY_URL, VMR_IMAGE_TAG, VMR_STORAGE_SIZE, and VMR_ADMIN_PASSWORD parameters:
+
+* Deploy a **Single-Node** VMR configuration
+  * Process the Solace 'Single Node' OpenShift template to deploy the Solace VMR in a single-node configuration.  Specify values for the DOCKER_REGISTRY_URL, VMR_IMAGE_TAG, VMR_STORAGE_SIZE, and VMR_ADMIN_PASSWORD parameters:
 ```
 oc project vmrha
 cd  ~/workspace/solace-openshift-quickstart/templates
 oc process -f vmr_singleNode_template.yaml DEPLOYMENT_NAME=single-node-vmr DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> VMR_IMAGE_TAG=<replace with your Solace VMR docker image tag> VMR_STORAGE_SIZE=30Gi VMR_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
 ```
-  * OR, Deploy VMR in a **high-availability** configuration
-    * Process the Solace 'HA' OpenShift template to deploy the Solace VMR in a high-availability configuration.  Specify values for the DOCKER_REGISTRY_URL, VMR_IMAGE_TAG, VMR_STORAGE_SIZE, and VMR_ADMIN_PASSWORD parameters:
+
+* Deploy VMR in a **High-Availability** configuration
+  * Process the Solace 'HA' OpenShift template to deploy the Solace VMR in a high-availability configuration.  Specify values for the DOCKER_REGISTRY_URL, VMR_IMAGE_TAG, VMR_STORAGE_SIZE, and VMR_ADMIN_PASSWORD parameters:
 ```
 oc project vmrha
 cd  ~/workspace/solace-openshift-quickstart/templates
 oc process -f vmr_ha_template.yaml DEPLOYMENT_NAME=single-node-vmr DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> VMR_IMAGE_TAG=<replace with your Solace VMR docker image tag> VMR_STORAGE_SIZE=30Gi VMR_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
 ```    
 
-* **(Option 2)** Deploy VMR software using the [Solace Kubernetes QuickStart project](https://github.com/SolaceProducts/solace-kubernetes-quickstart).
+### ** Step 7 (Optional)** Deploy the Solace VMR software using the **Solace Kubernetes QuickStart**.
 
-  * Update the Solace Kubernetes values.yaml configuration file for your target deployment (Please refer to the Solace Kubernetes QuickStart project for further details):
-    * Configure the values.yaml file to deploy the Solace VMR software in either a single-node or Highly-Available configuration. 
+* Update the Solace Kubernetes values.yaml configuration file for your target deployment (Please refer to the [Solace Kubernetes QuickStart](https://github.com/SolaceProducts/solace-kubernetes-quickstart) for further details):
+
 ```
 cd ~/workspace/solace-kubernetes-quickstart/solace
 vi values.yaml
 helm install . -f values.yaml
 ```
-  * The following table lists example values for the ‘values.yaml’ file to deploy Solace VMR in a Highly-Available configuration using persistent storage.
+* The following table lists example values for the ‘values.yaml’ file to deploy Solace VMR in a Highly-Available configuration using persistent storage.
 
   |Variable                |Value                |Description                |
   |------------------------|---------------------|---------------------------|
