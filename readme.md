@@ -46,7 +46,7 @@ git checkout highavail
 * **(Part I)** Utilize the ‘deployHelm.sh’ script to deploy the Helm client and server-side components.  Begin by installing the Helm client tool:
 ```
 cd ~/workspace/solace-openshift-quickstart/scripts
-. ./installHelm.sh client
+. ./deployHelm.sh client
 ```
 
 * After running the above script, take note of the values of the following environment variables and set their values in your .bashrc (These environment variables are used when running the helm client tool):
@@ -54,10 +54,10 @@ cd ~/workspace/solace-openshift-quickstart/scripts
   * TILLER_NAMESPACE
   * PATH
 
-* **(Part II)** Install the Helm server-side ‘Tiller’ component.
+* **(Part II)** Install the Helm server-side ‘Tiller’ component.  Note, you will be prompted to log into OpenShift if you have not already done so.
 ```
 cd ~/workspace/solace-openshift-quickstart/scripts
-. ./installHelm.sh server
+. ./deployHelm.sh server
 ```
 
 ### **Step 4:** Utilize scripts in the Solace OpenShift QuickStart to configure a project to host the VMR HA software:
