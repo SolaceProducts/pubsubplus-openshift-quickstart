@@ -85,14 +85,16 @@ sudo ./addECRsecret.sh vmrha
 
 ### **Step 6:** Deploy the Solace VMR message router using the OpenShift templates included in this project
 
-** Prerequisites: **
-  * Determine your VMR disk space requirements.  We recommend a minimum of 30 gigabytes of disk space.
-  * Define a strong password for the Solace VMR 'admin' user and then base64 encode the value.  This value will be specified as a parameter when processing the Solace VMR OpenShift template:
+**Prerequisites:**
+1. Determine your VMR disk space requirements.  We recommend a minimum of 30 gigabytes of disk space.
+2. Define a strong password for the Solace VMR 'admin' user and then base64 encode the value.  This value will be specified as a parameter when processing the Solace VMR OpenShift template:
 ```
 echo -n 'strong@dminPw!' | base64
 ```
 
-* Deploy a **Single-Node** VMR configuration
+**Deploy the Solace VMR software:**
+
+* **(Option 1)** Deploy a **Single-Node** VMR configuration
   * Process the Solace 'Single Node' OpenShift template to deploy the Solace VMR in a single-node configuration.  Specify values for the DOCKER_REGISTRY_URL, VMR_IMAGE_TAG, VMR_STORAGE_SIZE, and VMR_ADMIN_PASSWORD parameters:
 ```
 oc project vmrha
@@ -100,7 +102,7 @@ cd  ~/workspace/solace-openshift-quickstart/templates
 oc process -f vmr_singleNode_template.yaml DEPLOYMENT_NAME=single-node-vmr DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> VMR_IMAGE_TAG=<replace with your Solace VMR docker image tag> VMR_STORAGE_SIZE=30Gi VMR_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
 ```
 
-* Deploy VMR in a **High-Availability** configuration
+* **(Option 2)** Deploy VMR in a **High-Availability** configuration
   * Process the Solace 'HA' OpenShift template to deploy the Solace VMR in a high-availability configuration.  Specify values for the DOCKER_REGISTRY_URL, VMR_IMAGE_TAG, VMR_STORAGE_SIZE, and VMR_ADMIN_PASSWORD parameters:
 ```
 oc project vmrha
@@ -109,6 +111,24 @@ oc process -f vmr_ha_template.yaml DEPLOYMENT_NAME=single-node-vmr DOCKER_REGIST
 ```    
 
 ### ** Step 7 (Optional)** Deploy the Solace VMR software using the **Solace Kubernetes QuickStart**.
+
+If you require more flexibility in terms of Solace VMR deployment options (compared to those offered by the OpenShift templates provided by this project) then utilize the [Solace Kubernetes QuickStart](https://github.com/SolaceProducts/solace-kubernetes-quickstart) to deploy the Solace VMR software:
+
+* Retrieve the Solace Kubernetes QuickStart from GitHub:
+
+For now:
+```
+cd ~/workspace
+git clone https://github.com/KenBarr/solace-kubernetes-quickstart.git
+cd solace-kubernetes-quickstart
+git checkout reliability
+```
+Should be:
+```
+cd ~/workspace
+git clone https://github.com/SolaceProducts/solace-kubernetes-quickstart.git
+cd solace-kubernetes-quickstart
+```
 
 * Update the Solace Kubernetes values.yaml configuration file for your target deployment (Please refer to the [Solace Kubernetes QuickStart](https://github.com/SolaceProducts/solace-kubernetes-quickstart) for further details):
 
