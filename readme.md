@@ -244,7 +244,8 @@ Note, the **'LoadBalancer Ingress'** value listed in the service description abo
 ### Viewing bringup logs
 
 It is possible to watch the VMR come up via logs in the OpenShift UI log stack for individual VMR pods.  You can access the log stack for individual VMR pods from the OpenShift UI, by navigating to:
-* OpenShift UI > Stateful Sets > (Stateful Set) > Pods > (VMR Pod) > Logs
+
+* **OpenShift UI > (VMR Project) > Applications > Stateful Sets > ((name)-solace) > Pods > ((name)-solace-(N)) > Logs**
 
 ![alt text](/resources/VMR-Pod-Log-Stack.png "VMR Pod Log Stack")
 
@@ -255,7 +256,8 @@ The external management IP will be the Public IP associated with Load Balancer g
 If you deployed OpenShift in AWS then the Solace OpenShift QuickStart will have created an EC2 Load Balancer to front the Solace VMR / OpenShift service.  The Load Balancer public DNS name can be found in the AWS EC2 console under the 'Load Balancers' section.
 
 You can gain access to the Solace VMR CLI and container shell for individual VMR instances from the OpenShift UI.  A web-based Terminal emulator is available from the OpenShift UI.  Navigate to an invidual Solace VMR Pod using the OpenShift UI:
-* **OpenShift UI > (VMR Project) > Applications > Stateful Sets > ((name)-solace) > Pods > ((name)-solace-(N))**
+
+* **OpenShift UI > (VMR Project) > Applications > Stateful Sets > ((name)-solace) > Pods > ((name)-solace-(N)) > Terminal**
 
 Where (N) above is the ordinal of the Solace VMR:
   * 0 - Primary VMR
