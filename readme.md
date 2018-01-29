@@ -41,7 +41,7 @@ git clone https://github.com/SolaceProducts/solace-openshift-quickstart.git
 cd solace-openshift-quickstart
 ```
 
-### Step 3: (Optional / AWS) Install the Helm client and server-side tools if you are going to use the Solace Kubernetes QuickStart to deploy the Solace VMR software
+### Step 3: (Optional) Install the Helm client and server-side tools if you are going to use the Solace Kubernetes QuickStart to deploy the Solace VMR software
 * **(Part I)** Utilize the ‘deployHelm.sh’ script to deploy the Helm client and server-side components.  Begin by installing the Helm client tool:
 ```
 cd ~/workspace/solace-openshift-quickstart/scripts
