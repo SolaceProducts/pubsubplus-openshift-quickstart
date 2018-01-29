@@ -37,11 +37,11 @@ Steps to deploy the Solace VMR software:
 ```
 mkdir ~/workspace
 cd ~/workspace
-git clone https://github.com/SolaceLabs/solace-openshift-quickstart.git
+git clone https://github.com/SolaceProducts/solace-openshift-quickstart.git
 cd solace-openshift-quickstart
 ```
 
-### Step 3: (Optional / AWS) Install the Helm client and server-side tools if you are going to use the Solace Kubernetes QuickStart to deploy the Solace VMR software
+### Step 3: (Optional) Install the Helm client and server-side tools if you are going to use the Solace Kubernetes QuickStart to deploy the Solace VMR software
 * **(Part I)** Utilize the ‘deployHelm.sh’ script to deploy the Helm client and server-side components.  Begin by installing the Helm client tool:
 ```
 cd ~/workspace/solace-openshift-quickstart/scripts
@@ -119,13 +119,14 @@ If you require more flexibility in terms of Solace VMR deployment options (compa
 
 ```
 cd ~/workspace
-git clone https://github.com/SolaceLabs/solace-kubernetes-quickstart.git
+git clone https://github.com/SolaceProducts/solace-kubernetes-quickstart.git
 cd solace-kubernetes-quickstart
 ```
 
 * Update the Solace Kubernetes values.yaml configuration file for your target deployment (Please refer to the [Solace Kubernetes QuickStart](https://github.com/SolaceProducts/solace-kubernetes-quickstart) for further details):
 
 ```
+oc project vmrha
 cd ~/workspace/solace-kubernetes-quickstart/solace
 vi values.yaml
 helm install . -f values.yaml
