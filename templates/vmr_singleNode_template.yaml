@@ -1,0 +1,438 @@
+---
+apiVersion: v1
+kind: Template
+metadata:
+  name: solace-vmr-singlenode-template
+  annotations:
+    description: Deploys Solace VMR in an Single Node configuration
+objects:
+
+- kind: Secret
+  apiVersion: v1
+  metadata:
+    name: "${DEPLOYMENT_NAME}-solace-secrets"
+    labels:
+      heritage: Tiller
+      release: "${DEPLOYMENT_NAME}"
+      chart: solace-0.2.0
+      app: solace
+  type: Opaque
+  data:
+    username_admin_password: "${VMR_ADMIN_PASSWORD}"
+
+- kind: ConfigMap
+  apiVersion: v1
+  metadata:
+    name: "${DEPLOYMENT_NAME}-solace"
+    labels:
+      heritage: Tiller
+      release: "${DEPLOYMENT_NAME}"
+      chart: solace-0.2.0
+      app: solace
+  data:
+    init.sh: |-
+      # export username_admin_passwordfilepath=/mnt/disks/secrets/username_admin_password
+        export username_admin_password=`cat /mnt/disks/secrets/username_admin_password`
+        export username_admin_globalaccesslevel=admin
+        export service_ssh_port='22'
+        export logging_debug_output=stdout
+        export system_scaling_maxconnectioncount="1000"
+
+    config-sync-check.sh: |-
+        #!/bin/bash
+        exit 0
+
+
+    readiness_check.sh: |-
+      #!/bin/bash
+
+      # Function to set Kubernetes metadata labels
+      set_label () {
+        #Prevent overdriving Kubernetes infra, don't set activity state to same as previous state
+        previous_state=`cat $3`
+        if [ "${2}" = "${previous_state}" ]; then
+          echo "`date` INFO: ${APP}-Current and Previous state match, not updating label"
+        else
+          echo ${2} > ${3}
+          echo "[{\"op\": \"add\", \"path\": \"/metadata/labels/${1}\", \"value\": \"${2}\" }]" > /tmp/patch_label.json
+          KUBE_TOKEN=$(</var/run/secrets/kubernetes.io/serviceaccount/token)
+          curl -sSk -H "Authorization: Bearer $KUBE_TOKEN" --request PATCH --data "$(cat /tmp/patch_label.json)" \
+              -H "Content-Type:application/json-patch+json" \
+              https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_PORT_443_TCP_PORT/api/v1/namespaces/$STATEFULSET_NAMESPACE/pods/$HOSTNAME
+        fi
+      }
+
+      # note that there are no re-tries here, if check fails the return not ready.
+      APP=`basename "$0"`
+      version=${1}
+
+      password=`cat /mnt/disks/secrets/username_admin_password`
+      return_code=0
+      state_file=/tmp/activity_state
+      if [ ! -f ${state_file} ]; then
+        echo "State file not found, creating!"
+        echo "false" > ${state_file}
+      fi
+      echo "`date` INFO: ${APP}-node oridinal"
+      IFS='-' read -ra host_array <<< $(hostname)
+      node_ordinal=${host_array[-1]}
+
+      if [ "${node_ordinal}" = "2" ]; then
+        echo "`date` INFO: ${APP}-Monitor node ready check"
+        # Note that when dealing with Monitor, only need to be concerned and readiness response.
+        # active label will always be "false"
+        echo "`date` INFO: ${APP}-For monitor node just check for 3 online nodes in group"
+        role_results=`/mnt/disks/solace/semp_query.sh -n admin -p ${password} -u http://localhost:8080/SEMP \
+                -q "<rpc semp-version='soltr/8_5VMR'><show><redundancy><group/></redundancy></show></rpc>" \
+                -c "/rpc-reply/rpc/show/redundancy/group-node/status[text() = \"Online\"]"`
+        if [ `echo ${role_results} | jq '.countSearchResult' -` -eq 3 ]; then
+          echo "`date` INFO: ${APP}-Monitor node is redundancy ready"
+          exit 0
+        else
+          echo "`date` INFO: ${APP}-Monitor node is not redundancy ready, result: ${role_results}"
+          exit 1
+        fi
+      fi # End Monitor Node
+
+      health_result=`curl -s -o /dev/null -w "%{http_code}"  http://localhost:5550/health-check/guaranteed-active`
+      
+      case "${health_result}" in
+        "200")
+           echo "`date` INFO: ${APP}-Message Router is Active and Healthy"
+          set_label "active" "true" $state_file
+          exit 0
+          ;;
+        "503")
+          set_label "active" "false" $state_file
+          if (( "$version" < 7 )); then
+           echo "`date` INFO: ${APP}-Message Router is Healthy and not Active, this is K8S 1.6 ready"
+           exit 0
+          else
+           echo "`date` INFO: ${APP}-Message Router is Healthy and not Active, further check required"
+          fi
+          ;;
+        "")
+          echo "`date` WARN: ${APP}-Unable to deturmine config role, failing readiness check"
+          set_label "active" "false" $state_file
+          exit 1
+      esac
+       
+      echo "`date` INFO: ${APP}-Checking if Message Router is Standby"
+      case "${node_ordinal}" in
+        "0")
+          config_role="primary"
+          ;;
+        "1")
+          config_role="backup"
+          ;;
+      esac
+      online_results=`/mnt/disks/solace/semp_query.sh -n admin -p ${password} -u http://localhost:8080/SEMP \
+              -q "<rpc semp-version='soltr/8_5VMR'><show><redundancy><detail/></redundancy></show></rpc>" \
+              -v "/rpc-reply/rpc/show/redundancy/virtual-routers/${config_role}/status/activity[text()]"`
+      local_activity=`echo ${online_results} | jq '.valueSearchResult' -`
+      echo "`date` INFO: ${APP}-Local activity state is: ${local_activity}"
+      case "${local_activity}" in
+        "\"Local Active\"")
+          echo "`date` INFO: ${APP}-Redundancy is up locally Active"
+          # Set active label to "true"
+          set_label "active" "true" $state_file
+          # Pass readiness check
+          exit 0
+          ;;
+        "\"Mate Active\"")
+          echo "`date` INFO: ${APP}-Redundancy is up mate Active"
+          # Set active label to "false"
+          set_label "active" "false" $state_file
+          # Pass readiness check
+          exit 0
+          ;;
+        *)
+          echo "`date` WARN: ${APP}-Redundancy not up or not responding, failing readiness check"
+          # Set active label to "false"
+          set_label "active" "false" $state_file
+          # Fail readiness check
+          exit 1
+          ;;
+      esac
+
+
+    semp_query.sh: |-
+        #!/bin/bash
+        APP=`basename "$0"`
+        OPTIND=1         # Reset in case getopts has been used previously in the shell.
+        # Initialize our own variables:
+        count_search=""
+        name=""
+        password=""
+        query=""
+        url=""
+        value_search=""
+        script_name=$0
+        verbose=0
+        while getopts "c:n:p:q:u:v:" opt; do
+            case "$opt" in
+            c)  count_search=$OPTARG
+                ;;
+            n)  name=$OPTARG
+                ;;
+            p)  password=$OPTARG
+                ;;
+            q)  query=$OPTARG
+                ;;
+            u)  url=$OPTARG
+                ;;
+            v)  value_search=$OPTARG
+                ;;        
+            esac
+        done
+        shift $((OPTIND-1))
+        [ "$1" = "--" ] && shift
+        verbose=1
+        echo "`date` INFO: ${APP}-${script_name}: count_search=${count_search} ,name=${name} ,password=xxx query=${query} \
+                    ,url=${url} ,value_search=${value_search} ,Leftovers: $@" >&2
+        if [[ ${url} = "" || ${name} = "" || ${password} = "" || ${query} = "" ]]; then
+            echo "`date` ERROR: ${APP}-${script_name}: url, name, password and query are madatory fields" >&2
+            echo  '{"errorInfo":"missing parameter"}'
+            exit 1
+          fi
+        query_response=`curl -sS -u ${name}:${password} ${url} -d "${query}"`
+        # Validate first char of response is "<", otherwise no hope of being valid xml
+        if [[ ${query_response:0:1} != "<" ]] ; then 
+          echo "`date` ERROR: ${APP}-${script_name}: Query failed, non-xml response -${query_response}-" >&2
+          exit 1
+        fi
+        query_response_code=`echo $query_response | xmllint -xpath 'string(/rpc-reply/execute-result/@code)' -`
+
+        if [[ -z ${query_response_code} && ${query_response_code} != "ok" ]]; then
+            echo "`date` ERROR: ${APP}-${script_name}: Query failed, bad return code -${query_response}-" >&2
+            echo  "{\"errorInfo\":\"query failed -${query_response_code}-\"}"
+            exit 1
+        fi
+        echo "`date` INFO: ${APP}-${script_name}: Query passed ${query_response_code}" >&2
+        if [[ ! -z $value_search ]]; then
+            value_result=`echo $query_response | xmllint -xpath "string($value_search)" -`
+            echo "`date` INFO: ${APP}-${script_name}: Value search $value_search returned ${value_result}" >&2
+            echo  "{\"errorInfo\":\"\",\"valueSearchResult\":\"${value_result}\"}"
+            exit 0
+        fi
+        if [[ ! -z $count_search ]]; then
+            count_line=`echo $query_response | xmllint -xpath "$count_search" -`
+            count_string=`echo $count_search | cut -d '"' -f 2`
+            count_result=`echo ${count_line} | tr "><" "\n" | grep -c ${count_string}`
+            echo -e "`date` INFO: ${APP}-${script_name}: \n\t count search: $count_search \n\t count_line: ${count_line} \n\t count_string: ${count_string} \n\t count_result: ${count_result}" >&2
+            echo  "{\"errorInfo\":\"\",\"countSearchResult\":${count_result}}"
+            exit 0
+        fi
+
+- kind: StorageClass
+  apiVersion: storage.k8s.io/v1
+  metadata:
+    name: "${DEPLOYMENT_NAME}-standard"
+  provisioner: kubernetes.io/aws-ebs
+  parameters:
+  #Default don't set zone or zones, allow k8s to strip across active zones
+    type: gp2
+
+
+- kind: Service
+  apiVersion: v1
+  metadata:
+    name: "${DEPLOYMENT_NAME}-solace-discovery"
+    labels:
+      heritage: Tiller
+      release: "${DEPLOYMENT_NAME}"
+      chart: solace-0.2.0
+      app: solace
+    annotations:
+      service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+  spec:
+    ports:
+      - port: 8080
+        name: semp
+    clusterIP: None
+    selector:
+      app: solace
+      release: "${DEPLOYMENT_NAME}"
+
+- kind: Service
+  apiVersion: v1
+  metadata:
+    name: "${DEPLOYMENT_NAME}-solace"
+    labels:
+      heritage: Tiller
+      release: "${DEPLOYMENT_NAME}"
+      chart: solace-0.2.0
+      app: solace #end gcp
+  spec:
+    type: LoadBalancer
+    ports:
+    - port: 22
+      protocol: TCP
+      name: ssh
+    - port: 8080
+      protocol: TCP
+      name: semp
+    - port: 55555
+      protocol: TCP
+      name: smf
+    selector:
+      app: solace
+      release: "${DEPLOYMENT_NAME}"
+      active: "true"
+
+- kind: StatefulSet
+  apiVersion: apps/v1beta1
+  metadata:
+    name: "${DEPLOYMENT_NAME}-solace"
+    labels:
+      app: solace
+      chart: solace-0.2.0
+      release: "${DEPLOYMENT_NAME}"
+      heritage: Tiller
+  spec:
+    serviceName: "${DEPLOYMENT_NAME}-solace-discovery"
+    replicas: 1
+    template:
+      metadata:
+        labels:
+          app: solace
+          release: "${DEPLOYMENT_NAME}"
+      spec:
+        containers:
+        - name: solace
+          image: "${DOCKER_REGISTRY_URL}:${VMR_IMAGE_TAG}"
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: "1.2"
+              memory: 6.0Gi
+            limits:
+              cpu: "2"
+              memory: 7.5Gi
+          livenessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 300
+            timeoutSeconds: 5
+          readinessProbe:
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            exec:
+              command:
+              - /mnt/disks/solace/readiness_check.sh
+              - "6"
+          securityContext:
+            privileged: true
+            capabilities:
+              add:
+                - IPC_LOCK
+                - SYS_NICE
+          env:
+          - name: STATEFULSET_NAME
+            value: "${DEPLOYMENT_NAME}-solace"
+          - name: STATEFULSET_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+  # [TODO] not using correct method of finding ordinal until we bump min Kubernetes release above 1.8.1
+   #       - name: STATEFULSET_ORDINAL
+   #         valueFrom:
+   #           fieldRef:
+   #             fieldPath: metadata.annotations['annotationKey']
+
+          command:
+           - bash
+           - "-ec"
+           - |
+             source /mnt/disks/solace/init.sh
+             # not using postinstall hooks because of order dependencies
+             # launch config check then Solace so VCMR can provide return code
+             nohup /mnt/disks/solace/config-sync-check.sh &
+             /usr/sbin/boot.sh
+
+          volumeMounts:
+          - name: config-map
+            mountPath: /mnt/disks/solace
+          - name: secrets
+            mountPath: /mnt/disks/secrets
+            readOnly: true
+          - name: dshm
+            mountPath: /dev/shm
+          - name: data
+            mountPath: /usr/sw/jail
+            subPath: jail
+          - name: data
+            mountPath: /usr/sw/var
+            subPath: var
+          - name: data
+            mountPath: /usr/sw/internalSpool
+            subPath: internalSpool
+          - name: data
+            mountPath: /usr/sw/adb
+            subPath: adb
+          - name: data
+            mountPath: /usr/sw/internalSpool/softAdb
+            subPath: softAdb
+          ports:
+          - containerPort: 80
+            protocol: TCP
+          - containerPort: 8080
+            protocol: TCP
+          - containerPort: 443
+            protocol: TCP
+          - containerPort: 8443
+            protocol: TCP
+          - containerPort: 55555
+            protocol: TCP
+          - containerPort: 22
+            protocol: TCP
+        volumes:
+          - name: config-map
+            configMap:
+              name: "${DEPLOYMENT_NAME}-solace"
+              defaultMode: 0755
+          - name: secrets
+            secret:
+              secretName: "${DEPLOYMENT_NAME}-solace-secrets"
+              defaultMode: 0400
+          - name: dshm
+            emptyDir:
+              medium: Memory
+    volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        storageClassName: "${DEPLOYMENT_NAME}-standard"
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: "${VMR_STORAGE_SIZE}"
+
+parameters:
+  - name: DEPLOYMENT_NAME
+    displayName: Solace VMR Deployment Name
+    description: The prefix to use for object names
+    generate: expression
+    from: '[A-Z0-9]{8}'
+    value: example
+    required: true
+  - name: DOCKER_REGISTRY_URL
+    displayName: Docker Registry URL
+    description: The Docker registry URL for the registry containing the Solace VMR docker image
+    value: docker_registry_url
+    required: true
+  - name: VMR_IMAGE_TAG
+    displayName: Solace VMR Docker Image Tag
+    description: The Docker image tag for the Solace VMR docker image from your Docker registry
+    value: solace_vmr_image_tag
+    required: true
+  - name: VMR_ADMIN_PASSWORD
+    displayName: Base64 encoded password for Solace username 'admin'
+    description: The VMR 'admin' user's password (base64 encoded).  This Solace OpenShift template will create an administrative user with username 'admin' with specified password.
+    value: "cEBzc3cwcmQ=" # password 'p@ssw0rd'
+    required: true
+  - name: VMR_STORAGE_SIZE
+    displayName: Solace VMR Persistent Storage Disk Size
+    description: The size in gigabytes for a VMR Pod's persistent volume (with suffix 'Gi'), example 30Gi for 30 gigabytes
+    value: 30Gi
+    required: true

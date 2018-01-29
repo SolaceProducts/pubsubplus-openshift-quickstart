@@ -1,380 +1,295 @@
-# VMR in Openshift
+# Install Solace Message Router HA deployment onto an OpenShift 3.6 cluster
 
-## Overview
+## Purpose of this repository
 
-This repository contains OpenShift templates to use the VMR in OpenShift.  It also contains a template to demonstrate
-the VMR used by a Demo application to distribute work to workers.
+This repository expands on the [Solace Kubernetes Quickstart](https://github.com/SolaceProducts/solace-kubernetes-quickstart) to provide a concrete example of how to deploy redundant Solace VMRs in an HA configuration on the OpenShift platform running in AWS.  We utilize the [RedHat OpenShift on AWS QuickStart](https://aws.amazon.com/quickstart/architecture/openshift/) project to deploy OpenShift on AWS in a highly redundant configuration spanning 3 zones.
 
-## Prerequisites
+![alt text](/resources/network_diagram.jpg "Network Diagram")
 
-* A target OpenShift environment
-* A host with OpenShift client and Docker tools installed (IE. to run the Quick Start example)
-* Have cluster admin privileges
-* The VMR docker container (Available here : http://dev.solace.com/downloads/, under Docker in "VMR Community Edition")
-* Have an administrator make the internal registry externally accessible :
+## Description of Solace VMR
 
+Solace Virtual Message Router (VMR) software provides enterprise-grade messaging capabilities so you can easily enable event-driven communications between applications, IoT devices, microservices and mobile devices across hybrid cloud and multi cloud environments. The Solace VMR supports open APIs and standard protocols including AMQP 1.0, JMS, MQTT, REST and WebSocket, along with all message exchange patterns including publish/subscribe, request/reply, fan-in/fan-out, queueing, streaming and more. The Solace VMR can be deployed in all popular public cloud, private cloud and on-prem environments, and offers both feature parity and interoperability with Solace’s proven hardware appliances and Messaging as a Service offering called Solace Cloud.
+
+## How to Deploy a VMR onto OpenShift / AWS
+
+The following steps describe how to utilize the Solace OpenShift QuickStart to deploy the Solace VMR software onto an OpenShift environment.  Additional optional steps are included if you are deploying OpenShift onto Amazon AWS infrastructure.  
+
+There are two options for deploying the Solace VMR software onto your OpenShift deployment.
+* Execute the OpenShift templates included in this project for installing the VMR software in a limited number of configurations 
+* Use the Solace Kubernetes QuickStart to deploy the Solace VMR software onto your OpenShift environment.  The Solace Kubernetes QuickStart utilizes Helm to automate the process of deploying the Solace VMR software using a wide range of configuration options.
+
+Steps to deploy the Solace VMR software:
+
+* **Note:** You may skip Step 1 if you already have your own OpenShift environment deployed.
+
+### Step 1: (Optional / AWS) Deploy OpenShift onto AWS using the RedHat OpenShift AWS QuickStart Project
+
+* (Part I) Log into the AWS Web Console and run the [OpenShift AWS QuickStart project](https://aws.amazon.com/quickstart/architecture/openshift/).  We recommend you deploy OpenShift across 3 AWS Availability Zones for maximum redundancy.  Please refer to the RedHat OpenShift AWS QuickStart guide and supporting documentation:
+
+  * [Deploying and Managing OpenShift Container Platform 3.6 on Amazon Web Services](https://access.redhat.com/documentation/en-us/reference_architectures/2017/html-single/deploying_and_managing_openshift_container_platform_3.6_on_amazon_web_services/index)
+
+* (Part II) Once you have deployed OpenShift using the AWS QuickStart you will have to perform additional steps to re-configure OpenShift to integrate fully with AWS.  Please refer to the RedHat OpenShift documentation for configuring OpenShift for AWS:
+
+  * [OpenShift > Configuring for AWS](https://docs.openshift.com/container-platform/3.6/install_config/configuring_aws.html)
+
+### Step 2: Retrieve the Solace OpenShift QuickStart from GitHub
+* The Solace OpenShift QuickStart project contains useful scripts to help you prepare an OpenShift project for deployment of the Solace VMR.  You should retrieve the project on a host having the OpenShift client tools and a host that can reach your OpenShift cluster nodes.
 ```
-oc expose service docker-registry -n default
-```
-
-## OpenShift installation
-
-A guide is available to guide you in installing a minimalistic OpenShift environment in AWS here :
-[AWS Openshift install guide](https://github.com/dickeyf/openshift-aws-install)
-
-### Creating the OpenShift user
-
-[AWS Openshift install guide - Creating Users](https://github.com/dickeyf/openshift-aws-install#creating-users-and-the-admin-user)
-
-## Deploying the VMR Template
-
-After making sure you have all the [prerequisites](prerequisites) met, copy the VMR Docker image to the directory that
-contains the `deploy.sh` script.  Also place at that location the `id_rsa` file that contains your ssh private key for
-the OpenShift master node.
-
-Once these two files have been copied, execute the `deploy.sh` script :
-
-```
-./deploy.sh <ssh-host> <project-name> <openshift-domain>
-```
-IE:
-
-```
-./deploy.sh ec2-user@master.openshift.example.com demo-project openshift.example.com
+mkdir ~/workspace
+cd ~/workspace
+git clone https://github.com/SolaceLabs/solace-openshift-quickstart.git
+cd solace-openshift-quickstart
 ```
 
-The script will automate these steps for you :
-* Log you in OpenShift (If you are not logged in yet)
-* Create the project if it doesn't exists yet.
-* Assign the required SCCs to the project's service account.
-* Push the docker image to the OpenShift's project docker repository.
-* Install the VMR template and instantiate it.
-
-At the end you should have the VMR's DeploymentConfig created, and it will be instantiating a VMR pod.
-
-## Using the VMR into your own application template
-
-Copy the objects from the `solace-vmr-template.yml` into your template, and also add the parameters.  These objects will
-instantiate a VMR pod with a Service and HTTP/HTTPS routes.  You can then adjust the service and router objects to your
-needs.  For example if giving public access to the web services of the VMR is not desirable, then you should remove the
-route objects from the template.
-
-Your application should be configured to connect to the VMR by using the service.
-
-An example of an application template embedding `solace-vmr-template.yml` can be found here
-[Solace Messaging demonstration application](demo/).
-
-## VMR Pod Requirements
-
-For the VMR container to run properly as an OpenShift Pod the following requirements must be met :
-* The container needs to be running in privileged mode
-* The container processes have to run as root
-* The container needs to have a `Memory` emptyDir mounted at `/dev/shm`
-
-For these reasons, the project will requires the `anyuid` and `privileged` SCCs.
-
-NOTE: These requirements are temporary and won't be necessary in a future load.
-
-## VMR Container environment variables
-
-The VMR Container can be configured via these environment variables :
-
-| Environment Variable                      | Description |
-| ----------------------------------------- | ----------- |
-| USERNAME\_\<userName\>\_PASSWORD          | Setting this environment variable will create a user with \<userName\> as its username and set its password to the value of the environment variable. |
-| USERNAME\_\<userName\>\_ENCRYPTEDPASSWORD | Setting this environment variable will create a user with \<userName\> as its username and set its password to the value of the environment variable. |
-| USERNAME\_\<userName\>\_GLOBALACCESSLEVEL | Setting this environment variable will assign the global access level to the user \<userName\>.  Global access level can be one of these values: "" for no global access, "read-only", "read-write" or "admin". |
-| SERVICE\_SSH\_PORT                        | The port used by the sshd process running within the VMR Docker Container. | 
-| SERVICE\_SEMP\_PORT                       | The port used by the SEMP service within the VMR Docker Container.         |
-| ROUTERNAME                                | The SolOS router name.                                                     |
-| NODETYPE                                  | High-availability (HA) group node type.  Default value is message_routing. |
-
-## VMR pod Template
-
-A sample template of a VMR pod is provided here: [Solace VMR pod Template](solace-vmr-template.yml).
-
-Use this template as a reference to add a VMR pod to your OpenShift application.
-
-### Template header and metadata
-
-Templates are explained on the OpenShift official documentation web site.  Templates are explained on that web site at
-[this location](https://docs.openshift.org/latest/dev_guide/templates.html).
-
-The template is a yaml document that starts with a header declaring that the object is a template (`kind: Template`)
-and is using the version `v1`.
-
-The metadata block is used to associate information to the template.  The metadata here includes the template name, 
-and annotations (Used by OpenShift's web console to display the template).
-
+### Step 3: (Optional / AWS) Install the Helm client and server-side tools if you are going to use the Solace Kubernetes QuickStart to deploy the Solace VMR software
+* **(Part I)** Utilize the ‘deployHelm.sh’ script to deploy the Helm client and server-side components.  Begin by installing the Helm client tool:
 ```
-apiVersion: v1
-kind: Template
-metadata:
-  name: solace-vmr-template
-  annotations:
-    description: Creates a Solace VMR Pod
-    iconClass: icon-phalcon
-    tags: messaging
+cd ~/workspace/solace-openshift-quickstart/scripts
+. ./deployHelm.sh client
 ```
 
-### Object List
+* After running the above script, take note of the values of the following environment variables and set their values in your .bashrc (These environment variables are used when running the helm client tool):
+  * HELM_HOME
+  * TILLER_NAMESPACE
+  * PATH
 
-A template defines a list of object to be created when the template is instantiated.  For this template these objects
-will be created :
-* A `DeploymentConfig` that creates the VMR pod.
-* A `Service` that exposes the VMR's ports on a cluster IP.
-* Routes which exposes the various VMR HTTP/HTTPS services.
-
-This is how the template defines the VMR DeploymentConfig:
+* **(Part II)** Install the Helm server-side ‘Tiller’ component.  Note, you will be prompted to log into OpenShift if you have not already done so.
 ```
-  - kind: DeploymentConfig
-    apiVersion: v1
-    metadata:
-      name: '${APPLICATION_NAME}-vmr'
-    spec:
-      strategy:
-        type: Rolling
-        rollingParams:
-          timeoutSeconds: 1200
-          maxSurge: 0
-          maxUnavailable: 1
-      triggers:
-        - type: ConfigChange
-      replicas: 1
-      selector:
-        deploymentconfig: '${APPLICATION_NAME}-vmr'
-      template:
-        metadata:
-          name: '${APPLICATION_NAME}-vmr'
-          labels:
-            name: '${APPLICATION_NAME}-vmr'
-            deploymentconfig: '${APPLICATION_NAME}-vmr'
-        spec:
-          volumes:
-          - name: dshm
-            emptyDir:
-              medium: Memory
-          containers:
-            - name: "solace-vmr"
-              env:
-              - name: USERNAME_${ADMIN_USER}_PASSWORD
-                value: '${ADMIN_PASSWORD}'
-              - name: USERNAME_${ADMIN_USER}_GLOBALACCESSLEVEL
-                value: 'admin'
-              - name: SERVICE_SSH_PORT
-                value: '22'
-              - name: ALWAYS_DIE_ON_FAILURE
-                value: '0'
-              - name: ROUTERNAME
-                value: '${ROUTER_NAME}'
-              - name: NODETYPE
-                value: '${NODE_TYPE}'
-              image: "${VMR_IMAGE}"
-              volumeMounts:
-              - mountPath: /dev/shm
-                name: dshm
-              securityContext:
-                privileged: true
-              ports:
-              - containerPort: 8080
-                protocol: TCP
-              - containerPort: 943
-                protocol: TCP
-              - containerPort: 55555
-                protocol: TCP
-              - containerPort: 55003
-                protocol: TCP
-              - containerPort: 55556
-                protocol: TCP
-              - containerPort: 55443
-                protocol: TCP
-              - containerPort: 80
-                protocol: TCP
-              - containerPort: 443
-                protocol: TCP
-              - containerPort: 1883
-                protocol: TCP
-              - containerPort: 8883
-                protocol: TCP
-              - containerPort: 8000
-                protocol: TCP
-              - containerPort: 8443
-                protocol: TCP
-              - containerPort: 9000
-                protocol: TCP
-              - containerPort: 9443
-                protocol: TCP
-              - containerPort: 22
-                protocol: TCP
-              readinessProbe:
-                initialDelaySeconds: 30
-                periodSeconds: 5
-                tcpSocket:
-                  port: 55555
-              livenessProbe:
-                timeoutSeconds: 6
-                initialDelaySeconds: 300
-                periodSeconds: 60
-                tcpSocket:
-                  port: 55555
+cd ~/workspace/solace-openshift-quickstart/scripts
+. ./deployHelm.sh server
 ```
 
-__NOTE__: A dshm volume is required to be mounted at /dev/shm to give the VMR process enough space in /dev/shm.
-
-It also defines the container's name : `vmr`, and environment variables that are explained in section
-[VMR Container environment variables](#VMR-Container-environment-variables) above.  It also mount the Emptydir volume
-`dshm` onto `/dev/shm`, give the container privilege access, and then defines ports that must be exposed.
-
-### Template's parameter list
-
-Finally, the template must define all parameters that were used throughout the template document :
-* APPLICATION_NAME
-* APPLICATION_SUBDOMAIN
-* VMR_IMAGE
-* ROUTER_NAME
-* NODE_TYPE
-* ADMIN_USER
-* ADMIN_PASSWORD
-
-This is how these parameters are defined :
+### Step 4: Utilize scripts in the Solace OpenShift QuickStart to configure a project to host the VMR HA software
+* **(Part I)** Use the ‘prepareProject.sh’ script to create and configure an OpenShift project that meets requirements of the Solace VMR HA software:
 ```
-  - name: APPLICATION_NAME
-    displayName: Application Name
-    description: The suffix to use for object names
-    generate: expression
-    from: '[A-Z0-9]{8}'
-    value: example
-    required: true
-  - name: APPLICATION_SUBDOMAIN
-    displayName: Application Subdomain
-    description: The subdomain the template uses for its routes hostnames.
-    value: vmr1.openshift.exampledomain.com
-  - name: VMR_IMAGE
-    displayName: VMR Image
-    description: >-
-      Fully qualified VMR image name.
-    value: 172.30.3.53:5000/vmr-openshift-demo/solace-app
-  - name: ROUTER_NAME
-    displayName: Router Name
-    description: The name of the router to instantiate.
-    value: vmr1
-  - name: NODE_TYPE
-    displayName: VMR Node Type
-    description: The role of this VMR Node : message_routing or monitoring.  Monitoring is used only in HA group.
-    value: message_routing
-  - name: ADMIN_USER
-    description: Username of the admin user
-    generate: expression
-    from: '[A-Z0-9]{8}'
-    value: admin
-  - name: ADMIN_PASSWORD
-    description: Password of the admin user
-    generate: expression
-    from: '[A-Z0-9]{8}'
-    value: admin
+cd ~/workspace/solace-openshift-quickstart/scripts
+sudo ./prepareProject.sh vmrha
+```
+* **(Part II, Optional / AWS)** If you are using the AWS Elastic Container Registry (ECR) then you must add the ECR login credentials (as an OpenShift secret) to your VMR HA project.  This project contains a helper script to execute this step:
+```
+sudo su –
+aws configure
+exit
+cd ~/workspace/solace-openshift-quickstart/scripts
+sudo ./addECRsecret.sh vmrha
 ```
 
-When the user instantiate the template, he can specify a value for each parameter.  For instance the user would pick
-the initial admin user's username by assigning the username to the `ADMIN_USER` parameter.  The name of the pod and the
-initial admin user's password can be controller in the same way.
+### Step 5: Download and deploy Solace VMR software (Docker image) to your Docker Registry
 
-## Instantiating the example VMR Template
+* **(Part I)** Download a copy of the Solace VMR Software.  Follow Step 2 from the [Solace Kubernetes QuickStart](https://github.com/SolaceProducts/solace-kubernetes-quickstart) to download the VMR software (Community Edition for single-node deployments, Evaluation Edition for VMR HA deployments)
 
-NOTE: The `deploy.sh` script automates these steps it is recommended to use it instead of manually executing these
-commands.  This section purpose is to explain what the scripts does.
+* **(Part II)** Deploy the VMR docker image to your Docker registry of choice
 
-If your OpenShift project hasn't been created yet you will need to create it like so :
+  * **(Optional / AWS)** You can utilize the AWS Elastic Container Registry to host the VMR Docker image. For more information, refer to [Amazon Elastic Container Registry](https://aws.amazon.com/ecr/).
+
+### Step 6: (Option 1) Deploy the Solace VMR message router using the OpenShift templates included in this project
+
+**Prerequisites:**
+1. Determine your VMR disk space requirements.  We recommend a minimum of 30 gigabytes of disk space.
+2. Define a strong password for the Solace VMR 'admin' user and then base64 encode the value.  This value will be specified as a parameter when processing the Solace VMR OpenShift template:
 ```
-oc new-project vmr-openshift-demo
-```
-
-To be able to assign SSCs your project's Service Account you will need cluster admin privilege.
-
-In order to do this, you will have to be logged on one of the OpenShift Master Node and run these commands :
-```
-oadm policy add-scc-to-user privileged system:serviceaccount:vmr-openshift-demo:default
-oadm policy add-scc-to-user anyuid system:serviceaccount:vmr-openshift-demo:default
+echo -n 'strong@dminPw!' | base64
 ```
 
-Download the VMR Container image from [Solace Downloads page](http://dev.solace.com/downloads/).  You can download
-either the `Community Edition` or the `Evaluation Edition` as both will work.  The `Community Edition` is free and
-never expires but contains less features (See the Edition Comparision chart on the downloads page).
+**Deploy the Solace VMR software:**
 
-Pushing the docker image to the internal registry requires the use of a machine running docker (IE. Docker machine).
-The image is then loaded locally, and tagged as a repository image.  Then login to the OpenShift registry and push
-the image using these commands :
+You can deploy the Solace VMR software in either a single-node or high-availability configuration:
+
+* For **Single-Node** configuration:
+  * Process the Solace 'Single Node' OpenShift template to deploy the Solace VMR in a single-node configuration.  Specify values for the DOCKER_REGISTRY_URL, VMR_IMAGE_TAG, VMR_STORAGE_SIZE, and VMR_ADMIN_PASSWORD parameters:
 ```
-docker load -i <image>.tar.gz
-docker login --username=<user> --password=`oc whoami -t` docker-registry-default.<domain>
-docker tag solace-app:<version-tag> docker-registry-default.<domain>/vmr-openshift-demo/solace-app:latest
-docker push docker-registry-default.<domain>/vmr-openshift-demo/solace-app
+oc project vmrha
+cd  ~/workspace/solace-openshift-quickstart/templates
+oc process -f vmr_singleNode_template.yaml DEPLOYMENT_NAME=single-node-vmr DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> VMR_IMAGE_TAG=<replace with your Solace VMR docker image tag> VMR_STORAGE_SIZE=30Gi VMR_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
 ```
 
-List the imagestreams named `solaceapp` to learn the full VMR Image name :
+* For **High-Availability** configuration:
+  * Process the Solace 'HA' OpenShift template to deploy the Solace VMR in a high-availability configuration.  Specify values for the DOCKER_REGISTRY_URL, VMR_IMAGE_TAG, VMR_STORAGE_SIZE, and VMR_ADMIN_PASSWORD parameters:
 ```
-➜  openshift git:(master) ✗ oc get imagestreams solace-app
-NAME         DOCKER REPO                                      TAGS      UPDATED
-solace-app   172.30.3.53:5000/vmr-openshift-demo/solace-app   latest    48 minutes ago
+oc project vmrha
+cd  ~/workspace/solace-openshift-quickstart/templates
+oc process -f vmr_ha_template.yaml DEPLOYMENT_NAME=vmr-ha DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> VMR_IMAGE_TAG=<replace with your Solace VMR docker image tag> VMR_STORAGE_SIZE=30Gi VMR_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
+```    
+
+### Step 6: (Option 2) Deploy the Solace VMR software using the Solace Kubernetes QuickStart
+
+If you require more flexibility in terms of Solace VMR deployment options (compared to those offered by the OpenShift templates provided by this project) then utilize the [Solace Kubernetes QuickStart](https://github.com/SolaceProducts/solace-kubernetes-quickstart) to deploy the Solace VMR software:
+
+* Retrieve the Solace Kubernetes QuickStart from GitHub:
+
+```
+cd ~/workspace
+git clone https://github.com/SolaceLabs/solace-kubernetes-quickstart.git
+cd solace-kubernetes-quickstart
 ```
 
-In this case, the image must be `172.30.3.53:5000/vmr-openshift-demo/solace-app`.
-
-The application subdomain should be a DNS wildcard entry which maps to the OpenShift router.  Routes will be
-created based on that subdomain and should all resolve to the router.
+* Update the Solace Kubernetes values.yaml configuration file for your target deployment (Please refer to the [Solace Kubernetes QuickStart](https://github.com/SolaceProducts/solace-kubernetes-quickstart) for further details):
 
 ```
-oc create -f solace-vmr-template.yml
-oc process solace-vmr-template VMR_IMAGE=<ImageStream> APPLICATION_SUBDOMAIN=<Subdomain> | oc create -f -
+cd ~/workspace/solace-kubernetes-quickstart/solace
+vi values.yaml
+helm install . -f values.yaml
+```
+* The following table lists example values for the ‘values.yaml’ file to deploy Solace VMR in a Highly-Available configuration using persistent storage.
+
+  |Variable                |Value                |Description                |
+  |------------------------|---------------------|---------------------------|
+  |cloudProvider           |aws                  |Set to 'aws' when deploying Solace VMR in an OpenShift / AWS environment|
+  |solace / redundancy     |true                 |Set to ‘true’ for a Solace VMR HA configuration|
+  |image / repository      |ECR repository URI   |Retrieve the repository URI from the AWS ECR management page  |
+  |image / tag             |VMR docker image tag |Select your repository in the AWS ECR management page.  This page will list all available Docker images in the repository and their associated Image Tag|
+  |storage / persistent    |true                 |Set to ‘true’ to configure persistent disks to store Solace VMR data|
+  |storage / type          |standard             |Set to ‘standard’ to use lower-cost / standard performance disk types (AWS GP2)|
+  |storage / size          |30Gi                 |Set to the minimum number of gigabytes for VMR data storage.  Refer to Solace VMR documentation for further details.|
+
+## Validating the Deployment
+
+Now you can validate your deployment from the OpenShift client shell:
+```
+[ec2-user@ip-10-0-23-198 ~]$ oc get statefulset,service,pods,pvc,pv
+NAME                                   DESIRED   CURRENT   AGE
+statefulsets/oppulent-catfish-solace   3         3         17m
+
+NAME                                    CLUSTER-IP       EXTERNAL-IP        PORT(S)                                                                                                                   AGE
+svc/oppulent-catfish-solace             172.30.146.232   af12bcd7b0098...   22:31437/TCP,1883:32259/TCP,5672:32020/TCP,8000:31829/TCP,8080:32479/TCP,9000:32726/TCP,55003:31871/TCP,55555:30659/TCP   17m
+svc/oppulent-catfish-solace-discovery   None             <none>             8080/TCP                                                                                                                  17m
+
+NAME                           READY     STATUS    RESTARTS   AGE
+po/oppulent-catfish-solace-0   1/1       Running   0          17m
+po/oppulent-catfish-solace-1   1/1       Running   0          16m
+po/oppulent-catfish-solace-2   1/1       Running   0          15m
+
+NAME                                 STATUS    VOLUME                                     CAPACITY   ACCESSMODES   STORAGECLASS                AGE
+pvc/data-oppulent-catfish-solace-0   Bound     pvc-f12f15c0-0098-11e8-8ed4-02a152ed1b12   30Gi       RWO           oppulent-catfish-standard   17m
+pvc/data-oppulent-catfish-solace-1   Bound     pvc-0fa5577e-0099-11e8-8ed4-02a152ed1b12   30Gi       RWO           oppulent-catfish-standard   16m
+pvc/data-oppulent-catfish-solace-2   Bound     pvc-2e1daed6-0099-11e8-8ed4-02a152ed1b12   30Gi       RWO           oppulent-catfish-standard   15m
+
+NAME                                          CAPACITY   ACCESSMODES   RECLAIMPOLICY   STATUS    CLAIM                                  STORAGECLASS                REASON    AGE
+pv/pvc-0fa5577e-0099-11e8-8ed4-02a152ed1b12   30Gi       RWO           Delete          Bound     vmrha/data-oppulent-catfish-solace-1   oppulent-catfish-standard             16m
+pv/pvc-2e1daed6-0099-11e8-8ed4-02a152ed1b12   30Gi       RWO           Delete          Bound     vmrha/data-oppulent-catfish-solace-2   oppulent-catfish-standard             15m
+pv/pvc-f12f15c0-0098-11e8-8ed4-02a152ed1b12   30Gi       RWO           Delete          Bound     vmrha/data-oppulent-catfish-solace-0   oppulent-catfish-standard             17m
+[ec2-user@ip-10-0-23-198 ~]$
+[ec2-user@ip-10-0-23-198 ~]$
+[ec2-user@ip-10-0-23-198 ~]$ oc describe svc
+Name:                   oppulent-catfish-solace
+Namespace:              vmrha
+Labels:                 app=solace
+                        chart=solace-0.2.0
+                        heritage=Tiller
+                        release=oppulent-catfish
+Annotations:            <none>
+Selector:               active=true,app=solace,release=oppulent-catfish
+Type:                   LoadBalancer
+IP:                     172.30.146.232
+LoadBalancer Ingress:   af12bcd7b009811e8a44106dd6bcb75d-1520996963.us-east-2.elb.amazonaws.com
+Port:                   ssh     22/TCP
+NodePort:               ssh     31437/TCP
+Endpoints:              10.128.4.8:22
+Port:                   mqtt    1883/TCP
+NodePort:               mqtt    32259/TCP
+Endpoints:              10.128.4.8:1883
+Port:                   amqp    5672/TCP
+NodePort:               amqp    32020/TCP
+Endpoints:              10.128.4.8:5672
+Port:                   mqttws  8000/TCP
+NodePort:               mqttws  31829/TCP
+Endpoints:              10.128.4.8:8000
+Port:                   semp    8080/TCP
+NodePort:               semp    32479/TCP
+Endpoints:              10.128.4.8:8080
+Port:                   rest    9000/TCP
+NodePort:               rest    32726/TCP
+Endpoints:              10.128.4.8:9000
+Port:                   smfc    55003/TCP
+NodePort:               smfc    31871/TCP
+Endpoints:              10.128.4.8:55003
+Port:                   smf     55555/TCP
+NodePort:               smf     30659/TCP
+Endpoints:              10.128.4.8:55555
+Session Affinity:       None
+Events:
+  FirstSeen     LastSeen        Count   From                    SubObjectPath   Type            Reason                  Message
+  ---------     --------        -----   ----                    -------------   --------        ------                  -------
+  17m           17m             1       service-controller                      Normal          CreatingLoadBalancer    Creating load balancer
+  17m           17m             1       service-controller                      Normal          CreatedLoadBalancer     Created load balancer
+
+
+Name:                   oppulent-catfish-solace-discovery
+Namespace:              vmrha
+Labels:                 app=solace
+                        chart=solace-0.2.0
+                        heritage=Tiller
+                        release=oppulent-catfish
+Annotations:            service.alpha.kubernetes.io/tolerate-unready-endpoints=true
+Selector:               app=solace,release=oppulent-catfish
+Type:                   ClusterIP
+IP:                     None
+Port:                   semp    8080/TCP
+Endpoints:              10.128.4.8:8080,10.130.2.4:8080,10.131.2.4:8080
+Session Affinity:       None
+Events:                 <none>
 ```
 
-## Demo Openshift Application
+Note, the **'LoadBalancer Ingress'** value listed in the service description above.  This is the Solace Connection URL for messaging clients (AWS Load Balancer example).  
 
-A demonstration of the VMR in use by sample application is available here : [Openshift VMR Demo](demo/)
+### Viewing bringup logs
 
-## Using SolAdmin to connect to the VMR pod
+It is possible to watch the VMR come up via logs in the OpenShift UI log stack for individual VMR pods.  You can access the log stack for individual VMR pods from the OpenShift UI, by navigating to:
 
-SolAdmin can be used to connect to the VMR and administer it.  SolAdmin can be downloaded from [Solace's Download Page](http://dev.solace.com/downloads/).
+* **OpenShift UI > (VMR Project) > Applications > Stateful Sets > ((name)-solace) > Pods > ((name)-solace-(N)) > Logs**
 
-Follow these steps to connect to the VMR:
-1. Navigate to semp.<openshift-domain> with your browser and accept the server certificate.
-1. Export the certificate from your system trust-store and import the certificate into a Java Key Store (JKS) file.
-1. Connect to VMR from SolAdmin, these are the fields that must be filled:
+![alt text](/resources/VMR-Pod-Log-Stack.png "VMR Pod Log Stack")
 
-| Field                      | Value |
-| ----------------------------------------- | -------------- |
-| Management IP Address/Host | semp.<APPLICATION_SUBDOMAIN>  |
-| Management Port            | 443                           |
-| Username                   | <ADMIN_USER>                  |
-| Password                   | <ADMIN_PASSWORD>              | 
-| Use Secure Session         | This field must be checked    |
-| Trust Store File           | <Path to .jks file>           |
-| Trust Store Password       | <jks file password>           |
+## Gaining admin and ssh access to the VMR
 
-<APPLICATION_SUBDOMAIN>: The subdomain that was chosen when the VMR template was deployed.
-<ADMIN_USER>: The admin username that was chosen when the VMR template was deployed. 
-<ADMIN_PASSWORD>: The admin password that was chosen when the VMR template was deployed.
-<Path to .jks file>: This is the JKS file into which you imported the VMR certificate.
-<jks file password>: This is the password you used to encrypt and temper-proof the JKS file. 
+The external management IP will be the Public IP associated with Load Balancer generated by the Solace VMR OpenShift template.  Access will go through the load balancer service as described in the introduction and will always point to the active VMR. The default port is 22 for CLI and 8080 for SEMP/SolAdmin.
+
+If you deployed OpenShift in AWS then the Solace OpenShift QuickStart will have created an EC2 Load Balancer to front the Solace VMR / OpenShift service.  The Load Balancer public DNS name can be found in the AWS EC2 console under the 'Load Balancers' section.
+
+You can gain access to the Solace VMR CLI and container shell for individual VMR instances from the OpenShift UI.  A web-based Terminal emulator is available from the OpenShift UI.  Navigate to an invidual Solace VMR Pod using the OpenShift UI:
+
+* **OpenShift UI > (VMR Project) > Applications > Stateful Sets > ((name)-solace) > Pods > ((name)-solace-(N)) > Terminal**
+
+Where (N) above is the ordinal of the Solace VMR:
+  * 0 - Primary VMR
+  * 1 - Backup VMR
+  * 2 - Monitor VMR
+
+Once you have launched the Terminal emulator to the Solace VMR pod you may access the Solace VMR CLI by executing the following command:
+```
+/usr/sw/loads/currentload/bin/cli -A
+```
+
+![alt text](/resources/VMR-Primary-Pod-Terminal-VMR-CLI.png "VMR CLI via OpenShift UI Terminal emulator")
+
+See the [Solace Kubernetes Quickstart README](https://github.com/SolaceProducts/solace-kubernetes-quickstart/tree/master#gaining-admin-access-to-the-vmr ) for more details including admin and ssh access to the individual VMRs.
+
+## Testing Data access to the VMR
+
+To test data traffic though the newly created VMR instance, visit the Solace developer portal and select your preferred programming language to [send and receive messages](http://dev.solace.com/get-started/send-receive-messages/ ). Under each language there is a Publish/Subscribe tutorial that will help you get started.
+
+Note: the Host will be the Public IP. It may be necessary to [open up external access to a port](https://github.com/SolaceProducts/solace-kubernetes-quickstart/tree/master#upgradingmodifying-the-vmr-cluster) used by the particular messaging API if it is not already exposed.
+
+![alt text](/resources/solace_tutorial.png "getting started publish/subscribe")
+
+<br>
 
 ## Contributing
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull
-requests to us.
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
 
 ## Authors
 
-See the list of [contributors](https://github.com/SolaceLabs/solace-openshift-quickstart/graphs/contributors) who
-participated in this project.
+See the list of [contributors](https://github.com/SolaceProducts/solace-openshift-quickstart/graphs/contributors) who participated in this project.
 
 ## License
 
 This project is licensed under the Apache License, Version 2.0. - See the [LICENSE](LICENSE) file for details.
 
-## References
+## Resources
 
-Here are some interesting links if you're new to these concepts:
+For more information about Solace technology in general please visit these resources:
 
-* [The Solace Developer Portal](http://dev.solace.com/)
-* [OpenShift's Core concepts](https://docs.openshift.com/container-platform/3.4/architecture/core_concepts/index.html)
-* [Kubernetes Concepts](https://kubernetes.io/docs/concepts/)
-* [Docker Machine Overview](https://docs.docker.com/machine/overview/)
+* The Solace Developer Portal website at: http://dev.solace.com
+* Understanding [Solace technology.](http://dev.solace.com/tech/)
+* Ask the [Solace community](http://dev.solace.com/community/).
