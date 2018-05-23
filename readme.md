@@ -1,24 +1,24 @@
-# Install Solace Message Router HA deployment onto an OpenShift 3.6 cluster
+# How To deploy a Solace PubSub+ Software Message Broker HA Group onto an OpenShift 3.6 Cluster
 
-## Purpose of this repository
+## Purpose of this Repository
 
-This repository expands on the [Solace Kubernetes Quickstart](https://github.com/SolaceProducts/solace-kubernetes-quickstart) to provide a concrete example of how to deploy redundant Solace VMRs in an HA configuration on the OpenShift platform running in AWS.  We utilize the [RedHat OpenShift on AWS QuickStart](https://aws.amazon.com/quickstart/architecture/openshift/) project to deploy OpenShift on AWS in a highly redundant configuration spanning 3 zones.
+This repository expands on the [Solace Kubernetes Quickstart](https://github.com/SolaceProducts/solace-kubernetes-quickstart) to provide an example of how to deploy Solace PubSub+ software message brokers in an HA configuration on the OpenShift platform running in AWS.  We utilize the [RedHat OpenShift on AWS QuickStart](https://aws.amazon.com/quickstart/architecture/openshift/) project to deploy OpenShift on AWS in a highly redundant configuration spanning 3 zones.
 
 ![alt text](/resources/network_diagram.jpg "Network Diagram")
 
-## Description of Solace VMR
+## Description of the Solace PubSub+ Software Message Broker
 
-Solace Virtual Message Router (VMR) software provides enterprise-grade messaging capabilities so you can easily enable event-driven communications between applications, IoT devices, microservices and mobile devices across hybrid cloud and multi cloud environments. The Solace VMR supports open APIs and standard protocols including AMQP 1.0, JMS, MQTT, REST and WebSocket, along with all message exchange patterns including publish/subscribe, request/reply, fan-in/fan-out, queueing, streaming and more. The Solace VMR can be deployed in all popular public cloud, private cloud and on-prem environments, and offers both feature parity and interoperability with Solace’s proven hardware appliances and Messaging as a Service offering called Solace Cloud.
+The Solace PubSub+ software message broker meets the needs of big data, cloud migration, and Internet-of-Things initiatives, and enables microservices and event-driven architecture. Capabilities include topic-based publish/subscribe, request/reply, message queues/queueing, and data streaming for IoT devices and mobile/web apps. The message broker supports open APIs and standard protocols including AMQP, JMS, MQTT, REST, and WebSocket. As well, it can be deployed in on-premise datacenters, natively within private and public clouds, and across complex hybrid cloud environments.
 
-## How to Deploy a VMR onto OpenShift / AWS
+## How to deploy a message broker onto OpenShift / AWS
 
-The following steps describe how to utilize the Solace OpenShift QuickStart to deploy the Solace VMR software onto an OpenShift environment.  Additional optional steps are included if you are deploying OpenShift onto Amazon AWS infrastructure.  
+The following steps describe how to use the Solace OpenShift QuickStart to deploy a message broker onto an OpenShift environment. Optional steps are included if you are deploying OpenShift onto Amazon AWS infrastructure.  
 
-There are two options for deploying the Solace VMR software onto your OpenShift deployment.
-* Execute the OpenShift templates included in this project for installing the VMR software in a limited number of configurations 
-* Use the Solace Kubernetes QuickStart to deploy the Solace VMR software onto your OpenShift environment.  The Solace Kubernetes QuickStart utilizes Helm to automate the process of deploying the Solace VMR software using a wide range of configuration options.
+There are two options for deploying a message broker onto your OpenShift deployment.
+* Execute the OpenShift templates included in this project for installing the message broker in a limited number of configurations 
+* Use the Solace Kubernetes QuickStart to deploy the message broker onto your OpenShift environment.  The Solace Kubernetes QuickStart uses Helm to automate the process of message broker deployment through a wide range of configuration options.
 
-Steps to deploy the Solace VMR software:
+Steps to deploy the message broker:
 
 * **Note:** You may skip Step 1 if you already have your own OpenShift environment deployed.
 
@@ -33,7 +33,7 @@ Steps to deploy the Solace VMR software:
   * [OpenShift > Configuring for AWS](https://docs.openshift.com/container-platform/3.6/install_config/configuring_aws.html)
 
 ### Step 2: Retrieve the Solace OpenShift QuickStart from GitHub
-* The Solace OpenShift QuickStart project contains useful scripts to help you prepare an OpenShift project for deployment of the Solace VMR.  You should retrieve the project on a host having the OpenShift client tools and a host that can reach your OpenShift cluster nodes.
+* The Solace OpenShift QuickStart project contains useful scripts to help you prepare an OpenShift project for message broker deployment.  You should retrieve the project on a host having the OpenShift client tools and a host that can reach your OpenShift cluster nodes.
 ```
 mkdir ~/workspace
 cd ~/workspace
@@ -41,14 +41,14 @@ git clone https://github.com/SolaceProducts/solace-openshift-quickstart.git
 cd solace-openshift-quickstart
 ```
 
-### Step 3: (Optional) Install the Helm client and server-side tools if you are going to use the Solace Kubernetes QuickStart to deploy the Solace VMR software
-* **(Part I)** Utilize the ‘deployHelm.sh’ script to deploy the Helm client and server-side components.  Begin by installing the Helm client tool:
+### Step 3: (Optional) Install the Helm client and server-side tools if you are going to use the Solace Kubernetes QuickStart to deploy the message broker
+* **(Part I)** Use the ‘deployHelm.sh’ script to deploy the Helm client and server-side components.  Begin by installing the Helm client tool:
 ```
 cd ~/workspace/solace-openshift-quickstart/scripts
 . ./deployHelm.sh client
 ```
 
-* After running the above script, take note of the values of the following environment variables and set their values in your .bashrc (These environment variables are used when running the helm client tool):
+* After running the above script, note the values of the following environment variables and set their values in .bashrc (These environment variables are used when running the helm client tool):
   * HELM_HOME
   * TILLER_NAMESPACE
   * PATH
@@ -59,13 +59,13 @@ cd ~/workspace/solace-openshift-quickstart/scripts
 . ./deployHelm.sh server
 ```
 
-### Step 4: Utilize scripts in the Solace OpenShift QuickStart to configure a project to host the VMR HA software
-* **(Part I)** Use the ‘prepareProject.sh’ script to create and configure an OpenShift project that meets requirements of the Solace VMR HA software:
+### Step 4: Use scripts in the Solace OpenShift QuickStart to configure a project to host the message broker HA deployment.
+* **(Part I)** Use the ‘prepareProject.sh’ script to create and configure an OpenShift project that meets requirements of the message broker HA deployment:
 ```
 cd ~/workspace/solace-openshift-quickstart/scripts
 sudo ./prepareProject.sh vmrha
 ```
-* **(Part II, Optional / AWS)** If you are using the AWS Elastic Container Registry (ECR) then you must add the ECR login credentials (as an OpenShift secret) to your VMR HA project.  This project contains a helper script to execute this step:
+* **(Part II, Optional / AWS)** If you are using the AWS Elastic Container Registry (ECR) then you must add the ECR login credentials (as an OpenShift secret) to your message broker HA deployment.  This project contains a helper script to execute this step:
 ```
 sudo su –
 aws configure
@@ -74,46 +74,46 @@ cd ~/workspace/solace-openshift-quickstart/scripts
 sudo ./addECRsecret.sh vmrha
 ```
 
-### Step 5: Download and deploy Solace VMR software (Docker image) to your Docker Registry
+### Step 5: Download and deploy the message broker (Docker image) to your Docker Registry
 
-* **(Part I)** Download a copy of the Solace VMR Software.  Follow Step 2 from the [Solace Kubernetes QuickStart](https://github.com/SolaceProducts/solace-kubernetes-quickstart) to download the VMR software (Community Edition for single-node deployments, Evaluation Edition for VMR HA deployments)
+* **(Part I)** Download a copy of the message broker.  Follow Step 2 from the [Solace Kubernetes QuickStart](https://github.com/SolaceProducts/solace-kubernetes-quickstart) to download the message broker.
 
-* **(Part II)** Deploy the VMR docker image to your Docker registry of choice
+* **(Part II)** Deploy the message broker docker image to your Docker registry of choice
 
   * **(Optional / AWS)** You can utilize the AWS Elastic Container Registry to host the VMR Docker image. For more information, refer to [Amazon Elastic Container Registry](https://aws.amazon.com/ecr/).
 
-### Step 6: (Option 1) Deploy the Solace VMR message router using the OpenShift templates included in this project
+### Step 6: (Option 1) Deploy the message broker using the OpenShift templates included in this project
 
 **Prerequisites:**
-1. Determine your VMR disk space requirements.  We recommend a minimum of 30 gigabytes of disk space.
-2. Define a strong password for the Solace VMR 'admin' user and then base64 encode the value.  This value will be specified as a parameter when processing the Solace VMR OpenShift template:
+1. Determine your message broker disk space requirements.  We recommend a minimum of 30 gigabytes of disk space.
+2. Define a strong password for the 'admin' user and then base64 encode the value.  This value will be specified as a parameter when processing the message broker OpenShift template:
 ```
 echo -n 'strong@dminPw!' | base64
 ```
 
-**Deploy the Solace VMR software:**
+**Deploy the message broker:**
 
-You can deploy the Solace VMR software in either a single-node or high-availability configuration:
+You can deploy the message broker in either a single-node or high-availability configuration:
 
-* For **Single-Node** configuration:
-  * Process the Solace 'Single Node' OpenShift template to deploy the Solace VMR in a single-node configuration.  Specify values for the DOCKER_REGISTRY_URL, VMR_IMAGE_TAG, VMR_STORAGE_SIZE, and VMR_ADMIN_PASSWORD parameters:
+* For a **Single-Node** configuration:
+  * Process the Solace 'Single Node' OpenShift template to deploy the message broker in a single-node configuration.  Specify values for the DOCKER_REGISTRY_URL, VMR_IMAGE_TAG, VMR_STORAGE_SIZE, and VMR_ADMIN_PASSWORD parameters:
 ```
 oc project vmrha
 cd  ~/workspace/solace-openshift-quickstart/templates
 oc process -f vmr_singleNode_template.yaml DEPLOYMENT_NAME=single-node-vmr DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> VMR_IMAGE_TAG=<replace with your Solace VMR docker image tag> VMR_STORAGE_SIZE=30Gi VMR_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
 ```
 
-* For **High-Availability** configuration:
-  * Process the Solace 'HA' OpenShift template to deploy the Solace VMR in a high-availability configuration.  Specify values for the DOCKER_REGISTRY_URL, VMR_IMAGE_TAG, VMR_STORAGE_SIZE, and VMR_ADMIN_PASSWORD parameters:
+* For a **High-Availability** configuration:
+  * Process the Solace 'HA' OpenShift template to deploy the message broker in a high-availability configuration.  Specify values for the DOCKER_REGISTRY_URL, VMR_IMAGE_TAG, VMR_STORAGE_SIZE, and VMR_ADMIN_PASSWORD parameters:
 ```
 oc project vmrha
 cd  ~/workspace/solace-openshift-quickstart/templates
 oc process -f vmr_ha_template.yaml DEPLOYMENT_NAME=vmr-ha DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> VMR_IMAGE_TAG=<replace with your Solace VMR docker image tag> VMR_STORAGE_SIZE=30Gi VMR_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
 ```    
 
-### Step 6: (Option 2) Deploy the Solace VMR software using the Solace Kubernetes QuickStart
+### Step 6: (Option 2) Deploy the message broker using the Solace Kubernetes QuickStart
 
-If you require more flexibility in terms of Solace VMR deployment options (compared to those offered by the OpenShift templates provided by this project) then utilize the [Solace Kubernetes QuickStart](https://github.com/SolaceProducts/solace-kubernetes-quickstart) to deploy the Solace VMR software:
+If you require more flexibility in terms of message broker deployment options (compared to those offered by the OpenShift templates provided by this project) then use the [Solace Kubernetes QuickStart](https://github.com/SolaceProducts/solace-kubernetes-quickstart) to deploy the message broker:
 
 * Retrieve the Solace Kubernetes QuickStart from GitHub:
 
@@ -131,17 +131,17 @@ cd ~/workspace/solace-kubernetes-quickstart/solace
 vi values.yaml
 helm install . -f values.yaml
 ```
-* The following table lists example values for the ‘values.yaml’ file to deploy Solace VMR in a Highly-Available configuration using persistent storage.
+* The following table lists example values for the ‘values.yaml’ file to deploy a message broker in a Highly-Available configuration using persistent storage.
 
   |Variable                |Value                |Description                |
   |------------------------|---------------------|---------------------------|
-  |cloudProvider           |aws                  |Set to 'aws' when deploying Solace VMR in an OpenShift / AWS environment|
-  |solace / redundancy     |true                 |Set to ‘true’ for a Solace VMR HA configuration|
+  |cloudProvider           |aws                  |Set to 'aws' when deploying a message broker in an OpenShift / AWS environment|
+  |solace / redundancy     |true                 |Set to ‘true’ for a message broker HA configuration|
   |image / repository      |ECR repository URI   |Retrieve the repository URI from the AWS ECR management page  |
   |image / tag             |VMR docker image tag |Select your repository in the AWS ECR management page.  This page will list all available Docker images in the repository and their associated Image Tag|
-  |storage / persistent    |true                 |Set to ‘true’ to configure persistent disks to store Solace VMR data|
+  |storage / persistent    |true                 |Set to ‘true’ to configure persistent disks to store message broker data|
   |storage / type          |standard             |Set to ‘standard’ to use lower-cost / standard performance disk types (AWS GP2)|
-  |storage / size          |30Gi                 |Set to the minimum number of gigabytes for VMR data storage.  Refer to Solace VMR documentation for further details.|
+  |storage / size          |30Gi                 |Set to the minimum number of gigabytes for VMR data storage.  Refer to message broker documentation for further details.|
 
 ## Validating the Deployment
 
@@ -235,39 +235,39 @@ Note, the **'LoadBalancer Ingress'** value listed in the service description abo
 
 ### Viewing bringup logs
 
-It is possible to watch the VMR come up via logs in the OpenShift UI log stack for individual VMR pods.  You can access the log stack for individual VMR pods from the OpenShift UI, by navigating to:
+It is possible to watch the message broker come up via logs in the OpenShift UI log stack for individual message broker pods.  You can access the log stack for individual message broker pods from the OpenShift UI, by navigating to:
 
 * **OpenShift UI > (VMR Project) > Applications > Stateful Sets > ((name)-solace) > Pods > ((name)-solace-(N)) > Logs**
 
 ![alt text](/resources/VMR-Pod-Log-Stack.png "VMR Pod Log Stack")
 
-## Gaining admin and ssh access to the VMR
+## Gaining admin and ssh access to the message broker
 
-The external management IP will be the Public IP associated with Load Balancer generated by the Solace VMR OpenShift template.  Access will go through the load balancer service as described in the introduction and will always point to the active VMR. The default port is 22 for CLI and 8080 for SEMP/SolAdmin.
+The external management IP will be the Public IP associated with the load balancer generated by the message broker OpenShift template.  Access will go through the load balancer service as described in the introduction and will always point to the active message broker. The default port is 22 for CLI and 8080 for SEMP/SolAdmin.
 
-If you deployed OpenShift in AWS then the Solace OpenShift QuickStart will have created an EC2 Load Balancer to front the Solace VMR / OpenShift service.  The Load Balancer public DNS name can be found in the AWS EC2 console under the 'Load Balancers' section.
+If you deployed OpenShift in AWS, then the Solace OpenShift QuickStart will have created an EC2 Load Balancer to front the message broker / OpenShift service.  The Load Balancer public DNS name can be found in the AWS EC2 console under the 'Load Balancers' section.
 
-You can gain access to the Solace VMR CLI and container shell for individual VMR instances from the OpenShift UI.  A web-based Terminal emulator is available from the OpenShift UI.  Navigate to an invidual Solace VMR Pod using the OpenShift UI:
+You can gain access to the Solace CLI and container shell for individual message broker instances from the OpenShift UI.  A web-based terminal emulator is available from the OpenShift UI.  Navigate to an individual message broker Pod using the OpenShift UI:
 
 * **OpenShift UI > (VMR Project) > Applications > Stateful Sets > ((name)-solace) > Pods > ((name)-solace-(N)) > Terminal**
 
 Where (N) above is the ordinal of the Solace VMR:
-  * 0 - Primary VMR
-  * 1 - Backup VMR
-  * 2 - Monitor VMR
+  * 0 - Primary message broker
+  * 1 - Backup message broker
+  * 2 - Monitor message broker
 
-Once you have launched the Terminal emulator to the Solace VMR pod you may access the Solace VMR CLI by executing the following command:
+Once you have launched the terminal emulator to the message broker pod you may access the Solace CLI by executing the following command:
 ```
 /usr/sw/loads/currentload/bin/cli -A
 ```
 
 ![alt text](/resources/VMR-Primary-Pod-Terminal-VMR-CLI.png "VMR CLI via OpenShift UI Terminal emulator")
 
-See the [Solace Kubernetes Quickstart README](https://github.com/SolaceProducts/solace-kubernetes-quickstart/tree/master#gaining-admin-access-to-the-vmr ) for more details including admin and ssh access to the individual VMRs.
+See the [Solace Kubernetes Quickstart README](https://github.com/SolaceProducts/solace-kubernetes-quickstart/tree/master#gaining-admin-access-to-the-vmr ) for more details including admin and ssh access to the individual message brokers.
 
-## Testing Data access to the VMR
+## Testing data access to the message broker
 
-To test data traffic though the newly created VMR instance, visit the Solace developer portal and select your preferred programming language to [send and receive messages](http://dev.solace.com/get-started/send-receive-messages/ ). Under each language there is a Publish/Subscribe tutorial that will help you get started.
+To test data traffic though the newly created message broker instance, visit the Solace Developer Portal and select your preferred programming language to [send and receive messages](http://dev.solace.com/get-started/send-receive-messages/ ). Under each language there is a Publish/Subscribe tutorial that will help you get started.
 
 Note: the Host will be the Public IP. It may be necessary to [open up external access to a port](https://github.com/SolaceProducts/solace-kubernetes-quickstart/tree/master#upgradingmodifying-the-vmr-cluster) used by the particular messaging API if it is not already exposed.
 
