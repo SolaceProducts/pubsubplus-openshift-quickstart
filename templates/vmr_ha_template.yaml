@@ -452,6 +452,9 @@ objects:
   spec:
     serviceName: "${DEPLOYMENT_NAME}-solace-discovery"
     replicas: 3
+    podManagementPolicy: Parallel
+    updateStrategy: 
+      type: RollingUpdate
     template:
       metadata:
         labels:
@@ -480,7 +483,7 @@ objects:
             exec:
               command:
               - /mnt/disks/solace/readiness_check.sh
-              - "6"
+              - "7"
           securityContext:
             privileged: true
             capabilities:
