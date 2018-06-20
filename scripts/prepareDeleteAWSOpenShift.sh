@@ -20,10 +20,10 @@
 #  - Release subscriptions
 
 # First check all required env variables have been defined
-if [[ -z "$OPENSHIFT_STACKNAME" || -z "$AWS_ACCESS_KEY_ID" || -z "$AWS_SECRET_ACCESS_KEY" ]]; then
+if [[ -z "$OPENSHIFTSTACK_STACKNAME" || -z "$AWS_ACCESS_KEY_ID" || -z "$AWS_SECRET_ACCESS_KEY" ]]; then
   echo "Must provide all following variables in environment. Example (substitute your own parameters!):
 
-export OPENSHIFT_STACKNAME=XXXXXXXXXXXXXXXXXXXXX
+export OPENSHIFTSTACK_STACKNAME=XXXXXXXXXXXXXXXXXXXXX
 export AWS_ACCESS_KEY_ID=XXXXXXXXXXXXXXXXXXXXX
 export AWS_SECRET_ACCESS_KEY=XXXXXXXXXXXXXXXXXXXXX
   " 1>&2
@@ -33,10 +33,10 @@ REGION=`curl -s http://instance-data/latest/meta-data/placement/availability-zon
 
 # Remove AWS IAM policies from ‘Setup Role’ (IAM) used by the RedHat QuickStart to deploy OpenShift to AWS.
 echo "Releasing policies from AWS ('Setup') IAM Role"
-AWS_IAM_ROLE_NAME=`aws cloudformation describe-stack-resources --region $REGION --stack-name $OPENSHIFT_STACKNAME --logical-resource-id SetupRole --query StackResources[0].PhysicalResourceId --output text`
+AWS_IAM_ROLE_NAME=`aws cloudformation describe-stack-resources --region $REGION --stack-name $OPENSHIFTSTACK_STACKNAME --logical-resource-id SetupRole --query StackResources[0].PhysicalResourceId --output text`
 if [[ -z "$AWS_IAM_ROLE_NAME" ]]; then
   echo "Couldn't identify the resource ID of the AWS ('Setup') IAM Role. Verify the required env variables are exported and valid:
-OPENSHIFT_STACKNAME, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY" 1>&2
+OPENSHIFTSTACK_STACKNAME, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY" 1>&2
   exit 1
 fi
 declare -a POLICIES=("AmazonEC2FullAccess" "AWSLambdaFullAccess" "IAMFullAccess" "AmazonS3FullAccess" "AmazonVPCFullAccess" "AWSKeyManagementServicePowerUser" "AmazonRoute53FullAccess")
@@ -49,10 +49,10 @@ echo
 
 # Unregister subscriptions
 echo "Releasing RedHat OpenShift subscriptions"
-OPENSHIFT_INSTANCES_LIST=`aws ec2 describe-instances --region $REGION --filters "Name=tag:aws:cloudformation:stack-name,Values=$OPENSHIFT_STACKNAME" --query Reservations[].Instances[].PrivateIpAddress | awk -F'"' '{print $2}' | paste -sd " " -`
+OPENSHIFT_INSTANCES_LIST=`aws ec2 describe-instances --region $REGION --filters "Name=tag:aws:cloudformation:stack-name,Values=$OPENSHIFTSTACK_STACKNAME" --query Reservations[].Instances[].PrivateIpAddress | awk -F'"' '{print $2}' | paste -sd " " -`
 if [[ -z "$OPENSHIFT_INSTANCES_LIST" ]]; then
   echo "Couldn't identify OpenShift instances list. Verify the required env variables are exported and valid:
-OPENSHIFT_STACKNAME, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY" 1>&2
+OPENSHIFTSTACK_STACKNAME, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY" 1>&2
   exit 1
 fi
 for node in $OPENSHIFT_INSTANCES_LIST

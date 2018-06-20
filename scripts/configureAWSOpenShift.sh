@@ -20,13 +20,17 @@
 #  - Re-configure OpenShift Masters and OpenShift Nodes to make OpenShift aware of AWS deployment specifics
 
 # First check all required env variables have been defined
-if [[ -z "$OPENSHIFT_STACKNAME" || -z "$VPC_STACKNAME" || -z "$AWS_ACCESS_KEY_ID" || -z "$AWS_SECRET_ACCESS_KEY" ]]; then
+if [[ -z "$OPENSHIFTSTACK_STACKNAME" || -z "$VPC_STACKNAME" || -z "$AWS_ACCESS_KEY_ID" || -z "$AWS_SECRET_ACCESS_KEY" ]]; then
   echo "Must provide all following variables in environment. Example (substitute your own parameters!):
 
-export OPENSHIFT_STACKNAME=XXXXXXXXXXXXXXXXXXXXX
+export OPENSHIFTSTACK_STACKNAME=XXXXXXXXXXXXXXXXXXXXX
 export VPC_STACKNAME=XXXXXXXXXXXXXXXXXXXXX
 export AWS_ACCESS_KEY_ID=XXXXXXXXXXXXXXXXXXXXX
 export AWS_SECRET_ACCESS_KEY=XXXXXXXXXXXXXXXXXXXXX
+
+You can get the stack names e.g.: from the CloudFormation page of the AWS services console,
+see the 'Overview' tab of the nested stack which includes your VPC or OpenShift deployment.
+You can get the access keys from the AWS services console IAM > Users > Security credentials.
   " 1>&2
   exit 1
 fi
@@ -36,10 +40,10 @@ REGION=`curl -s http://instance-data/latest/meta-data/placement/availability-zon
 # adding the required AWS IAM policies to the ‘Setup Role’ (IAM) used by the RedHat QuickStart to deploy OpenShift to AWS.
 # This IAM Role is also used by OpenShift to authenticate / authorize with AWS when OpenShift.
 echo "Reconfiguring AWS ('Setup') IAM Role"
-AWS_IAM_ROLE_NAME=`aws cloudformation describe-stack-resources --region $REGION --stack-name $OPENSHIFT_STACKNAME --logical-resource-id SetupRole --query StackResources[0].PhysicalResourceId --output text`
+AWS_IAM_ROLE_NAME=`aws cloudformation describe-stack-resources --region $REGION --stack-name $OPENSHIFTSTACK_STACKNAME --logical-resource-id SetupRole --query StackResources[0].PhysicalResourceId --output text`
 if [[ -z "$AWS_IAM_ROLE_NAME" ]]; then
   echo "Couldn't identify the resource ID of the AWS ('Setup') IAM Role. Verify the required env variables are exported and valid:
-OPENSHIFT_STACKNAME, VPC_STACKNAME, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY" 1>&2
+OPENSHIFTSTACK_STACKNAME, VPC_STACKNAME, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY" 1>&2
   exit 1
 fi
 declare -a POLICIES=("AmazonEC2FullAccess" "AWSLambdaFullAccess" "IAMFullAccess" "AmazonS3FullAccess" "AmazonVPCFullAccess" "AWSKeyManagementServicePowerUser" "AmazonRoute53FullAccess")
@@ -54,11 +58,11 @@ echo
 echo "Tagging public subnets"
 # get public subnets of the VPC
 SUBNETS=`aws ec2 describe-subnets --region $REGION --filters "Name=tag:aws:cloudformation:stack-name,Values=$VPC_STACKNAME" --filters "Name=tag:Network,Values=Public" --query Subnets[].SubnetId --output text`
-KUBE_CLUSTER_TAGKEY=`aws ec2 describe-tags --region $REGION --filters "Name=tag:aws:cloudformation:stack-name,Values=$OPENSHIFT_STACKNAME" --filters Name=tag-key,Values=*kubernetes.io/cluster* --query 'Tags[0].Key' --output text`
-KUBE_CLUSTER_TAGVALUE=`aws ec2 describe-tags --region $REGION --filters "Name=tag:aws:cloudformation:stack-name,Values=$OPENSHIFT_STACKNAME" --filters Name=tag-key,Values=*kubernetes.io/cluster* --query 'Tags[0].Value' --output text`
+KUBE_CLUSTER_TAGKEY=`aws ec2 describe-tags --region $REGION --filters "Name=tag:aws:cloudformation:stack-name,Values=$OPENSHIFTSTACK_STACKNAME" --filters Name=tag-key,Values=*kubernetes.io/cluster* --query 'Tags[0].Key' --output text`
+KUBE_CLUSTER_TAGVALUE=`aws ec2 describe-tags --region $REGION --filters "Name=tag:aws:cloudformation:stack-name,Values=$OPENSHIFTSTACK_STACKNAME" --filters Name=tag-key,Values=*kubernetes.io/cluster* --query 'Tags[0].Value' --output text`
 if [[ -z "$SUBNETS" || -z "$KUBE_CLUSTER_TAGKEY" || -z "$KUBE_CLUSTER_TAGVALUE" ]]; then
   echo "Couldn't identify subnets or tag names. Verify the required env variables are exported and valid:
-OPENSHIFT_STACKNAME, VPC_STACKNAME, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY" 1>&2
+OPENSHIFTSTACK_STACKNAME, VPC_STACKNAME, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY" 1>&2
   exit 1
 fi
 # create the tags
@@ -68,10 +72,10 @@ echo ""
 
 # Update OpenShift Nodes (EC2 instances)
 echo "Updating OpenShift Nodes (EC2 instances)"
-OPENSHIFT_NODES_LIST=`aws ec2 describe-instances --region $REGION --filters "Name=tag:aws:cloudformation:stack-name,Values=$OPENSHIFT_STACKNAME" --filters Name="tag:Name",Values="*nodes*" --query Reservations[].Instances[].PrivateIpAddress | awk -F'"' '{print $2}' | paste -sd " " -`
+OPENSHIFT_NODES_LIST=`aws ec2 describe-instances --region $REGION --filters "Name=tag:aws:cloudformation:stack-name,Values=$OPENSHIFTSTACK_STACKNAME" --filters Name="tag:Name",Values="*nodes*" --query Reservations[].Instances[].PrivateIpAddress | awk -F'"' '{print $2}' | paste -sd " " -`
 if [[ -z "$OPENSHIFT_NODES_LIST" ]]; then
   echo "Couldn't identify OpenShift nodes list. Verify the required env variables are exported and valid:
-OPENSHIFT_STACKNAME, VPC_STACKNAME, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY" 1>&2
+OPENSHIFTSTACK_STACKNAME, VPC_STACKNAME, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY" 1>&2
   exit 1
 fi
 for node in $OPENSHIFT_NODES_LIST
@@ -87,10 +91,10 @@ echo
 
 # Update OpenShift Masters (EC2 instances)
 echo "Updating OpenShift Masters (EC2 instances)"
-OPENSHIFT_MASTERS_LIST=`aws ec2 describe-instances --region $REGION --filters "Name=tag:aws:cloudformation:stack-name,Values=$OPENSHIFT_STACKNAME" --filters Name="tag:Name",Values="*master*" --query Reservations[].Instances[].PrivateIpAddress | awk -F'"' '{print $2}' | paste -sd " " -`
+OPENSHIFT_MASTERS_LIST=`aws ec2 describe-instances --region $REGION --filters "Name=tag:aws:cloudformation:stack-name,Values=$OPENSHIFTSTACK_STACKNAME" --filters Name="tag:Name",Values="*master*" --query Reservations[].Instances[].PrivateIpAddress | awk -F'"' '{print $2}' | paste -sd " " -`
 if [[ -z "$OPENSHIFT_MASTERS_LIST" ]]; then
   echo "Couldn't identify OpenShift masters list. Verify the required env variables are exported and valid:
-OPENSHIFT_STACKNAME, VPC_STACKNAME, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY" 1>&2
+OPENSHIFTSTACK_STACKNAME, VPC_STACKNAME, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY" 1>&2
   exit 1
 fi
 for node in $OPENSHIFT_MASTERS_LIST
