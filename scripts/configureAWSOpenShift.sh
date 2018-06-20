@@ -29,7 +29,7 @@ export AWS_ACCESS_KEY_ID=XXXXXXXXXXXXXXXXXXXXX
 export AWS_SECRET_ACCESS_KEY=XXXXXXXXXXXXXXXXXXXXX
 
 You can get the stack names e.g.: from the CloudFormation page of the AWS services console,
-see the 'Overview' tab of the nested stack which includes your VPC or OpenShift deployment.
+see the 'Overview' tab of the *nested* stack which includes your VPC or OpenShiftStack deployment.
 You can get the access keys from the AWS services console IAM > Users > Security credentials.
   " 1>&2
   exit 1
