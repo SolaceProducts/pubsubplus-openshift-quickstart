@@ -38,7 +38,8 @@ Steps to deploy the message broker:
   
   * **IAM policies required**
   
-  This will create a number of EC2 instances: an `ansible-configserver` and three of each `openshift-etcd`, `openshift-master` and `openshift-nodes` servers. Note that only the `ansible-configserver` is exposed in a public subnet. To access the other servers that are in a private subnet, first [SSH into the `ansible-configserver` instance](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html ) then from that instance SSH into the target server using it's private IP. Cloudformation has setup passwordless SSH login to the other servers for the root user so you can simply use `sudo ssh <privateIP>`.
+  This will 10 EC2 instances: an `ansible-configserver` and three of each `openshift-etcd`, `openshift-master` and `openshift-nodes` servers. <br>
+  Note that only the `ansible-configserver` is exposed in a public subnet. To access the other servers that are in a private subnet, first [SSH into the `ansible-configserver` instance](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html ) then from that instance SSH into the target server using it's private IP. Cloudformation has setup passwordless SSH login to the other servers for the root user so you can simply use ```sudo ssh <privateIP>```.
 
 * (Part II) Once you have deployed OpenShift using the AWS QuickStart you will have to perform additional steps to re-configure OpenShift to integrate fully with AWS.  For full details, please refer to the RedHat OpenShift documentation for configuring OpenShift for AWS:
 
