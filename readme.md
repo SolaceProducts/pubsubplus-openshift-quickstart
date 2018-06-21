@@ -38,27 +38,27 @@ Steps to deploy the message broker:
   
   * **IAM policies required**
   
-  This will 10 EC2 instances: an `ansible-configserver` and three of each `openshift-etcd`, `openshift-master` and `openshift-nodes` servers. <br>
-  Note that only the `ansible-configserver` is exposed in a public subnet. To access the other servers that are in a private subnet, first [SSH into the `ansible-configserver` instance](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html ) then from that instance SSH into the target server using it's private IP. Cloudformation has setup passwordless SSH login to the other servers for the root user so you can simply use ```sudo ssh <privateIP>```.
+  This will 10 EC2 instances: an *ansible-configserver* and three of each *openshift-etcd*, *openshift-master* and *openshift-nodes* servers. <br>
+  Note that only the *ansible-configserver* is exposed in a public subnet. To access the other servers that are in a private subnet, first [SSH into the `ansible-configserver` instance](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html ) then from that instance SSH into the target server using it's private IP. Cloudformation has setup passwordless SSH login to the other servers for the root user so you can simply use ```sudo ssh <privateIP>```.
 
 * (Part II) Once you have deployed OpenShift using the AWS QuickStart you will have to perform additional steps to re-configure OpenShift to integrate fully with AWS.  For full details, please refer to the RedHat OpenShift documentation for configuring OpenShift for AWS:
 
   * [OpenShift > Configuring for AWS](https://docs.openshift.com/container-platform/3.7/install_config/configuring_aws.html)
   
-  This quick start provides a script to automate the execution of the required steps:
+  To help with that this quick start provides a script to automate the execution of the required steps:
   
    * Add the required AWS IAM policies to the ‘Setup Role’ (IAM) used by the RedHat QuickStart to deploy OpenShift to AWS
    * Tag public subnets so when creating a public service suitable public subnets can be found
    * Re-configure OpenShift Masters and OpenShift Nodes to make OpenShift aware of AWS deployment specifics
    
-  Run the script on the `ansible-configserver`, so first [ssh into this , then follow:
+  SSH into the *ansible-configserver* then follow:
   
 ```
 git clone https://github.com/SolaceProducts/solace-openshift-quickstart.git
 cd solace-openshift-quickstart/scripts
 # substitute your own parameters
 # You can get the stack names e.g.: from the CloudFormation page of the AWS services console,
-# see the 'Overview' tab of the *nested* stack which includes your VPC or OpenShiftStack deployment.
+# see the 'Overview' tab of the *nested* VPC or OpenShiftStack substacks.
 # You can get the access keys from the AWS services console IAM > Users > Security credentials.
 export OPENSHIFTSTACK_STACKNAME=XXXXXXXXXXXXXXXXXXXXX
 export VPC_STACKNAME=XXXXXXXXXXXXXXXXXXXXX
@@ -66,7 +66,8 @@ export AWS_ACCESS_KEY_ID=XXXXXXXXXXXXXXXXXXXXX
 export AWS_SECRET_ACCESS_KEY=XXXXXXXXXXXXXXXXXXXXX
 ./configureAWSOpenShift.sh
 ```
-   
+
+  The script will end with listing the private IP of the *openshift-master* servers, one of which you will need to SSH into for Step 3. As described above you can use ```sudo ssh <privateIP>```.
 
 
 ### Step 2: Retrieve the Solace OpenShift QuickStart from GitHub
