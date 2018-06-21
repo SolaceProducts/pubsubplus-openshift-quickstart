@@ -1,4 +1,4 @@
-# Deploying a Solace PubSub+ Software Message Broker HA Group onto the Red Hat OpenShift Container Platform 3.7 or 3.9
+# Deploying a Solace PubSub+ Software Message Broker HA Group onto Red Hat OpenShift Container Platform 3.7 or 3.9
 
 ## Purpose of this Repository
 
@@ -8,7 +8,7 @@ We utilize the [RedHat OpenShift on AWS QuickStart](https://aws.amazon.com/quick
 
 This repository expands on the [Solace Kubernetes Quickstart](https://github.com/SolaceProducts/solace-kubernetes-quickstart) to provide an example of how to deploy Solace PubSub+ software message brokers in an HA configuration on the OpenShift Container Platform running in AWS.
 
-**TODO: add description to set up non-HA for developers** 
+**TODO: add hints how to set up non-HA for developers** 
 
 ![alt text](/resources/network_diagram.jpg "Network Diagram")
 
@@ -18,25 +18,29 @@ The Solace PubSub+ software message broker meets the needs of big data, cloud mi
 
 ## How to deploy a message broker onto OpenShift / AWS
 
-The following steps describe how to deploy a message broker onto an OpenShift environment. Optional steps are included if you are deploying Red Hat OpenShift Container Platform onto Amazon AWS infrastructure and if you use AWS Elastic Container Registry to host the Solace message broker Docker image, these are marked as (Optional / AWS).
+The following steps describe how to deploy a message broker onto an OpenShift environment. Optional steps are provided about setting up a Red Hat OpenShift Container Platform on Amazon AWS infrastructure and if you use AWS Elastic Container Registry to host the Solace message broker Docker image - these are marked as (Optional / AWS).
 
 There are also two options for deploying a message broker onto your OpenShift deployment.
 * (Option 1): Execute the OpenShift templates included in this project for installing the message broker in a limited number of configurations 
-* (Option 2): Use the Solace Kubernetes QuickStart to deploy the message broker onto your OpenShift environment.  The Solace Kubernetes QuickStart uses Helm to automate the process of message broker deployment through a wide range of configuration options.
+* (Option 2): Use the Solace Kubernetes QuickStart to deploy the message broker onto your OpenShift environment.  The Solace Kubernetes QuickStart uses Helm to automate the process of message broker deployment through a wide range of configuration options and provides in-service upgrade of the message broker.
 
 Steps to deploy the message broker:
 
-* **Note:** You may skip Step 1 if you already have your own OpenShift environment deployed.
+**Note:** You may skip Step 1 if you already have your own OpenShift environment deployed.
 
-### Step 1: (Optional / AWS) Deploy OpenShift onto AWS using the RedHat OpenShift AWS QuickStart Project
+### Step 1: (Optional / AWS) Deploy OpenShift Container Platform onto AWS using the RedHat OpenShift AWS QuickStart Project
 
 * (Part I) Log into the AWS Web Console and run the [OpenShift AWS QuickStart project](https://aws.amazon.com/quickstart/architecture/openshift/).  We recommend you deploy OpenShift across 3 AWS Availability Zones for maximum redundancy.  Please refer to the RedHat OpenShift AWS QuickStart guide and supporting documentation:
 
   * [Deploying and Managing OpenShift Container Platform 3.6 on Amazon Web Services](https://access.redhat.com/documentation/en-us/reference_architectures/2017/html-single/deploying_and_managing_openshift_container_platform_3.6_on_amazon_web_services/index)
+  
+  * ** Important:** As described in above documentation, this deployment requires a Red Hat account with a valid Red Hat subscription to OpenShift and will consume 10 OpenShift entitlements in a maximum redundancy configuration. When no longer needed ensure to follow the steps in the "Deleting the OpenShift Container Platform deployment" section of this guide to free up the entitlements.
 
-* (Part II) Once you have deployed OpenShift using the AWS QuickStart you will have to perform additional steps to re-configure OpenShift to integrate fully with AWS.  Please refer to the RedHat OpenShift documentation for configuring OpenShift for AWS:
+* (Part II) Once you have deployed OpenShift using the AWS QuickStart you will have to perform additional steps to re-configure OpenShift to integrate fully with AWS.  For full details please refer to the RedHat OpenShift documentation for configuring OpenShift for AWS:
 
   * [OpenShift > Configuring for AWS](https://docs.openshift.com/container-platform/3.6/install_config/configuring_aws.html)
+  
+  * The following script can be used to execute all the required steps
 
 ### Step 2: Retrieve the Solace OpenShift QuickStart from GitHub
 * The Solace OpenShift QuickStart project contains useful scripts to help you prepare an OpenShift project for message broker deployment.  You should retrieve the project on a host having the OpenShift client tools and a host that can reach your OpenShift cluster nodes.
@@ -283,6 +287,9 @@ Note: the Host will be the Public IP. It may be necessary to [open up external a
 
 ## Deleting a deployment
 
+### Deleting the Solace message broker deployment
+
+### Deleting the OpenShift Container Platform deployment
 
 ## Contributing
 
