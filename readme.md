@@ -21,8 +21,8 @@ The Solace PubSub+ software message broker meets the needs of big data, cloud mi
 The following steps describe how to deploy a message broker onto an OpenShift environment. Optional steps are provided about setting up a Red Hat OpenShift Container Platform on Amazon AWS infrastructure and if you use AWS Elastic Container Registry to host the Solace message broker Docker image - these are marked as (Optional / AWS).
 
 There are also two options for deploying a message broker onto your OpenShift deployment.
-* (Deployment option 1): Execute the OpenShift templates included in this project for installing the message broker in a limited number of configurations 
-* (Deployment option 2): Use the Solace Kubernetes QuickStart to deploy the message broker onto your OpenShift environment.  The Solace Kubernetes QuickStart uses Helm to automate the process of message broker deployment through a wide range of configuration options and provides in-service upgrade of the message broker.
+* (Deployment option 1): Use the Solace Kubernetes QuickStart to deploy the message broker onto your OpenShift environment. The Solace Kubernetes QuickStart uses Helm to automate the process of message broker deployment through a wide range of configuration options and provides in-service upgrade of the message broker.
+* (Deployment option 2): Execute the OpenShift templates included in this project for installing the message broker in a limited number of configurations 
 
 Steps to deploy the message broker:
 
@@ -51,7 +51,7 @@ Steps to deploy the message broker:
    * Tag public subnets so when creating a public service suitable public subnets can be found
    * Re-configure OpenShift Masters and OpenShift Nodes to make OpenShift aware of AWS deployment specifics
    
-  SSH into the *ansible-configserver* then follow the commands:
+  SSH into the *ansible-configserver* then follow the commands. The script will end with listing the private IP of the *openshift-master* servers, one of which you will need to SSH into for the next step. As described in (Part I) you can use `sudo ssh <privateIP>` for that.
   
 ```
 git clone https://github.com/SolaceProducts/solace-openshift-quickstart.git
@@ -65,23 +65,12 @@ export VPC_STACKNAME=XXXXXXXXXXXXXXXXXXXXX
 export AWS_ACCESS_KEY_ID=XXXXXXXXXXXXXXXXXXXXX
 export AWS_SECRET_ACCESS_KEY=XXXXXXXXXXXXXXXXXXXXX
 ./configureAWSOpenShift.sh
-  ```
+```
 
-  The script will end with listing the private IP of the *openshift-master* servers, one of which you will need to SSH into for the next step. As described in (Part I) you can use `sudo ssh <privateIP>` for that.
-  
-### Step 2: Download and deploy the message broker (Docker image) to your Docker Registry
+### Step 2: Prepare for the deployment
 
-* **(Part I)** Download a copy of the message broker.  Follow Step 2 from the [Solace Kubernetes QuickStart](https://github.com/SolaceProducts/solace-kubernetes-quickstart) to download the message broker.
+* The Solace OpenShift QuickStart project contains useful scripts to help you prepare an OpenShift project for message broker deployment. You should retrieve the project on a host having the OpenShift client tools and a host that can reach your OpenShift cluster nodes - conveniently, this can be one of the *openshift-master* servers. SSH into the selected host, then
 
-* **(Part II)** Deploy the message broker docker image to your Docker registry of choice
-
-  * **(Optional / AWS)** You can utilize the AWS Elastic Container Registry to host the VMR Docker image. For more information, refer to [Amazon Elastic Container Registry](https://aws.amazon.com/ecr/).
-
-
-
-### Step 2: Prepare deployment on the master node
-
-* The Solace OpenShift QuickStart project contains useful scripts to help you prepare an OpenShift project for message broker deployment.  You should retrieve the project on a host having the OpenShift client tools and a host that can reach your OpenShift cluster nodes.
 ```
 mkdir ~/workspace
 cd ~/workspace
@@ -89,19 +78,22 @@ git clone https://github.com/SolaceProducts/solace-openshift-quickstart.git
 cd solace-openshift-quickstart
 ```
 
-### Step 3: (Optional) Install the Helm client and server-side tools if you are going to use the Solace Kubernetes QuickStart to deploy the message broker
+### Step 3: (Optional: Deployment option 1 only) Install the Helm client and server-side tools if you are going to use the Solace Kubernetes QuickStart to deploy the message broker
+
 * **(Part I)** Use the ‘deployHelm.sh’ script to deploy the Helm client and server-side components.  Begin by installing the Helm client tool:
+
 ```
 cd ~/workspace/solace-openshift-quickstart/scripts
 . ./deployHelm.sh client
 ```
 
-* After running the above script, note the values of the following environment variables and set their values in .bashrc (These environment variables are used when running the helm client tool):
+* After running the above script, note the values of the following environment variables and set their values in ~/.bashrc (These environment variables are used when running the helm client tool):
   * HELM_HOME
   * TILLER_NAMESPACE
   * PATH
 
 * **(Part II)** Install the Helm server-side ‘Tiller’ component.  Note, you will be prompted to log into OpenShift if you have not already done so.
+
 ```
 cd ~/workspace/solace-openshift-quickstart/scripts
 . ./deployHelm.sh server
@@ -121,6 +113,16 @@ exit
 cd ~/workspace/solace-openshift-quickstart/scripts
 sudo ./addECRsecret.sh vmrha
 ```
+
+### Step 2: Download and deploy the message broker (Docker image) to your Docker Registry
+
+* **(Part I)** Download a copy of the message broker.  Follow Step 2 from the [Solace Kubernetes QuickStart](https://github.com/SolaceProducts/solace-kubernetes-quickstart) to download the message broker.
+
+* **(Part II)** Deploy the message broker docker image to your Docker registry of choice
+
+  * **(Optional / AWS)** You can utilize the AWS Elastic Container Registry to host the VMR Docker image. For more information, refer to [Amazon Elastic Container Registry](https://aws.amazon.com/ecr/).
+
+
 
 ### Step 6: (Option 1) Deploy the message broker using the OpenShift templates included in this project
 
