@@ -32,15 +32,27 @@ Steps to deploy the message broker:
 
 * (Part I) Log into the AWS Web Console and run the [OpenShift AWS QuickStart project](https://aws.amazon.com/quickstart/architecture/openshift/).  We recommend you deploy OpenShift across 3 AWS Availability Zones for maximum redundancy.  Please refer to the RedHat OpenShift AWS QuickStart guide and supporting documentation:
 
-  * [Deploying and Managing OpenShift Container Platform 3.6 on Amazon Web Services](https://access.redhat.com/documentation/en-us/reference_architectures/2017/html-single/deploying_and_managing_openshift_container_platform_3.6_on_amazon_web_services/index)
+  * [Deploying and Managing OpenShift Container Platform 3.7 on Amazon Web Services](https://access.redhat.com/documentation/en-us/reference_architectures/2017/html-single/deploying_and_managing_openshift_container_platform_3.7_on_amazon_web_services/index)
   
   **Important:** As described in above documentation, this deployment requires a Red Hat account with a valid Red Hat subscription to OpenShift and will consume 10 OpenShift entitlements in a maximum redundancy configuration. When no longer needed ensure to follow the steps in the [Deleting the OpenShift Container Platform deployment](#deleting-the-openshift-container-platform-deployment ) section of this guide to free up the entitlements.
+  
+  * **IAM policies required**
 
 * (Part II) Once you have deployed OpenShift using the AWS QuickStart you will have to perform additional steps to re-configure OpenShift to integrate fully with AWS.  For full details please refer to the RedHat OpenShift documentation for configuring OpenShift for AWS:
 
-  * [OpenShift > Configuring for AWS](https://docs.openshift.com/container-platform/3.6/install_config/configuring_aws.html)
+  * [OpenShift > Configuring for AWS](https://docs.openshift.com/container-platform/3.7/install_config/configuring_aws.html)
   
-  * The following script can be used to execute all the required steps
+  This quick start provides a script to automate the execution of the required steps:
+  
+   * Add the required AWS IAM policies to the ‘Setup Role’ (IAM) used by the RedHat QuickStart to deploy OpenShift to AWS
+   
+   * Tag public subnets so when creating a public service suitable public subnets can be found
+   
+   * Re-configure OpenShift Masters and OpenShift Nodes to make OpenShift aware of AWS deployment specifics
+   
+  To run the script, [ssh into the `ansible-configserver` EC2 instance](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html ).
+   
+
 
 ### Step 2: Retrieve the Solace OpenShift QuickStart from GitHub
 * The Solace OpenShift QuickStart project contains useful scripts to help you prepare an OpenShift project for message broker deployment.  You should retrieve the project on a host having the OpenShift client tools and a host that can reach your OpenShift cluster nodes.
