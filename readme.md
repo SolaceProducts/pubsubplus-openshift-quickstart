@@ -53,7 +53,7 @@ Steps to deploy the message broker:
    
   SSH into the *ansible-configserver* then follow the commands:
   
-  ```
+```
 git clone https://github.com/SolaceProducts/solace-openshift-quickstart.git
 cd solace-openshift-quickstart/scripts
 # substitute your own parameters
