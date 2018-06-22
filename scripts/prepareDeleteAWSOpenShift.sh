@@ -15,6 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#################################################
+# Run this script from the ansible-configserver #
+#################################################
+
 # The purpose of this script is to cleanup before deleting an AWS OpenShift environment to avoid delete failed or leaking of resources:
 #  - Release AWS IAM roles
 #  - Release subscriptions

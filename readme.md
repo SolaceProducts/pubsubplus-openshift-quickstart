@@ -8,20 +8,18 @@ We utilize the [RedHat OpenShift on AWS QuickStart](https://aws.amazon.com/quick
 
 This repository expands on the [Solace Kubernetes Quickstart](https://github.com/SolaceProducts/solace-kubernetes-quickstart) to provide an example of how to deploy Solace PubSub+ software message brokers in an HA configuration on the OpenShift Container Platform running in AWS.
 
-**TODO: add hints how to set up non-HA for developers** 
-
 ![alt text](/resources/network_diagram.jpg "Network Diagram")
 
 ## Description of the Solace PubSub+ Software Message Broker
 
 The Solace PubSub+ software message broker meets the needs of big data, cloud migration, and Internet-of-Things initiatives, and enables microservices and event-driven architecture. Capabilities include topic-based publish/subscribe, request/reply, message queues/queueing, and data streaming for IoT devices and mobile/web apps. The message broker supports open APIs and standard protocols including AMQP, JMS, MQTT, REST, and WebSocket. As well, it can be deployed in on-premise datacenters, natively within private and public clouds, and across complex hybrid cloud environments.
 
-## How to deploy a message broker onto OpenShift / AWS
+## How to deploy a Solace PubSub+ Message Broker onto OpenShift / AWS
 
 The following steps describe how to deploy a message broker onto an OpenShift environment. Optional steps are provided about setting up a Red Hat OpenShift Container Platform on Amazon AWS infrastructure and if you use AWS Elastic Container Registry to host the Solace message broker Docker image - these are marked as (Optional / AWS).
 
 There are also two options for deploying a message broker onto your OpenShift deployment.
-* (Deployment option 1): Use the Solace Kubernetes QuickStart to deploy the message broker onto your OpenShift environment. The Solace Kubernetes QuickStart uses Helm to automate the process of message broker deployment through a wide range of configuration options and provides in-service upgrade of the message broker.
+* (Deployment option 1): Use the Solace Kubernetes QuickStart to deploy the message broker onto your OpenShift environment. The Solace Kubernetes QuickStart uses `Helm` to automate the process of message broker deployment through a wide range of configuration options and provides in-service upgrade of the message broker.
 * (Deployment option 2): Execute the OpenShift templates included in this project for installing the message broker in a limited number of configurations 
 
 Steps to deploy the message broker:
@@ -39,7 +37,7 @@ Steps to deploy the message broker:
   * **IAM policies required**
   
   This deployment will create 10 EC2 instances: an *ansible-configserver* and three of each *openshift-etcd*, *openshift-master* and *openshift-nodes* servers. <br>
-  Note that only the *ansible-configserver* is exposed externally in a public subnet. To access the other servers that are in a private subnet, first [SSH into](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html ) the *ansible-configserver* instance then from that instance SSH into the target server using it's private IP. The OpenShift AWS QuickStart has setup passwordless SSH login from the *ansible-configserver* to the other servers for the root user so you can simply use ```sudo ssh <privateIP>```.
+  Note that only the *ansible-configserver* is exposed externally in a public subnet. To access the other servers that are in a private subnet, first [SSH into](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html ) the *ansible-configserver* instance then from that instance SSH into the target server using it's private IP. For that, SCP your AWS private access keyfile to your working directory on the *ansible-configserver*, ensure it has permissions `400`, then use `ssh -i <keyfile>.pem" ec2-user@<privateIP>`. Alternatively, the OpenShift AWS QuickStart has setup passwordless SSH login from the *ansible-configserver* to the other servers for the root user so you can simply use `sudo ssh <privateIP>`.
 
 * (Part II) Once you have deployed OpenShift using the AWS QuickStart you will have to perform additional steps to re-configure OpenShift to integrate fully with AWS.  For full details, please refer to the RedHat OpenShift documentation for configuring OpenShift for AWS:
 
@@ -51,12 +49,13 @@ Steps to deploy the message broker:
    * Tag public subnets so when creating a public service suitable public subnets can be found
    * Re-configure OpenShift Masters and OpenShift Nodes to make OpenShift aware of AWS deployment specifics
    
-  SSH into the *ansible-configserver* then follow the commands. The script will end with listing the private IP of the *openshift-master* servers, one of which you will need to SSH into for the next step. As described in (Part I) you can use `sudo ssh <privateIP>` for that.
+  SSH into the *ansible-configserver* then follow the commands. The script will end with listing the private IP of the *openshift-master* servers, one of which you will need to SSH into for the next step, as described in (Part I).
   
 ```
+# get the scripts
 git clone https://github.com/SolaceProducts/solace-openshift-quickstart.git
 cd solace-openshift-quickstart/scripts
-# substitute your own parameters
+# substitute your own parameters for the following exports
 # You can get the stack names e.g.: from the CloudFormation page of the AWS services console,
 # see the 'Overview' tab of the *nested* VPC or OpenShiftStack substacks.
 # You can get the access keys from the AWS services console IAM > Users > Security credentials.
@@ -64,12 +63,13 @@ export OPENSHIFTSTACK_STACKNAME=XXXXXXXXXXXXXXXXXXXXX
 export VPC_STACKNAME=XXXXXXXXXXXXXXXXXXXXX
 export AWS_ACCESS_KEY_ID=XXXXXXXXXXXXXXXXXXXXX
 export AWS_SECRET_ACCESS_KEY=XXXXXXXXXXXXXXXXXXXXX
+# run the config script
 ./configureAWSOpenShift.sh
 ```
 
 ### Step 2: Prepare for the deployment
 
-* The Solace OpenShift QuickStart project contains useful scripts to help you prepare an OpenShift project for message broker deployment. You should retrieve the project on a host having the OpenShift client tools and a host that can reach your OpenShift cluster nodes - conveniently, this can be one of the *openshift-master* servers. SSH into the selected host, then
+* The Solace OpenShift QuickStart project contains useful scripts to help you prepare an OpenShift project for message broker deployment. You should retrieve the project on a host having the OpenShift client tools and a host that can reach your OpenShift cluster nodes - conveniently, this can be one of the *openshift-master* servers. SSH into the selected host, then:
 
 ```
 mkdir ~/workspace
@@ -78,16 +78,16 @@ git clone https://github.com/SolaceProducts/solace-openshift-quickstart.git
 cd solace-openshift-quickstart
 ```
 
-### Step 3: (Optional: Deployment option 1 only) Install the Helm client and server-side tools if you are going to use the Solace Kubernetes QuickStart to deploy the message broker
+### Step 3: (Optional: only for Deployment option 1 - use the Solace Kubernetes QuickStart to deploy the message broker) Install the Helm client and server-side tools
 
 * **(Part I)** Use the ‘deployHelm.sh’ script to deploy the Helm client and server-side components.  Begin by installing the Helm client tool:
 
 ```
 cd ~/workspace/solace-openshift-quickstart/scripts
-. ./deployHelm.sh client
+./deployHelm.sh client
 ```
 
-* After running the above script, note the values of the following environment variables and set their values in ~/.bashrc (These environment variables are used when running the helm client tool):
+* After running the above script, note the values of the following environment variables from the output - copy and run the export statements. It is recommended to also add them to `~/.bashrc` so they are automatically sourced at future sessions (These environment variables are required when running the `helm` client tool):
   * HELM_HOME
   * TILLER_NAMESPACE
   * PATH
@@ -96,7 +96,7 @@ cd ~/workspace/solace-openshift-quickstart/scripts
 
 ```
 cd ~/workspace/solace-openshift-quickstart/scripts
-. ./deployHelm.sh server
+./deployHelm.sh server
 ```
 
 ### Step 4: Use scripts in the Solace OpenShift QuickStart to configure a project to host the message broker HA deployment.

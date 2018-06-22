@@ -15,6 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#################################################
+# Run this script from the ansible-configserver #
+#################################################
+
 # The purpose of this script is to configure to fully integrate the OpenShift environment to allow OpenShift to provision AWS resources:
 #  - Configure AWS IAM role to allow OpenShift to provision resources
 #  - Re-configure OpenShift Masters and OpenShift Nodes to make OpenShift aware of AWS deployment specifics
