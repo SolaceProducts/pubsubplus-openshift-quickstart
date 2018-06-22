@@ -33,7 +33,7 @@ Steps to deploy the message broker:
   * [Deploying and Managing OpenShift Container Platform 3.7 on Amazon Web Services](https://access.redhat.com/documentation/en-us/reference_architectures/2017/html-single/deploying_and_managing_openshift_container_platform_3.7_on_amazon_web_services/index)
   
   **Important:** As described in above documentation, this deployment requires a Red Hat account with a valid Red Hat subscription to OpenShift and will consume 10 OpenShift entitlements in a maximum redundancy configuration. When no longer needed ensure to follow the steps in the [Deleting the OpenShift Container Platform deployment](#deleting-the-openshift-container-platform-deployment ) section of this guide to free up the entitlements.
-  
+
   * **IAM policies required**
   
   This deployment will create 10 EC2 instances: an *ansible-configserver* and three of each *openshift-etcd*, *openshift-master* and *openshift-nodes* servers. <br>
@@ -66,6 +66,11 @@ export AWS_SECRET_ACCESS_KEY=XXXXXXXXXXXXXXXXXXXXX
 # run the config script
 ./configureAWSOpenShift.sh
 ```
+
+Verify you can access and login to the OpenShift console. You can get the URL from the CloudFormation page of the AWS services console, see the 'Outputs' tab of the *nested* OpenShiftStack substack:
+
+![alt text](/resources/GetOpenShiftURL.png "Getting to OpenShift console URL")
+
 
 ### Step 2: Prepare for the deployment
 
@@ -103,7 +108,7 @@ cd ~/workspace/solace-openshift-quickstart/scripts
 * **(Part I)** Use the ‘prepareProject.sh’ script to create and configure an OpenShift project that meets requirements of the message broker HA deployment:
 ```
 cd ~/workspace/solace-openshift-quickstart/scripts
-sudo ./prepareProject.sh vmrha
+sudo ./prepareProject.sh solace-pubsub-ha
 ```
 * **(Part II, Optional / AWS)** If you are using the AWS Elastic Container Registry (ECR) then you must add the ECR login credentials (as an OpenShift secret) to your message broker HA deployment.  This project contains a helper script to execute this step:
 ```
@@ -111,7 +116,7 @@ sudo su –
 aws configure
 exit
 cd ~/workspace/solace-openshift-quickstart/scripts
-sudo ./addECRsecret.sh vmrha
+sudo ./addECRsecret.sh solace-pubsub-ha
 ```
 
 ### Step 2: Download and deploy the message broker (Docker image) to your Docker Registry
@@ -140,7 +145,7 @@ You can deploy the message broker in either a single-node or high-availability c
 * For a **Single-Node** configuration:
   * Process the Solace 'Single Node' OpenShift template to deploy the message broker in a single-node configuration.  Specify values for the DOCKER_REGISTRY_URL, VMR_IMAGE_TAG, VMR_STORAGE_SIZE, and VMR_ADMIN_PASSWORD parameters:
 ```
-oc project vmrha
+oc project solace-pubsub-ha
 cd  ~/workspace/solace-openshift-quickstart/templates
 oc process -f vmr_singleNode_template.yaml DEPLOYMENT_NAME=single-node-vmr DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> VMR_IMAGE_TAG=<replace with your Solace VMR docker image tag> VMR_STORAGE_SIZE=30Gi VMR_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
 ```
@@ -148,7 +153,7 @@ oc process -f vmr_singleNode_template.yaml DEPLOYMENT_NAME=single-node-vmr DOCKE
 * For a **High-Availability** configuration:
   * Process the Solace 'HA' OpenShift template to deploy the message broker in a high-availability configuration.  Specify values for the DOCKER_REGISTRY_URL, VMR_IMAGE_TAG, VMR_STORAGE_SIZE, and VMR_ADMIN_PASSWORD parameters:
 ```
-oc project vmrha
+oc project solace-pubsub-ha
 cd  ~/workspace/solace-openshift-quickstart/templates
 oc process -f vmr_ha_template.yaml DEPLOYMENT_NAME=vmr-ha DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> VMR_IMAGE_TAG=<replace with your Solace VMR docker image tag> VMR_STORAGE_SIZE=30Gi VMR_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
 ```    
@@ -168,7 +173,7 @@ cd solace-kubernetes-quickstart
 * Update the Solace Kubernetes values.yaml configuration file for your target deployment (Please refer to the [Solace Kubernetes QuickStart](https://github.com/SolaceProducts/solace-kubernetes-quickstart) for further details):
 
 ```
-oc project vmrha
+oc project solace-pubsub-ha
 cd ~/workspace/solace-kubernetes-quickstart/solace
 vi values.yaml
 helm install . -f values.yaml
@@ -208,14 +213,14 @@ pvc/data-oppulent-catfish-solace-1   Bound     pvc-0fa5577e-0099-11e8-8ed4-02a15
 pvc/data-oppulent-catfish-solace-2   Bound     pvc-2e1daed6-0099-11e8-8ed4-02a152ed1b12   30Gi       RWO           oppulent-catfish-standard   15m
 
 NAME                                          CAPACITY   ACCESSMODES   RECLAIMPOLICY   STATUS    CLAIM                                  STORAGECLASS                REASON    AGE
-pv/pvc-0fa5577e-0099-11e8-8ed4-02a152ed1b12   30Gi       RWO           Delete          Bound     vmrha/data-oppulent-catfish-solace-1   oppulent-catfish-standard             16m
-pv/pvc-2e1daed6-0099-11e8-8ed4-02a152ed1b12   30Gi       RWO           Delete          Bound     vmrha/data-oppulent-catfish-solace-2   oppulent-catfish-standard             15m
-pv/pvc-f12f15c0-0098-11e8-8ed4-02a152ed1b12   30Gi       RWO           Delete          Bound     vmrha/data-oppulent-catfish-solace-0   oppulent-catfish-standard             17m
+pv/pvc-0fa5577e-0099-11e8-8ed4-02a152ed1b12   30Gi       RWO           Delete          Bound     solace-pubsub-ha/data-oppulent-catfish-solace-1   oppulent-catfish-standard             16m
+pv/pvc-2e1daed6-0099-11e8-8ed4-02a152ed1b12   30Gi       RWO           Delete          Bound     solace-pubsub-ha/data-oppulent-catfish-solace-2   oppulent-catfish-standard             15m
+pv/pvc-f12f15c0-0098-11e8-8ed4-02a152ed1b12   30Gi       RWO           Delete          Bound     solace-pubsub-ha/data-oppulent-catfish-solace-0   oppulent-catfish-standard             17m
 [ec2-user@ip-10-0-23-198 ~]$
 [ec2-user@ip-10-0-23-198 ~]$
 [ec2-user@ip-10-0-23-198 ~]$ oc describe svc
 Name:                   oppulent-catfish-solace
-Namespace:              vmrha
+Namespace:              solace-pubsub-ha
 Labels:                 app=solace
                         chart=solace-0.2.0
                         heritage=Tiller
@@ -258,7 +263,7 @@ Events:
 
 
 Name:                   oppulent-catfish-solace-discovery
-Namespace:              vmrha
+Namespace:              solace-pubsub-ha
 Labels:                 app=solace
                         chart=solace-0.2.0
                         heritage=Tiller
