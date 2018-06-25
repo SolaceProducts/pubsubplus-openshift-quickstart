@@ -20,7 +20,7 @@ The following steps describe how to deploy a message broker onto an OpenShift en
 
 There are also two options for deploying a message broker onto your OpenShift deployment:
 * (Deployment option 1): This option allows great flexibility using the Kubernetes `Helm` tool to automate the process of message broker deployment through a wide range of configuration options including in-service rolling upgrade of the message broker. The [Solace Kubernetes QuickStart project](https://github.com/SolaceProducts/solace-kubernetes-quickstart ) will be referred to deploy the message broker onto your OpenShift environment.
-* (Deployment option 2): This option can be used directly, without any additional tool to deploy the message broker in a limited number of configurations using OpenShift templates included in this project.
+* (Deployment option 2): This option can be used directly, without any additional tool to deploy the message broker in a limited number of configurations, using OpenShift templates included in this project.
 
 Steps to deploy the message broker:
 
@@ -208,7 +208,9 @@ You can deploy the message broker in either a single-node or high-availability c
 ```
 oc project solace-pubsub-ha   # adjust your project name as needed
 cd  ~/workspace/solace-openshift-quickstart/templates
-oc process -f messagebroker_single-node_template.yaml DEPLOYMENT_NAME=solace-single-node DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> MESSAGEBROKER_IMAGE_TAG=<replace with your Solace message broker docker image tag> MESSAGEBROKER_STORAGE_SIZE=30Gi MESSAGEBROKER_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
+oc process -f messagebroker_singlenode_template.yaml DEPLOYMENT_NAME=test-singlenode DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> MESSAGEBROKER_IMAGE_TAG=<replace with your Solace message broker docker image tag> MESSAGEBROKER_STORAGE_SIZE=30Gi MESSAGEBROKER_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
+# Wait until all pods running and ready
+watch oc get statefulset,service,pods,pvc,pv
 ```
 
 * For a **High-Availability** configuration:
@@ -216,7 +218,9 @@ oc process -f messagebroker_single-node_template.yaml DEPLOYMENT_NAME=solace-sin
 ```
 oc project solace-pubsub-ha   # adjust your project name as needed
 cd  ~/workspace/solace-openshift-quickstart/templates
-oc process -f messagebroker_ha_template.yaml DEPLOYMENT_NAME=solace-ha DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> MESSAGEBROKER_IMAGE_TAG=<replace with your Solace message broker docker image tag> MESSAGEBROKER_STORAGE_SIZE=30Gi MESSAGEBROKER_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
+oc process -f messagebroker_ha_template.yaml DEPLOYMENT_NAME=test-ha DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> MESSAGEBROKER_IMAGE_TAG=<replace with your Solace message broker docker image tag> MESSAGEBROKER_STORAGE_SIZE=30Gi MESSAGEBROKER_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
+# Wait until all pods running and ready
+watch oc get statefulset,service,pods,pvc,pv
 ```
   
 ## Validating the Deployment
@@ -348,20 +352,35 @@ Note: the Host will be the Public IP. It may be necessary to [open up external a
 
 ### Deleting the Solace message broker deployment
 
-If used (Option 1) `helm`, delete the deployment to start over from Step 6:
+To delete the deployment or to start over from Step 6 in a clean state:
+
+* If used (Option 1) `helm` to deploy, execute: 
 
 ```
 helm list   # will list the releases (deployments)
 helm delete XXX-XXX  # your deployment - "plucking-squid" in the example above
 ```
 
-To remove the project or to start over from Step 4 in a clean state delete the project using the OpenShift console or the command line:
+* If used (Option 2) OpenShift templates to deploy, use:
+
+```
+oc process -f <template-used> DEPLOYMENT_NAME=<deploymentname> | oc delete -f -
+```
+
+**Note:** Above will not delete dynamic Persistent Volumes (PVs) and related Persistent Volume Claims (PVCs). If recreating the deployment with same name, the original volumes get mounted with existing configuration. Deleting the PVCs will also delete the PVs:
+
+```
+# List PVCs
+oc get pvc
+# Delete unneeded PVCs
+oc delete pvc <pvc-name>
+```
+
+To remove the project or to start over from Step 4 in a clean state, delete the project using the OpenShift console or the command line. For more details, refer to the [OpenShift Projects](https://docs.openshift.com/enterprise/3.0/dev_guide/projects.html ) documentation.
 
 ```
 oc delete project solace-pubsub-ha   # adjust your project name as needed
 ```
-
-Refer to the [OpenShift Projects](https://docs.openshift.com/enterprise/3.0/dev_guide/projects.html ) documentation.
 
 ### Deleting the OpenShift Container Platform deployment
 

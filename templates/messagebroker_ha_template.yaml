@@ -14,7 +14,7 @@ objects:
     labels:
       heritage: Tiller
       release: "${DEPLOYMENT_NAME}"
-      chart: solace-0.2.0
+      chart: solace-0.3.0
       app: solace
   type: Opaque
   data:
@@ -27,7 +27,7 @@ objects:
     labels:
       heritage: Tiller
       release: "${DEPLOYMENT_NAME}"
-      chart: solace-0.2.0
+      chart: solace-0.3.0
       app: solace
   data:
     init.sh: |-
@@ -386,7 +386,7 @@ objects:
     labels:
       heritage: Tiller
       release: "${DEPLOYMENT_NAME}"
-      chart: solace-0.2.0
+      chart: solace-0.3.0
       app: solace
     annotations:
       service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
@@ -406,7 +406,7 @@ objects:
     labels:
       heritage: Tiller
       release: "${DEPLOYMENT_NAME}"
-      chart: solace-0.2.0
+      chart: solace-0.3.0
       app: solace #end gcp
   spec:
     type: LoadBalancer
@@ -446,7 +446,7 @@ objects:
     name: "${DEPLOYMENT_NAME}-solace"
     labels:
       app: solace
-      chart: solace-0.2.0
+      chart: solace-0.3.0
       release: "${DEPLOYMENT_NAME}"
       heritage: Tiller
   spec:
