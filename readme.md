@@ -1,4 +1,4 @@
-# Deploying a Solace PubSub+ Software Message Broker HA Group onto Red Hat OpenShift Container Platform 3.7 or 3.9
+# Deploying a Solace PubSub+ Software Message Broker HA Group onto a Red Hat OpenShift 3.7 or 3.9 platform
 
 ## Purpose of this Repository
 
@@ -34,8 +34,6 @@ Steps to deploy the message broker:
   
   **Important:** As described in above documentation, this deployment requires a Red Hat account with a valid Red Hat subscription to OpenShift and will consume 10 OpenShift entitlements in a maximum redundancy configuration. When no longer needed ensure to follow the steps in the [Deleting the OpenShift Container Platform deployment](#deleting-the-openshift-container-platform-deployment ) section of this guide to free up the entitlements.
 
-  * **List IAM policies required**
-  
   This deployment will create 10 EC2 instances: an *ansible-configserver* and three of each *openshift-etcd*, *openshift-master* and *openshift-nodes* servers. <br>
   Note that only the *ansible-configserver* is exposed externally in a public subnet. To access the other servers that are in a private subnet, first [SSH into](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html ) the *ansible-configserver* instance then from that instance SSH into the target server using it's private IP. For that, SCP your AWS private access keyfile to your working directory on the *ansible-configserver*, ensure it has permissions `400`, then use `ssh -i <keyfile>.pem" ec2-user@<privateIP>`. Alternatively, the OpenShift AWS QuickStart has setup passwordless SSH login from the *ansible-configserver* to the other servers for the root user so you can simply use `sudo ssh <privateIP>`.
 
@@ -350,6 +348,13 @@ Note: the Host will be the Public IP. It may be necessary to [open up external a
 
 ### Deleting the Solace message broker deployment
 
+If used (Option 1) `helm`, delete the deployment to start over from Step 6:
+
+```
+helm list   # will list the releases (deployments)
+helm delete XXX-XXX  # your deployment - "plucking-squid" in the example above
+```
+
 To remove the project or to start over from Step 4 in a clean state delete the project using the OpenShift console or the command line:
 
 ```
@@ -360,7 +365,7 @@ Refer to the [OpenShift Projects](https://docs.openshift.com/enterprise/3.0/dev_
 
 ### Deleting the OpenShift Container Platform deployment
 
-To delete your OpenShift Container Platform deployment that was set up following Step 1, first you need to detach the IAM policies from the ‘Setup Role’ (IAM) that were attached in (Part II) of Step 1. Then you also need to ensure to free up the allocated OpenShift entitlements from your subscription otherwise they will no longer be available for a subsequent deployment.
+To delete your OpenShift Container Platform deployment that was set up at Step 1, first you need to detach the IAM policies from the ‘Setup Role’ (IAM) that were attached in (Part II) of Step 1. Then you also need to ensure to free up the allocated OpenShift entitlements from your subscription otherwise they will no longer be available for a subsequent deployment.
 
 Use this quick start's script to automate the execution of the required steps. SSH into the *ansible-configserver* then follow the commands:
 
