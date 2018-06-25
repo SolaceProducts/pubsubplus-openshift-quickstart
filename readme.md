@@ -1,4 +1,4 @@
-# Deploying a Solace PubSub+ Software Message Broker HA Group onto a Red Hat OpenShift 3.7 or 3.9 platform
+# Deploying a Solace PubSub+ Software Message Broker HA Group onto an OpenShift 3.7 or 3.9 platform
 
 ## Purpose of this Repository
 
