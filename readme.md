@@ -18,9 +18,9 @@ The Solace PubSub+ software message broker meets the needs of big data, cloud mi
 
 The following steps describe how to deploy a message broker onto an OpenShift environment. Optional steps are provided about setting up a Red Hat OpenShift Container Platform on Amazon AWS infrastructure (marked as Optional / AWS) and if you use AWS Elastic Container Registry to host the Solace message broker Docker image (marked as Optional / ECR).
 
-There are also two options for deploying a message broker onto your OpenShift deployment.
-* (Deployment option 1): Use the Solace Kubernetes QuickStart to deploy the message broker onto your OpenShift environment. The Solace Kubernetes QuickStart uses `Helm` to automate the process of message broker deployment through a wide range of configuration options and provides in-service upgrade of the message broker.
-* (Deployment option 2): Execute the OpenShift templates included in this project for installing the message broker in a limited number of configurations 
+There are also two options for deploying a message broker onto your OpenShift deployment:
+* (Deployment option 1): This option allows great flexibility using the Kubernetes `Helm` tool to automate the process of message broker deployment through a wide range of configuration options including in-service rolling upgrade of the message broker. The [Solace Kubernetes QuickStart project](https://github.com/SolaceProducts/solace-kubernetes-quickstart ) will be referred to deploy the message broker onto your OpenShift environment.
+* (Deployment option 2): This option can be used directly, without any additional tool to deploy the message broker in a limited number of configurations using OpenShift templates included in this project.
 
 Steps to deploy the message broker:
 
@@ -34,7 +34,7 @@ Steps to deploy the message broker:
   
   **Important:** As described in above documentation, this deployment requires a Red Hat account with a valid Red Hat subscription to OpenShift and will consume 10 OpenShift entitlements in a maximum redundancy configuration. When no longer needed ensure to follow the steps in the [Deleting the OpenShift Container Platform deployment](#deleting-the-openshift-container-platform-deployment ) section of this guide to free up the entitlements.
 
-  * **IAM policies required**
+  * **List IAM policies required**
   
   This deployment will create 10 EC2 instances: an *ansible-configserver* and three of each *openshift-etcd*, *openshift-master* and *openshift-nodes* servers. <br>
   Note that only the *ansible-configserver* is exposed externally in a public subnet. To access the other servers that are in a private subnet, first [SSH into](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html ) the *ansible-configserver* instance then from that instance SSH into the target server using it's private IP. For that, SCP your AWS private access keyfile to your working directory on the *ansible-configserver*, ensure it has permissions `400`, then use `ssh -i <keyfile>.pem" ec2-user@<privateIP>`. Alternatively, the OpenShift AWS QuickStart has setup passwordless SSH login from the *ansible-configserver* to the other servers for the root user so you can simply use `sudo ssh <privateIP>`.
@@ -53,6 +53,7 @@ Steps to deploy the message broker:
   
 ```
 # get the scripts
+cd ~
 git clone https://github.com/SolaceProducts/solace-openshift-quickstart.git
 cd solace-openshift-quickstart/scripts
 # substitute your own parameters for the following exports
@@ -94,7 +95,7 @@ cd ~/workspace/solace-openshift-quickstart/scripts
 ./deployHelm.sh client
 ```
 
-* After running the above script, note the values of the following environment variables from the output - copy and run the export statements. It is recommended to also add them to `~/.bashrc` so they are automatically sourced at future sessions (These environment variables are required when running the `helm` client tool):
+* After running the above script, note the export statements for the following environment variables from the output - copy and run them. It is also recommended to add them to `~/.bashrc` on your machine so they are automatically sourced at future sessions (These environment variables are required every time when running the `helm` client tool):
   * HELM_HOME
   * TILLER_NAMESPACE
   * PATH
@@ -112,25 +113,25 @@ cd ~/workspace/solace-openshift-quickstart/scripts
 
 ```
 cd ~/workspace/solace-openshift-quickstart/scripts
-./prepareProject.sh solace-pubsub-ha    # adjust the project name as needed here and in subsequent commands
+./prepareProject.sh solace-pubsub-ha    # adjust your project name as needed here and in subsequent commands
 ```
 
 ### Step 5 Load the message broker (Docker image) to your Docker Registry
 
-Deployment scripts will pull the Solace message broker image from a docker registry. There are several [options ](https://docs.openshift.com/container-platform/3.7/architecture/infrastructure_components/image_registry.html#overview ) here depending on the requirements of your project, see some examples in (Part II) of this step.
+Deployment scripts will pull the Solace message broker image from a [docker registry](https://docs.docker.com/registry/ ). There are several [options which registry to use](https://docs.openshift.com/container-platform/3.7/architecture/infrastructure_components/image_registry.html#overview ) depending on the requirements of your project, see some examples in (Part II) of this step.
 
 **Note:** The free PubSub+ Standard Edition is available from the [Solace public Docker Hub registry](https://hub.docker.com/r/solace/solace-pubsub-standard/tags/ ). If pulling this image from a public registry meets your requirements you can skip the rest of this step. The Docker Registry URL will be `solace/solace-pubsub-standard:<TagName>`.
 
 * **(Part I)** Download a copy of the message broker Docker image.
 
-Go to the Solace Developer Portal and download the Solace PubSub+ software message broker as a **Docker** image or obtain your version from Solace Support.
+  Go to the Solace Developer Portal and download the Solace PubSub+ software message broker as a **Docker** image or obtain your version from Solace Support.
 
-You can use this quick start with either PubSub+ `Standard` or PubSub+ `Enterprise Evaluation Edition`.
+  You can use this quick start with either PubSub+ `Standard` or PubSub+ `Enterprise Evaluation Edition`.
 
-| PubSub+ Standard<br/>Docker Image | PubSub+ Enterprise Evaluation Edition<br/>Docker Image
-| :---: | :---: |
-| Free, up to 1k simultaneous connections,<br/>up to 10k messages per second | 90-day trial version, unlimited |
-| [Download Standard Docker Image](http://dev.solace.com/downloads/) | [Download Evaluation Docker Image](http://dev.solace.com/downloads#eval) |
+  | PubSub+ Standard<br/>Docker Image | PubSub+ Enterprise Evaluation Edition<br/>Docker Image
+  | :---: | :---: |
+  | Free, up to 1k simultaneous connections,<br/>up to 10k messages per second | 90-day trial version, unlimited |
+  | [Download Standard Docker Image](http://dev.solace.com/downloads/) | [Download Evaluation Docker Image](http://dev.solace.com/downloads#eval) |
 
 * **(Part II)** Deploy the message broker docker image to your Docker registry of choice
 
@@ -138,13 +139,13 @@ You can use this quick start with either PubSub+ `Standard` or PubSub+ `Enterpri
 
   * You can choose to use [OpenShift's docker registry.](https://docs.openshift.com/container-platform/3.7/install_config/registry/deploy_registry_existing_clusters.html )
 
-  * **(Optional / ECR)** You can utilize the AWS Elastic Container Registry (ECR) to host the VMR Docker image. For more information, refer to [Amazon Elastic Container Registry](https://aws.amazon.com/ecr/ ). If you are using ECR as your Docker registry then you must add the ECR login credentials (as an OpenShift secret) to your message broker HA deployment.  This project contains a helper script to execute this step:
+  * **(Optional / ECR)** You can utilize the AWS Elastic Container Registry (ECR) to host the message broker Docker image. For more information, refer to [Amazon Elastic Container Registry](https://aws.amazon.com/ecr/ ). If you are using ECR as your Docker registry then you must add the ECR login credentials (as an OpenShift secret) to your message broker HA deployment.  This project contains a helper script to execute this step:
 
 ```
 # Required if using ECR for docker registry
 sudo aws configure       # provide AWS config for root
 cd ~/workspace/solace-openshift-quickstart/scripts
-sudo ./addECRsecret.sh solace-pubsub-ha   # adjust the project name as needed
+sudo ./addECRsecret.sh solace-pubsub-ha   # adjust your project name as needed
 ```
 
 ### Step 6: (Option 1) Deploy the message broker using the Solace Kubernetes QuickStart
@@ -162,28 +163,40 @@ cd solace-kubernetes-quickstart
 * Update the Solace Kubernetes values.yaml configuration file for your target deployment (Please refer to the [Solace Kubernetes QuickStart](https://github.com/SolaceProducts/solace-kubernetes-quickstart) for further details):
 
 ```
-oc project solace-pubsub-ha   # adjust the project name as needed
+oc project solace-pubsub-ha   # adjust your project name as needed
 cd ~/workspace/solace-kubernetes-quickstart/solace
+# Edit values.yaml or overwrite with one of the examples
+#     HA config example
+#        cp values-examples/prod1k-persist-ha-provisionPvc.yaml values.yaml
+#     non-HA config example
+#        cp values-examples/prod1k-direct-noha.yaml values.yaml
+# replace SOLOS_CLOUD_PROVIDER, SOLOS_IMAGE_REPO, SOLOS_IMAGE_TAG
 vi values.yaml
+# Setup the password for the 'admin' user of the message broker
+# replace SOLOS_ADMIN_PASSWORD
+vi templates/secret.yaml
+# Initiate the deployment
 helm install . -f values.yaml
+# Wait until all pods running and ready
+watch oc get statefulset,service,pods,pvc,pv
 ```
 * The following table lists example values for the ‘values.yaml’ file to deploy a message broker in a Highly-Available configuration using persistent storage.
 
-  |Variable                |Value                |Description                |
-  |------------------------|---------------------|---------------------------|
-  |cloudProvider           |aws                  |Set to 'aws' when deploying a message broker in an OpenShift / AWS environment|
-  |solace / redundancy     |true                 |Set to ‘true’ for a message broker HA configuration|
-  |image / repository      |ECR repository URI   |Retrieve the repository URI from the AWS ECR management page  |
-  |image / tag             |VMR docker image tag |Select your repository in the AWS ECR management page.  This page will list all available Docker images in the repository and their associated Image Tag|
-  |storage / persistent    |true                 |Set to ‘true’ to configure persistent disks to store message broker data|
-  |storage / type          |standard             |Set to ‘standard’ to use lower-cost / standard performance disk types (AWS GP2)|
-  |storage / size          |30Gi                 |Set to the minimum number of gigabytes for VMR data storage.  Refer to message broker documentation for further details.|
+  |Variable                |Value                 |Description                |
+  |------------------------|----------------------|---------------------------|
+  |cloudProvider           |aws                   |Set to 'aws' when deploying a message broker in an OpenShift / AWS environment|
+  |solace / redundancy     |true                  |Set to ‘true’ for a message broker HA configuration|
+  |image / repository      |docker repo URI       |The repository URI of your docker repo including the location of the message broker docker image|
+  |image / tag             |docker repo image tag |The associated Image Tag of the message broker docker image|
+  |storage / persistent    |true                  |Set to ‘true’ to configure persistent disks to store message broker data|
+  |storage / type          |standard              |Set to ‘standard’ to use lower-cost / standard performance disk types (AWS GP2)|
+  |storage / size          |30Gi                  |Set to the minimum number of gigabytes for the message broker data storage.  Refer to message broker documentation for further details.|
 
 ### Step 6: (Option 2) Deploy the message broker using the OpenShift templates included in this project
 
 **Prerequisites:**
 1. Determine your message broker disk space requirements.  We recommend a minimum of 30 gigabytes of disk space.
-2. Define a strong password for the 'admin' user and then base64 encode the value.  This value will be specified as a parameter when processing the message broker OpenShift template:
+2. Define a strong password for the 'admin' user of the message broker and then base64 encode the value.  This value will be specified as a parameter when processing the message broker OpenShift template:
 ```
 echo -n 'strong@dminPw!' | base64
 ```
@@ -193,118 +206,116 @@ echo -n 'strong@dminPw!' | base64
 You can deploy the message broker in either a single-node or high-availability configuration:
 
 * For a **Single-Node** configuration:
-  * Process the Solace 'Single Node' OpenShift template to deploy the message broker in a single-node configuration.  Specify values for the DOCKER_REGISTRY_URL, VMR_IMAGE_TAG, VMR_STORAGE_SIZE, and VMR_ADMIN_PASSWORD parameters:
+  * Process the Solace 'Single Node' OpenShift template to deploy the message broker in a single-node configuration.  Specify values for the DOCKER_REGISTRY_URL, MESSAGEBROKER_IMAGE_TAG, MESSAGEBROKER_STORAGE_SIZE, and MESSAGEBROKER_ADMIN_PASSWORD parameters:
 ```
-oc project solace-pubsub-ha   # adjust the project name as needed
+oc project solace-pubsub-ha   # adjust your project name as needed
 cd  ~/workspace/solace-openshift-quickstart/templates
-oc process -f vmr_singleNode_template.yaml DEPLOYMENT_NAME=single-node-vmr DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> VMR_IMAGE_TAG=<replace with your Solace VMR docker image tag> VMR_STORAGE_SIZE=30Gi VMR_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
+oc process -f messagebroker_single-node_template.yaml DEPLOYMENT_NAME=solace-single-node DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> MESSAGEBROKER_IMAGE_TAG=<replace with your Solace message broker docker image tag> MESSAGEBROKER_STORAGE_SIZE=30Gi MESSAGEBROKER_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
 ```
 
 * For a **High-Availability** configuration:
-  * Process the Solace 'HA' OpenShift template to deploy the message broker in a high-availability configuration.  Specify values for the DOCKER_REGISTRY_URL, VMR_IMAGE_TAG, VMR_STORAGE_SIZE, and VMR_ADMIN_PASSWORD parameters:
+  * Process the Solace 'HA' OpenShift template to deploy the message broker in a high-availability configuration.  Specify values for the DOCKER_REGISTRY_URL, MESSAGEBROKER_IMAGE_TAG, MESSAGEBROKER_STORAGE_SIZE, and MESSAGEBROKER_ADMIN_PASSWORD parameters:
 ```
-oc project solace-pubsub-ha   # adjust the project name as needed
+oc project solace-pubsub-ha   # adjust your project name as needed
 cd  ~/workspace/solace-openshift-quickstart/templates
-oc process -f vmr_ha_template.yaml DEPLOYMENT_NAME=vmr-ha DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> VMR_IMAGE_TAG=<replace with your Solace VMR docker image tag> VMR_STORAGE_SIZE=30Gi VMR_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
+oc process -f messagebroker_ha_template.yaml DEPLOYMENT_NAME=solace-ha DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> MESSAGEBROKER_IMAGE_TAG=<replace with your Solace message broker docker image tag> MESSAGEBROKER_STORAGE_SIZE=30Gi MESSAGEBROKER_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
 ```
   
 ## Validating the Deployment
 
 Now you can validate your deployment from the OpenShift client shell:
+
 ```
-[ec2-user@ip-10-0-23-198 ~]$ oc get statefulset,service,pods,pvc,pv
-NAME                                   DESIRED   CURRENT   AGE
-statefulsets/oppulent-catfish-solace   3         3         17m
+[ec2-user@ip-10-0-23-198 ~]$ oc get statefulset,service,pods,pvc,pv --show-labels
+NAME                                 DESIRED   CURRENT   AGE       LABELS
+statefulsets/plucking-squid-solace   3         3         3m        app=solace,chart=solace-0.3.0,heritage=Tiller,release=plucking-squid
 
-NAME                                    CLUSTER-IP       EXTERNAL-IP        PORT(S)                                                                                                                   AGE
-svc/oppulent-catfish-solace             172.30.146.232   af12bcd7b0098...   22:31437/TCP,1883:32259/TCP,5672:32020/TCP,8000:31829/TCP,8080:32479/TCP,9000:32726/TCP,55003:31871/TCP,55555:30659/TCP   17m
-svc/oppulent-catfish-solace-discovery   None             <none>             8080/TCP                                                                                                                  17m
+NAME                                  CLUSTER-IP      EXTERNAL-IP        PORT(S)                                       AGE       LABELS
+svc/plucking-squid-solace             172.30.15.249   ae2dd15e27880...   22:30811/TCP,8080:30295/TCP,55555:30079/TCP   3m        app=solace,chart=solace-0.3.0,heritage=Tiller,release=plucking-squid
+svc/plucking-squid-solace-discovery   None            <none>             8080/TCP                                      3m        app=solace,chart=solace-0.3.0,heritage=Tiller,release=plucking-squid
 
-NAME                           READY     STATUS    RESTARTS   AGE
-po/oppulent-catfish-solace-0   1/1       Running   0          17m
-po/oppulent-catfish-solace-1   1/1       Running   0          16m
-po/oppulent-catfish-solace-2   1/1       Running   0          15m
+NAME                         READY     STATUS    RESTARTS   AGE       LABELS
+po/plucking-squid-solace-0   1/1       Running   0          3m        active=true,app=solace,controller-revision-hash=plucking-squid-solace-335123159,release=plucking-squid
+po/plucking-squid-solace-1   1/1       Running   0          3m        app=solace,controller-revision-hash=plucking-squid-solace-335123159,release=plucking-squid
+po/plucking-squid-solace-2   1/1       Running   0          3m        app=solace,controller-revision-hash=plucking-squid-solace-335123159,release=plucking-squid
 
-NAME                                 STATUS    VOLUME                                     CAPACITY   ACCESSMODES   STORAGECLASS                AGE
-pvc/data-oppulent-catfish-solace-0   Bound     pvc-f12f15c0-0098-11e8-8ed4-02a152ed1b12   30Gi       RWO           oppulent-catfish-standard   17m
-pvc/data-oppulent-catfish-solace-1   Bound     pvc-0fa5577e-0099-11e8-8ed4-02a152ed1b12   30Gi       RWO           oppulent-catfish-standard   16m
-pvc/data-oppulent-catfish-solace-2   Bound     pvc-2e1daed6-0099-11e8-8ed4-02a152ed1b12   30Gi       RWO           oppulent-catfish-standard   15m
+NAME                               STATUS    VOLUME                                     CAPACITY   ACCESSMODES   STORAGECLASS              AGE       LABELS
+pvc/data-plucking-squid-solace-0   Bound     pvc-e2e20e0f-7880-11e8-b199-06c6ba3800d0   30Gi       RWO           plucking-squid-standard   3m        app=solace,release=plucking-squid
+pvc/data-plucking-squid-solace-1   Bound     pvc-e2e4379c-7880-11e8-b199-06c6ba3800d0   30Gi       RWO           plucking-squid-standard   3m        app=solace,release=plucking-squid
+pvc/data-plucking-squid-solace-2   Bound     pvc-e2e6e88d-7880-11e8-b199-06c6ba3800d0   30Gi       RWO           plucking-squid-standard   3m        app=solace,release=plucking-squid
 
-NAME                                          CAPACITY   ACCESSMODES   RECLAIMPOLICY   STATUS    CLAIM                                  STORAGECLASS                REASON    AGE
-pv/pvc-0fa5577e-0099-11e8-8ed4-02a152ed1b12   30Gi       RWO           Delete          Bound     solace-pubsub-ha/data-oppulent-catfish-solace-1   oppulent-catfish-standard             16m
-pv/pvc-2e1daed6-0099-11e8-8ed4-02a152ed1b12   30Gi       RWO           Delete          Bound     solace-pubsub-ha/data-oppulent-catfish-solace-2   oppulent-catfish-standard             15m
-pv/pvc-f12f15c0-0098-11e8-8ed4-02a152ed1b12   30Gi       RWO           Delete          Bound     solace-pubsub-ha/data-oppulent-catfish-solace-0   oppulent-catfish-standard             17m
+NAME                                          CAPACITY   ACCESSMODES   RECLAIMPOLICY   STATUS    CLAIM                                           STORAGECLASS              REASON    AGE       LABELS
+pv/pvc-01e8785b-74b4-11e8-ac35-0afbbfab169a   1Gi        RWO           Delete          Bound     openshift-ansible-service-broker/etcd           gp2                                 4d        failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1b
+pv/pvc-229cf3d4-74b4-11e8-ba4e-02b74a526708   1Gi        RWO           Delete          Bound     aws-service-broker/etcd                         gp2                                 4d        failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1b
+pv/pvc-cf27bd8c-74b3-11e8-ac35-0afbbfab169a   10Gi       RWO           Delete          Bound     openshift-infra/metrics-cassandra-1             gp2                                 4d        failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1c
+pv/pvc-e2e20e0f-7880-11e8-b199-06c6ba3800d0   30Gi       RWO           Delete          Bound     solace-pubsub-ha/data-plucking-squid-solace-0   plucking-squid-standard             3m        failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1c
+pv/pvc-e2e4379c-7880-11e8-b199-06c6ba3800d0   30Gi       RWO           Delete          Bound     solace-pubsub-ha/data-plucking-squid-solace-1   plucking-squid-standard             3m        failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1a
+pv/pvc-e2e6e88d-7880-11e8-b199-06c6ba3800d0   30Gi       RWO           Delete          Bound     solace-pubsub-ha/data-plucking-squid-solace-2   plucking-squid-standard             3m        failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1b
 [ec2-user@ip-10-0-23-198 ~]$
 [ec2-user@ip-10-0-23-198 ~]$
 [ec2-user@ip-10-0-23-198 ~]$ oc describe svc
-Name:                   oppulent-catfish-solace
+Name:                   plucking-squid-solace
 Namespace:              solace-pubsub-ha
 Labels:                 app=solace
-                        chart=solace-0.2.0
+                        chart=solace-0.3.0
                         heritage=Tiller
-                        release=oppulent-catfish
+                        release=plucking-squid
 Annotations:            <none>
-Selector:               active=true,app=solace,release=oppulent-catfish
+Selector:               active=true,app=solace,release=plucking-squid
 Type:                   LoadBalancer
-IP:                     172.30.146.232
-LoadBalancer Ingress:   af12bcd7b009811e8a44106dd6bcb75d-1520996963.us-east-2.elb.amazonaws.com
+IP:                     172.30.15.249
+LoadBalancer Ingress:   ae2dd15e2788011e8b19906c6ba3800d-1889414054.eu-central-1.elb.amazonaws.com
 Port:                   ssh     22/TCP
-NodePort:               ssh     31437/TCP
-Endpoints:              10.128.4.8:22
-Port:                   mqtt    1883/TCP
-NodePort:               mqtt    32259/TCP
-Endpoints:              10.128.4.8:1883
-Port:                   amqp    5672/TCP
-NodePort:               amqp    32020/TCP
-Endpoints:              10.128.4.8:5672
-Port:                   mqttws  8000/TCP
-NodePort:               mqttws  31829/TCP
-Endpoints:              10.128.4.8:8000
+NodePort:               ssh     30811/TCP
+Endpoints:              10.129.0.11:22
 Port:                   semp    8080/TCP
-NodePort:               semp    32479/TCP
-Endpoints:              10.128.4.8:8080
-Port:                   rest    9000/TCP
-NodePort:               rest    32726/TCP
-Endpoints:              10.128.4.8:9000
-Port:                   smfc    55003/TCP
-NodePort:               smfc    31871/TCP
-Endpoints:              10.128.4.8:55003
+NodePort:               semp    30295/TCP
+Endpoints:              10.129.0.11:8080
 Port:                   smf     55555/TCP
-NodePort:               smf     30659/TCP
-Endpoints:              10.128.4.8:55555
+NodePort:               smf     30079/TCP
+Endpoints:              10.129.0.11:55555
 Session Affinity:       None
 Events:
   FirstSeen     LastSeen        Count   From                    SubObjectPath   Type            Reason                  Message
   ---------     --------        -----   ----                    -------------   --------        ------                  -------
-  17m           17m             1       service-controller                      Normal          CreatingLoadBalancer    Creating load balancer
-  17m           17m             1       service-controller                      Normal          CreatedLoadBalancer     Created load balancer
+  5m            5m              1       service-controller                      Normal          CreatingLoadBalancer    Creating load balancer
+  5m            5m              1       service-controller                      Normal          CreatedLoadBalancer     Created load balancer
 
 
-Name:                   oppulent-catfish-solace-discovery
+Name:                   plucking-squid-solace-discovery
 Namespace:              solace-pubsub-ha
 Labels:                 app=solace
-                        chart=solace-0.2.0
+                        chart=solace-0.3.0
                         heritage=Tiller
-                        release=oppulent-catfish
+                        release=plucking-squid
 Annotations:            service.alpha.kubernetes.io/tolerate-unready-endpoints=true
-Selector:               app=solace,release=oppulent-catfish
+Selector:               app=solace,release=plucking-squid
 Type:                   ClusterIP
 IP:                     None
 Port:                   semp    8080/TCP
-Endpoints:              10.128.4.8:8080,10.130.2.4:8080,10.131.2.4:8080
+Endpoints:              10.129.0.11:8080,10.130.0.12:8080,10.131.0.9:8080
 Session Affinity:       None
 Events:                 <none>
 ```
 
-Note, the **'LoadBalancer Ingress'** value listed in the service description above.  This is the Solace Connection URL for messaging clients (AWS Load Balancer example).  
+Note, the **'LoadBalancer Ingress'** value listed in the service description above.  This is the Solace Connection URL for messaging clients (AWS Load Balancer example).
 
 ### Viewing bringup logs
 
-It is possible to watch the message broker come up via logs in the OpenShift UI log stack for individual message broker pods.  You can access the log stack for individual message broker pods from the OpenShift UI, by navigating to:
+To see the deployment events, navigate to:
 
-* **OpenShift UI > (VMR Project) > Applications > Stateful Sets > ((name)-solace) > Pods > ((name)-solace-(N)) > Logs**
+* **OpenShift UI > (Your Project) > Applications > Stateful Sets > ((name)-solace) > Events**
 
-![alt text](/resources/VMR-Pod-Log-Stack.png "VMR Pod Log Stack")
+You can access the log stack for individual message broker pods from the OpenShift UI, by navigating to:
+
+* **OpenShift UI > (Your Project) > Applications > Stateful Sets > ((name)-solace) > Pods > ((name)-solace-(N)) > Logs**
+
+![alt text](/resources/Solace-Pod-Log-Stack.png "Message Broker Pod Log Stack")
+
+Where (N) above is the ordinal of the Solace message broker:
+  * 0 - Primary message broker
+  * 1 - Backup message broker
+  * 2 - Monitor message broker
 
 ## Gaining admin and ssh access to the message broker
 
@@ -314,27 +325,22 @@ If you deployed OpenShift in AWS, then the Solace OpenShift QuickStart will have
 
 You can gain access to the Solace CLI and container shell for individual message broker instances from the OpenShift UI.  A web-based terminal emulator is available from the OpenShift UI.  Navigate to an individual message broker Pod using the OpenShift UI:
 
-* **OpenShift UI > (VMR Project) > Applications > Stateful Sets > ((name)-solace) > Pods > ((name)-solace-(N)) > Terminal**
-
-Where (N) above is the ordinal of the Solace VMR:
-  * 0 - Primary message broker
-  * 1 - Backup message broker
-  * 2 - Monitor message broker
+* **OpenShift UI > (Your Project) > Applications > Stateful Sets > ((name)-solace) > Pods > ((name)-solace-(N)) > Terminal**
 
 Once you have launched the terminal emulator to the message broker pod you may access the Solace CLI by executing the following command:
 ```
 /usr/sw/loads/currentload/bin/cli -A
 ```
 
-![alt text](/resources/VMR-Primary-Pod-Terminal-VMR-CLI.png "VMR CLI via OpenShift UI Terminal emulator")
+![alt text](/resources/Solace-Primary-Pod-Terminal-CLI.png "Message Broker CLI via OpenShift UI Terminal emulator")
 
-See the [Solace Kubernetes Quickstart README](https://github.com/SolaceProducts/solace-kubernetes-quickstart/tree/master#gaining-admin-access-to-the-vmr ) for more details including admin and ssh access to the individual message brokers.
+See the [Solace Kubernetes Quickstart README](https://github.com/SolaceProducts/solace-kubernetes-quickstart/tree/master#gaining-admin-access-to-the-message-broker ) for more details including admin and ssh access to the individual message brokers.
 
 ## Testing data access to the message broker
 
 To test data traffic though the newly created message broker instance, visit the Solace Developer Portal and select your preferred programming language to [send and receive messages](http://dev.solace.com/get-started/send-receive-messages/ ). Under each language there is a Publish/Subscribe tutorial that will help you get started.
 
-Note: the Host will be the Public IP. It may be necessary to [open up external access to a port](https://github.com/SolaceProducts/solace-kubernetes-quickstart/tree/master#upgradingmodifying-the-vmr-cluster) used by the particular messaging API if it is not already exposed.
+Note: the Host will be the Public IP. It may be necessary to [open up external access to a port](https://github.com/SolaceProducts/solace-kubernetes-quickstart/tree/master#upgradingmodifying-the-message-broker-cluster) used by the particular messaging API if it is not already exposed.
 
 ![alt text](/resources/solace_tutorial.png "getting started publish/subscribe")
 
@@ -344,7 +350,27 @@ Note: the Host will be the Public IP. It may be necessary to [open up external a
 
 ### Deleting the Solace message broker deployment
 
+To remove the project or to start over from Step 4 in a clean state delete the project using the OpenShift console or the command line:
+
+```
+oc delete project solace-pubsub-ha   # adjust your project name as needed
+```
+
+Refer to the [OpenShift Projects](https://docs.openshift.com/enterprise/3.0/dev_guide/projects.html ) documentation.
+
 ### Deleting the OpenShift Container Platform deployment
+
+To delete your OpenShift Container Platform deployment that was set up following Step 1, first you need to detach the IAM policies from the ‘Setup Role’ (IAM) that were attached in (Part II) of Step 1. Then you also need to ensure to free up the allocated OpenShift entitlements from your subscription otherwise they will no longer be available for a subsequent deployment.
+
+Use this quick start's script to automate the execution of the required steps. SSH into the *ansible-configserver* then follow the commands:
+
+```
+# assuming solace-openshift-quickstart/scripts are still available from Step 1
+cd ~/solace-openshift-quickstart/scripts
+./prepareDeleteAWSOpenShift.sh
+```
+
+Now the OpenShift stack delete can be initiated from the AWS CloudFormation console.
 
 ## Contributing
 

@@ -13,7 +13,7 @@
 #
 if [ $# -eq 0 ]; then
   echo "Usage: "
-  echo " . ./prepareProject.sh <VMR project name>"
+  echo "./prepareProject.sh <VMR project name>"
 fi
 
 PROJECT=$1
@@ -49,14 +49,15 @@ fi
 
 # If deployed, grant the Tiller project the required access to deploy VMR HA project components
 if [[ "`oc get projects | grep tiller`" ]]; then
-  echo "Granting the Tiller project access to the VMR HA project..."
+  echo "Tiller project detected, adding access to the ${1} project..."
   oc policy add-role-to-user edit system:serviceaccount:$TILLER:tiller
   oadm policy add-cluster-role-to-user storage-admin system:serviceaccount:$TILLER:tiller
   oadm policy add-cluster-role-to-user cluster-admin system:serviceaccount:$TILLER:tiller
+  echo
 fi
 
 # Configure the required OpenShift Policies and SCC privileges for the operation of the VMR HA software
-echo "Granting the VMR HA project policies and SCC privileges for correct operation..."
+echo "Granting the ${1} project policies and SCC privileges for correct operation..."
 oc policy add-role-to-user edit system:serviceaccount:$PROJECT:default
 oadm policy add-cluster-role-to-user cluster-admin system:serviceaccount:$PROJECT:default
 oadm policy add-scc-to-user privileged system:serviceaccount:$PROJECT:default

@@ -2,9 +2,9 @@
 apiVersion: v1
 kind: Template
 metadata:
-  name: solace-vmr-singlenode-template
+  name: solace-messagebroker-ha-template
   annotations:
-    description: Deploys Solace VMR in an Single Node configuration
+    description: Deploys Solace Message Broker in an HA configuration using persistent storage
 objects:
 
 - kind: Secret
@@ -18,7 +18,7 @@ objects:
       app: solace
   type: Opaque
   data:
-    username_admin_password: "${VMR_ADMIN_PASSWORD}"
+    username_admin_password: "${MESSAGEBROKER_ADMIN_PASSWORD}"
 
 - kind: ConfigMap
   apiVersion: v1
@@ -37,9 +37,155 @@ objects:
         export service_ssh_port='22'
         export logging_debug_output=stdout
         export system_scaling_maxconnectioncount="1000"
+        # [TODO] KBARR not using correct method of finding ordinal until we bump min Kubernetes release above 1.8.1
+        # https://github.com/kubernetes/kubernetes/issues/40651
+        # node_ordinal=$(STATEFULSET_ORDINAL)
+        IFS='-' read -ra host_array <<< $(hostname)
+        node_ordinal=${host_array[-1]}
+        if [[ ! -z `echo $STATEFULSET_NAMESPACE` ]]; then
+          namespace=`echo $STATEFULSET_NAMESPACE`
+        else
+          namespace=default
+        fi
+        service="${DEPLOYMENT_NAME}-solace"
+        # Deal with the fact we cannot accept "-" in routre names
+        service_name=$(echo ${service} | sed 's/-//g')
+        export routername=$(echo $(hostname) | sed 's/-//g')
+        export redundancy_enable=yes
+        export configsync_enable=yes
+        export redundancy_group_password=`cat /mnt/disks/secrets/username_admin_password`
+        export redundancy_group_node_${service_name}0_nodetype=message_routing
+        export redundancy_group_node_${service_name}0_connectvia=${service}-0.${service}-discovery.${namespace}.svc
+        export redundancy_group_node_${service_name}1_nodetype=message_routing
+        export redundancy_group_node_${service_name}1_connectvia=${service}-1.${service}-discovery.${namespace}.svc
+        export redundancy_group_node_${service_name}2_nodetype=monitoring
+        export redundancy_group_node_${service_name}2_connectvia=${service}-2.${service}-discovery.${namespace}.svc
+
+        case ${node_ordinal} in
+        0 )
+         export nodetype=message_routing
+         export redundancy_matelink_connectvia=${service}-1.${service}-discovery.${namespace}.svc
+         export redundancy_activestandbyrole=primary
+          ;;
+        1)
+         export nodetype=message_routing
+         export redundancy_matelink_connectvia=${service}-0.${service}-discovery.${namespace}.svc
+         export redundancy_activestandbyrole=backup
+          ;;
+        2)
+         export nodetype=monitoring
+         ;;
+        esac
 
     config-sync-check.sh: |-
         #!/bin/bash
+        APP=`basename "$0"`
+        yum install -y jq
+        # [TODO] KBARR not using correct method of finding ordinal until we bump min Kubernetes release above 1.8.1
+        # https://github.com/kubernetes/kubernetes/issues/40651
+        # node_ordinal=$(STATEFULSET_ORDINAL)
+        IFS='-' read -ra host_array <<< $(hostname)
+        node_ordinal=${host_array[-1]}
+        password=`cat /mnt/disks/secrets/username_admin_password`
+        loop_guard=30
+        pause=10
+        count=0
+        resync_step=""
+        role=""
+        #exclude monitor node from config-sync check
+        if [ "${node_ordinal}" != "2" ]; then
+          echo "`date` INFO: ${APP}-Determine if Active or Backup role to know which Virtual router to check"
+          while [ ${count} -lt ${loop_guard} ]; do 
+            role_results=`/mnt/disks/solace/semp_query.sh -n admin -p ${password} -u http://localhost:8080/SEMP \
+                  -q "<rpc semp-version='soltr/8_5VMR'><show><redundancy><detail/></redundancy></show></rpc>" \
+                  -v "/rpc-reply/rpc/show/redundancy/active-standby-role[text()]"`
+            case "`echo ${role_results} | jq '.valueSearchResult' -`" in
+              "\"Primary\"")
+              role="primary"
+              break
+              ;;
+              "\"Backup\"")
+              role="backup"
+              break
+              ;;
+            esac
+            ((count++))
+            echo "`date` INFO: ${APP}-Waited ${run_time} seconds, Redundancy not yet up"
+            sleep ${pause}
+          done
+          if [ ${count} -eq ${loop_guard} ]; then
+            echo "`date` ERROR: ${APP}-Solace redundancy group never came up" | tee /dev/stderr
+            exit 1 
+          fi
+
+          count=0
+          echo "`date` INFO: ${APP}-Active or Backup role is ${role}"
+          while [ ${count} -lt ${loop_guard} ]; do 
+            online_results=`/mnt/disks/solace/semp_query.sh -n admin -p ${password} -u http://localhost:8080/SEMP \
+                -q "<rpc semp-version='soltr/8_5VMR'><show><redundancy><detail/></redundancy></show></rpc>" \
+                -v "/rpc-reply/rpc/show/redundancy/virtual-routers/${role}/status/activity[text()]"`
+            local_activity=`echo ${online_results} | jq '.valueSearchResult' -`
+            echo "`date` INFO: ${APP}-Local activity state is: ${local_activity}"
+            run_time=$((${count} * ${pause}))
+            case "${local_activity}" in
+              "\"Local Active\"")
+                echo "`date` INFO: ${APP}-Redundancy is up locally Active, after ${run_time} seconds"
+                echo "`date` INFO: "We should only be here on new cluster create, if not likely a bug"
+                echo "`date` INFO: "   will issue a assert master to get back into sync"                              
+                resync_step="assert-master"
+                break
+                ;;
+              "\"Mate Active\"")
+                echo "`date` INFO: ${APP}-Redundancy is up mate Active, after ${run_time} seconds" 
+                echo "`date` INFO: "This is normal state if we are backup or recreated later on"
+                echo "`date` INFO: "   will issue a resync master to get back into sync"            
+                resync_step="resync-master"
+                break
+                ;;
+            esac
+            ((count++))
+            echo "`date` INFO: ${APP}-Waited ${run_time} seconds, Redundancy not yet up"
+            sleep ${pause}
+          done
+          if [ ${count} -eq ${loop_guard} ]; then
+            echo "`date` ERROR: ${APP}-Solace redundancy group never came up" | tee /dev/stderr
+            exit 1 
+          fi
+
+          # If we need to assert master, then we need to wait for mate to reconsile
+          
+          if [ "${resync_step}" = "assert-master" ]; then
+            count=0
+            echo "`date` INFO: ${APP}-Wait for mate to be 'Standby'"
+            while [ ${count} -lt ${loop_guard} ]; do 
+              online_results=`/mnt/disks/solace/semp_query.sh -n admin -p ${password} -u http://localhost:8080/SEMP \
+                  -q "<rpc semp-version='soltr/8_5VMR'><show><redundancy><detail/></redundancy></show></rpc>" \
+                  -v "/rpc-reply/rpc/show/redundancy/virtual-routers/${role}/status/detail/priority-reported-by-mate/summary[text()]"`
+              mate_activity=`echo ${online_results} | jq '.valueSearchResult' -`
+              echo "`date` INFO: ${APP}-Mate activity state is: ${mate_activity}"
+              run_time=$((${count} * ${pause}))
+              case "${mate_activity}" in
+                "\"Standby\"")
+                  echo "`date` INFO: ${APP}-Redundancy is up end-to-end, Local Active Mate Standby, after ${run_time} seconds"
+                  break
+                  ;;
+              esac
+              ((count++))
+              echo "`date` INFO: ${APP}-Waited ${run_time} seconds, Mate not yet in sync"
+              sleep ${pause}
+            done
+            if [ ${count} -eq ${loop_guard} ]; then
+              echo "`date` ERROR: ${APP}-Solace redundancy group never came up" | tee /dev/stderr
+              exit 1 
+            fi
+          fi # if assert-master
+          # If only needs to do is resync master, can issue cammand and exit.
+          /mnt/disks/solace/semp_query.sh -n admin -p ${password} -u http://localhost:8080/SEMP \
+                -q "<rpc semp-version='soltr/8_5VMR'><admin><config-sync><${resync_step}><router/></${resync_step}></config-sync></admin></rpc>"
+          /mnt/disks/solace/semp_query.sh -n admin -p ${password} -u http://localhost:8080/SEMP \
+                -q "<rpc semp-version='soltr/8_5VMR'><admin><config-sync><${resync_step}><vpn-name>default</vpn-name></${resync_step}></config-sync></admin></rpc>"
+          echo "`date` INFO: ${APP}-Solace Message Broker bringup complete"
+        fi # if not monitor
         exit 0
 
 
@@ -233,7 +379,6 @@ objects:
   #Default don't set zone or zones, allow k8s to strip across active zones
     type: gp2
 
-
 - kind: Service
   apiVersion: v1
   metadata:
@@ -269,9 +414,24 @@ objects:
     - port: 22
       protocol: TCP
       name: ssh
+    - port: 1883
+      protocol: TCP
+      name: mqtt
+    - port: 5672
+      protocol: TCP
+      name: amqp
+    - port: 8000
+      protocol: TCP
+      name: mqttws
     - port: 8080
       protocol: TCP
       name: semp
+    - port: 9000
+      protocol: TCP
+      name: rest
+    - port: 55003
+      protocol: TCP
+      name: smfc
     - port: 55555
       protocol: TCP
       name: smf
@@ -291,7 +451,10 @@ objects:
       heritage: Tiller
   spec:
     serviceName: "${DEPLOYMENT_NAME}-solace-discovery"
-    replicas: 1
+    replicas: 3
+    podManagementPolicy: Parallel
+    updateStrategy: 
+      type: RollingUpdate
     template:
       metadata:
         labels:
@@ -300,7 +463,7 @@ objects:
       spec:
         containers:
         - name: solace
-          image: "${DOCKER_REGISTRY_URL}:${VMR_IMAGE_TAG}"
+          image: "${DOCKER_REGISTRY_URL}:${MESSAGEBROKER_IMAGE_TAG}"
           imagePullPolicy: IfNotPresent
           resources:
             requests:
@@ -320,7 +483,7 @@ objects:
             exec:
               command:
               - /mnt/disks/solace/readiness_check.sh
-              - "6"
+              - "7"
           securityContext:
             privileged: true
             capabilities:
@@ -406,11 +569,11 @@ objects:
         accessModes: [ "ReadWriteOnce" ]
         resources:
           requests:
-            storage: "${VMR_STORAGE_SIZE}"
+            storage: "${MESSAGEBROKER_STORAGE_SIZE}"
 
 parameters:
   - name: DEPLOYMENT_NAME
-    displayName: Solace VMR Deployment Name
+    displayName: Solace Message Broker Deployment Name
     description: The prefix to use for object names
     generate: expression
     from: '[A-Z0-9]{8}'
@@ -418,21 +581,21 @@ parameters:
     required: true
   - name: DOCKER_REGISTRY_URL
     displayName: Docker Registry URL
-    description: The Docker registry URL for the registry containing the Solace VMR docker image
+    description: The Docker registry URL for the registry containing the Solace Message Broker docker image
     value: docker_registry_url
     required: true
-  - name: VMR_IMAGE_TAG
-    displayName: Solace VMR Docker Image Tag
-    description: The Docker image tag for the Solace VMR docker image from your Docker registry
-    value: solace_vmr_image_tag
+  - name: MESSAGEBROKER_IMAGE_TAG
+    displayName: Solace Message Broker Docker Image Tag
+    description: The Docker image tag for the Solace Message Broker docker image from your Docker registry
+    value: solace_messagebroker_image_tag
     required: true
-  - name: VMR_ADMIN_PASSWORD
+  - name: MESSAGEBROKER_ADMIN_PASSWORD
     displayName: Base64 encoded password for Solace username 'admin'
-    description: The VMR 'admin' user's password (base64 encoded).  This Solace OpenShift template will create an administrative user with username 'admin' with specified password.
+    description: The Message Broker 'admin' user's password (base64 encoded).  This Solace OpenShift template will create an administrative user with username 'admin' with specified password.
     value: "cEBzc3cwcmQ=" # password 'p@ssw0rd'
     required: true
-  - name: VMR_STORAGE_SIZE
-    displayName: Solace VMR Persistent Storage Disk Size
-    description: The size in gigabytes for a VMR Pod's persistent volume (with suffix 'Gi'), example 30Gi for 30 gigabytes
+  - name: MESSAGEBROKER_STORAGE_SIZE
+    displayName: Solace Message Broker Persistent Storage Disk Size
+    description: The size in gigabytes for a Message Broker Pod's persistent volume (with suffix 'Gi'), example 30Gi for 30 gigabytes
     value: 30Gi
     required: true
