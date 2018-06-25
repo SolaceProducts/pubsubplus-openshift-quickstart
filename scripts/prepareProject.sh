@@ -6,7 +6,7 @@
 #   2. Grant the necessary OpenShift privileges to the VMR HA project as required for the correct operation of the VMR HA software
 # 
 # PREREQUISITES:
-# 1. Helm client and server-side components (Tiller) have been deployed in the OpenShift environment
+# 1. If used, Helm client and server-side components (Tiller) have been already deployed in the OpenShift environment
 #
 #  Usage:
 #    sudo ./prepareProject.sh <vmrProjectName>
@@ -47,11 +47,13 @@ else
   echo "Skipping project creation, project ${PROJECT} already exists..."
 fi
 
-# Grant the Tiller project the required access to deploy VMR HA project components
-echo "Granting the Tiller project access to the VMR HA project..."
-oc policy add-role-to-user edit system:serviceaccount:$TILLER:tiller
-oadm policy add-cluster-role-to-user storage-admin system:serviceaccount:$TILLER:tiller
-oadm policy add-cluster-role-to-user cluster-admin system:serviceaccount:$TILLER:tiller
+# If deployed, grant the Tiller project the required access to deploy VMR HA project components
+if [[ "`oc get projects | grep tiller`" ]]; then
+  echo "Granting the Tiller project access to the VMR HA project..."
+  oc policy add-role-to-user edit system:serviceaccount:$TILLER:tiller
+  oadm policy add-cluster-role-to-user storage-admin system:serviceaccount:$TILLER:tiller
+  oadm policy add-cluster-role-to-user cluster-admin system:serviceaccount:$TILLER:tiller
+fi
 
 # Configure the required OpenShift Policies and SCC privileges for the operation of the VMR HA software
 echo "Granting the VMR HA project policies and SCC privileges for correct operation..."

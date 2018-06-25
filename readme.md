@@ -16,7 +16,7 @@ The Solace PubSub+ software message broker meets the needs of big data, cloud mi
 
 ## How to deploy a Solace PubSub+ Message Broker onto OpenShift / AWS
 
-The following steps describe how to deploy a message broker onto an OpenShift environment. Optional steps are provided about setting up a Red Hat OpenShift Container Platform on Amazon AWS infrastructure and if you use AWS Elastic Container Registry to host the Solace message broker Docker image - these are marked as (Optional / AWS).
+The following steps describe how to deploy a message broker onto an OpenShift environment. Optional steps are provided about setting up a Red Hat OpenShift Container Platform on Amazon AWS infrastructure (marked as Optional / AWS) and if you use AWS Elastic Container Registry to host the Solace message broker Docker image (marked as Optional / ECR).
 
 There are also two options for deploying a message broker onto your OpenShift deployment.
 * (Deployment option 1): Use the Solace Kubernetes QuickStart to deploy the message broker onto your OpenShift environment. The Solace Kubernetes QuickStart uses `Helm` to automate the process of message broker deployment through a wide range of configuration options and provides in-service upgrade of the message broker.
@@ -67,14 +67,16 @@ export AWS_SECRET_ACCESS_KEY=XXXXXXXXXXXXXXXXXXXXX
 ./configureAWSOpenShift.sh
 ```
 
-Verify you can access and login to the OpenShift console. You can get the URL from the CloudFormation page of the AWS services console, see the 'Outputs' tab of the *nested* OpenShiftStack substack:
+Verify you have access and can login to the OpenShift console. You can get the URL from the CloudFormation page of the AWS services console, see the 'Outputs' tab of the *nested* OpenShiftStack substack:
 
 ![alt text](/resources/GetOpenShiftURL.png "Getting to OpenShift console URL")
 
 
 ### Step 2: Prepare for the deployment
 
-* The Solace OpenShift QuickStart project contains useful scripts to help you prepare an OpenShift project for message broker deployment. You should retrieve the project on a host having the OpenShift client tools and a host that can reach your OpenShift cluster nodes - conveniently, this can be one of the *openshift-master* servers. SSH into the selected host, then:
+**Note:** This and subsequent steps shall be executed on a host having the OpenShift client tools and able to reach your OpenShift cluster nodes - conveniently, this can be one of the *openshift-master* servers.
+
+* The Solace OpenShift QuickStart project contains useful scripts to help you prepare an OpenShift project for message broker deployment. SSH into your selected host and retrieve the project:
 
 ```
 mkdir ~/workspace
@@ -97,68 +99,55 @@ cd ~/workspace/solace-openshift-quickstart/scripts
   * TILLER_NAMESPACE
   * PATH
 
-* **(Part II)** Install the Helm server-side ‘Tiller’ component.  Note, you will be prompted to log into OpenShift if you have not already done so.
+* **(Part II)** Install the Helm server-side ‘Tiller’ component.  Note, you will be prompted to log into OpenShift if you have not already done so. If you used Step 1 to deploy OpenShift, the requested server URL is the same as the OpenShift console URL, the username is `admin` and the password is as specified in the CloudFormation template. Otherwise use the values specific to your environment.
 
 ```
 cd ~/workspace/solace-openshift-quickstart/scripts
 ./deployHelm.sh server
 ```
 
-### Step 4: Use scripts in the Solace OpenShift QuickStart to configure a project to host the message broker HA deployment.
-* **(Part I)** Use the ‘prepareProject.sh’ script to create and configure an OpenShift project that meets requirements of the message broker HA deployment:
+### Step 4: Use scripts in the Solace OpenShift QuickStart to configure a project to host the message broker HA deployment
+
+* Use the ‘prepareProject.sh’ script to create and configure an OpenShift project that meets requirements of the message broker HA deployment:
+
 ```
 cd ~/workspace/solace-openshift-quickstart/scripts
-sudo ./prepareProject.sh solace-pubsub-ha
-```
-* **(Part II, Optional / AWS)** If you are using the AWS Elastic Container Registry (ECR) then you must add the ECR login credentials (as an OpenShift secret) to your message broker HA deployment.  This project contains a helper script to execute this step:
-```
-sudo su –
-aws configure
-exit
-cd ~/workspace/solace-openshift-quickstart/scripts
-sudo ./addECRsecret.sh solace-pubsub-ha
+./prepareProject.sh solace-pubsub-ha    # adjust the project name as needed here and in subsequent commands
 ```
 
-### Step 2: Download and deploy the message broker (Docker image) to your Docker Registry
+### Step 5 Load the message broker (Docker image) to your Docker Registry
 
-* **(Part I)** Download a copy of the message broker.  Follow Step 2 from the [Solace Kubernetes QuickStart](https://github.com/SolaceProducts/solace-kubernetes-quickstart) to download the message broker.
+Deployment scripts will pull the Solace message broker image from a docker registry. There are several [options ](https://docs.openshift.com/container-platform/3.7/architecture/infrastructure_components/image_registry.html#overview ) here depending on the requirements of your project, see some examples in (Part II) of this step.
+
+**Note:** The free PubSub+ Standard Edition is available from the [Solace public Docker Hub registry](https://hub.docker.com/r/solace/solace-pubsub-standard/tags/ ). If pulling this image from a public registry meets your requirements you can skip the rest of this step. The Docker Registry URL will be `solace/solace-pubsub-standard:<TagName>`.
+
+* **(Part I)** Download a copy of the message broker Docker image.
+
+Go to the Solace Developer Portal and download the Solace PubSub+ software message broker as a **Docker** image or obtain your version from Solace Support.
+
+You can use this quick start with either PubSub+ `Standard` or PubSub+ `Enterprise Evaluation Edition`.
+
+| PubSub+ Standard<br/>Docker Image | PubSub+ Enterprise Evaluation Edition<br/>Docker Image
+| :---: | :---: |
+| Free, up to 1k simultaneous connections,<br/>up to 10k messages per second | 90-day trial version, unlimited |
+| [Download Standard Docker Image](http://dev.solace.com/downloads/) | [Download Evaluation Docker Image](http://dev.solace.com/downloads#eval) |
 
 * **(Part II)** Deploy the message broker docker image to your Docker registry of choice
 
-  * **(Optional / AWS)** You can utilize the AWS Elastic Container Registry to host the VMR Docker image. For more information, refer to [Amazon Elastic Container Registry](https://aws.amazon.com/ecr/).
+  Options include:
 
+  * You can choose to use [OpenShift's docker registry.](https://docs.openshift.com/container-platform/3.7/install_config/registry/deploy_registry_existing_clusters.html )
 
+  * **(Optional / ECR)** You can utilize the AWS Elastic Container Registry (ECR) to host the VMR Docker image. For more information, refer to [Amazon Elastic Container Registry](https://aws.amazon.com/ecr/ ). If you are using ECR as your Docker registry then you must add the ECR login credentials (as an OpenShift secret) to your message broker HA deployment.  This project contains a helper script to execute this step:
 
-### Step 6: (Option 1) Deploy the message broker using the OpenShift templates included in this project
-
-**Prerequisites:**
-1. Determine your message broker disk space requirements.  We recommend a minimum of 30 gigabytes of disk space.
-2. Define a strong password for the 'admin' user and then base64 encode the value.  This value will be specified as a parameter when processing the message broker OpenShift template:
 ```
-echo -n 'strong@dminPw!' | base64
-```
-
-**Deploy the message broker:**
-
-You can deploy the message broker in either a single-node or high-availability configuration:
-
-* For a **Single-Node** configuration:
-  * Process the Solace 'Single Node' OpenShift template to deploy the message broker in a single-node configuration.  Specify values for the DOCKER_REGISTRY_URL, VMR_IMAGE_TAG, VMR_STORAGE_SIZE, and VMR_ADMIN_PASSWORD parameters:
-```
-oc project solace-pubsub-ha
-cd  ~/workspace/solace-openshift-quickstart/templates
-oc process -f vmr_singleNode_template.yaml DEPLOYMENT_NAME=single-node-vmr DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> VMR_IMAGE_TAG=<replace with your Solace VMR docker image tag> VMR_STORAGE_SIZE=30Gi VMR_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
+# Required if using ECR for docker registry
+sudo aws configure       # provide AWS config for root
+cd ~/workspace/solace-openshift-quickstart/scripts
+sudo ./addECRsecret.sh solace-pubsub-ha   # adjust the project name as needed
 ```
 
-* For a **High-Availability** configuration:
-  * Process the Solace 'HA' OpenShift template to deploy the message broker in a high-availability configuration.  Specify values for the DOCKER_REGISTRY_URL, VMR_IMAGE_TAG, VMR_STORAGE_SIZE, and VMR_ADMIN_PASSWORD parameters:
-```
-oc project solace-pubsub-ha
-cd  ~/workspace/solace-openshift-quickstart/templates
-oc process -f vmr_ha_template.yaml DEPLOYMENT_NAME=vmr-ha DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> VMR_IMAGE_TAG=<replace with your Solace VMR docker image tag> VMR_STORAGE_SIZE=30Gi VMR_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
-```    
-
-### Step 6: (Option 2) Deploy the message broker using the Solace Kubernetes QuickStart
+### Step 6: (Option 1) Deploy the message broker using the Solace Kubernetes QuickStart
 
 If you require more flexibility in terms of message broker deployment options (compared to those offered by the OpenShift templates provided by this project) then use the [Solace Kubernetes QuickStart](https://github.com/SolaceProducts/solace-kubernetes-quickstart) to deploy the message broker:
 
@@ -173,7 +162,7 @@ cd solace-kubernetes-quickstart
 * Update the Solace Kubernetes values.yaml configuration file for your target deployment (Please refer to the [Solace Kubernetes QuickStart](https://github.com/SolaceProducts/solace-kubernetes-quickstart) for further details):
 
 ```
-oc project solace-pubsub-ha
+oc project solace-pubsub-ha   # adjust the project name as needed
 cd ~/workspace/solace-kubernetes-quickstart/solace
 vi values.yaml
 helm install . -f values.yaml
@@ -190,6 +179,35 @@ helm install . -f values.yaml
   |storage / type          |standard             |Set to ‘standard’ to use lower-cost / standard performance disk types (AWS GP2)|
   |storage / size          |30Gi                 |Set to the minimum number of gigabytes for VMR data storage.  Refer to message broker documentation for further details.|
 
+### Step 6: (Option 2) Deploy the message broker using the OpenShift templates included in this project
+
+**Prerequisites:**
+1. Determine your message broker disk space requirements.  We recommend a minimum of 30 gigabytes of disk space.
+2. Define a strong password for the 'admin' user and then base64 encode the value.  This value will be specified as a parameter when processing the message broker OpenShift template:
+```
+echo -n 'strong@dminPw!' | base64
+```
+
+**Deploy the message broker:**
+
+You can deploy the message broker in either a single-node or high-availability configuration:
+
+* For a **Single-Node** configuration:
+  * Process the Solace 'Single Node' OpenShift template to deploy the message broker in a single-node configuration.  Specify values for the DOCKER_REGISTRY_URL, VMR_IMAGE_TAG, VMR_STORAGE_SIZE, and VMR_ADMIN_PASSWORD parameters:
+```
+oc project solace-pubsub-ha   # adjust the project name as needed
+cd  ~/workspace/solace-openshift-quickstart/templates
+oc process -f vmr_singleNode_template.yaml DEPLOYMENT_NAME=single-node-vmr DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> VMR_IMAGE_TAG=<replace with your Solace VMR docker image tag> VMR_STORAGE_SIZE=30Gi VMR_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
+```
+
+* For a **High-Availability** configuration:
+  * Process the Solace 'HA' OpenShift template to deploy the message broker in a high-availability configuration.  Specify values for the DOCKER_REGISTRY_URL, VMR_IMAGE_TAG, VMR_STORAGE_SIZE, and VMR_ADMIN_PASSWORD parameters:
+```
+oc project solace-pubsub-ha   # adjust the project name as needed
+cd  ~/workspace/solace-openshift-quickstart/templates
+oc process -f vmr_ha_template.yaml DEPLOYMENT_NAME=vmr-ha DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> VMR_IMAGE_TAG=<replace with your Solace VMR docker image tag> VMR_STORAGE_SIZE=30Gi VMR_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
+```
+  
 ## Validating the Deployment
 
 Now you can validate your deployment from the OpenShift client shell:
