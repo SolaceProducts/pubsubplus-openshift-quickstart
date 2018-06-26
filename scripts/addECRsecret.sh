@@ -1,23 +1,22 @@
 #!/bin/bash
 # This script adds an AWS ECR credentials secret to an OpenShift project 
-#   1. Configure an OpenShift Secret containing AWS ECR access credentials to allow the VMR project to pull the VMR software
-#       from the remote AWS (Elastic Container Registry) Docker repository.
+#   1. Configure an OpenShift Secret containing AWS ECR access credentials to allow a project to pull the Solace
+#       message broker docker image from the remote AWS (Elastic Container Registry) Docker repository.
 # 
 # PREREQUISITES:
 # 1. The user has run the 'aws configure' command as root user
-# 2. The VMR software (Docker Image) has been deployed in an external publicly accessible Docker Registry (AWS
+# 2. The Solace message broker docker image has been deployed in an external publicly accessible Docker Registry (AWS
 #      Elastic Container Registry)
 #
 #  Usage:
-#    sudo ./addECRsecret.sh <vmrProjectName>
+#    sudo ./addECRsecret.sh <projectName>
 #
 if [ $# -eq 0 ]; then
   echo "Usage: "
-  echo " sudo ./addECRsecret.sh <VMR project name>"
+  echo " sudo ./addECRsecret.sh <projectName>"
 fi
 
 PROJECT=$1
-TILLER=tiller
 
 function ocLogin() {
   # Log the user into OpenShift if they are not already logged in
@@ -33,10 +32,10 @@ function ocLogin() {
 ocLogin
 
 
-# Switch to the VMR project
+# Switch to the project
 oc project ${PROJECT} &> /dev/null
 if [ $? -ne 0 ]; then
-  echo "The project ${PROJECT} does not exist.  Run the prepareProject.sh script to create an OpenShift project for deploying Solace VMR"
+  echo "The project ${PROJECT} does not exist.  Run the prepareProject.sh script to create an OpenShift project for deploying the Solace message broker"
 fi
 
 # Create an OpenShift Secret to contain the AWS ECR login credentials

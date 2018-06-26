@@ -4,9 +4,9 @@
 
 This repository provides an example of how to deploy Solace PubSub+ software message brokers onto an OpenShift 3.7 or 3.9 platform. There are [multiple ways](https://docs.openshift.com/index.html ) to get to an OpenShift platform, including [MiniShift](https://github.com/minishift/minishift#welcome-to-minishift ). This guide will specifically use the Red Hat OpenShift Container Platform 3.7 or 3.9 but concepts are transferable to other compatible platforms.
 
-We utilize the [RedHat OpenShift on AWS QuickStart](https://aws.amazon.com/quickstart/architecture/openshift/) project to deploy a Red Hat OpenShift Container Platform on AWS in a highly redundant configuration, spanning 3 zones.
+We utilize the [RedHat OpenShift on AWS QuickStart](https://aws.amazon.com/quickstart/architecture/openshift/ ) project to deploy a Red Hat OpenShift Container Platform on AWS in a highly redundant configuration, spanning 3 zones.
 
-This repository expands on the [Solace Kubernetes Quickstart](https://github.com/SolaceProducts/solace-kubernetes-quickstart) to provide an example of how to deploy Solace PubSub+ software message brokers in an HA configuration on the OpenShift Container Platform running in AWS.
+This repository expands on the [Solace Kubernetes Quickstart](https://github.com/SolaceProducts/solace-kubernetes-quickstart ) to provide an example of how to deploy Solace PubSub+ software message brokers in an HA configuration on the OpenShift Container Platform running in AWS.
 
 ![alt text](/resources/network_diagram.jpg "Network Diagram")
 
@@ -28,9 +28,9 @@ Steps to deploy the message broker:
 
 ### Step 1: (Optional / AWS) Deploy OpenShift Container Platform onto AWS using the RedHat OpenShift AWS QuickStart Project
 
-* (Part I) Log into the AWS Web Console and run the [OpenShift AWS QuickStart project](https://aws.amazon.com/quickstart/architecture/openshift/), which will use AWS CloudFormation for the deployment.  We recommend you deploy OpenShift across 3 AWS Availability Zones for maximum redundancy.  Please refer to the RedHat OpenShift AWS QuickStart guide and supporting documentation:
+* (Part I) Log into the AWS Web Console and run the [OpenShift AWS QuickStart project](https://aws.amazon.com/quickstart/architecture/openshift/ ), which will use AWS CloudFormation for the deployment.  We recommend you deploy OpenShift across 3 AWS Availability Zones for maximum redundancy.  Please refer to the RedHat OpenShift AWS QuickStart guide and supporting documentation:
 
-  * [Deploying and Managing OpenShift Container Platform 3.7 on Amazon Web Services](https://access.redhat.com/documentation/en-us/reference_architectures/2017/html-single/deploying_and_managing_openshift_container_platform_3.7_on_amazon_web_services/index)
+  * [Deploying and Managing OpenShift 3.9 on Amazon Web Services](https://access.redhat.com/documentation/en-us/reference_architectures/2018/html/deploying_and_managing_openshift_3.9_on_amazon_web_services/ )
   
   **Important:** As described in above documentation, this deployment requires a Red Hat account with a valid Red Hat subscription to OpenShift and will consume 10 OpenShift entitlements in a maximum redundancy configuration. When no longer needed ensure to follow the steps in the [Deleting the OpenShift Container Platform deployment](#deleting-the-openshift-container-platform-deployment ) section of this guide to free up the entitlements.
 
@@ -39,7 +39,7 @@ Steps to deploy the message broker:
 
 * (Part II) Once you have deployed OpenShift using the AWS QuickStart you will have to perform additional steps to re-configure OpenShift to integrate fully with AWS.  For full details, please refer to the RedHat OpenShift documentation for configuring OpenShift for AWS:
 
-  * [OpenShift > Configuring for AWS](https://docs.openshift.com/container-platform/3.7/install_config/configuring_aws.html)
+  * [OpenShift > Configuring for AWS](https://docs.openshift.com/container-platform/3.7/install_config/configuring_aws.html )
   
   To help with that this quick start provides a script to automate the execution of the required steps:
   
@@ -148,7 +148,7 @@ sudo ./addECRsecret.sh solace-pubsub-ha   # adjust your project name as needed
 
 ### Step 6: (Option 1) Deploy the message broker using the Solace Kubernetes QuickStart
 
-If you require more flexibility in terms of message broker deployment options (compared to those offered by the OpenShift templates provided by this project) then use the [Solace Kubernetes QuickStart](https://github.com/SolaceProducts/solace-kubernetes-quickstart) to deploy the message broker:
+If you require more flexibility in terms of message broker deployment options (compared to those offered by the OpenShift templates provided by this project) then use the [Solace Kubernetes QuickStart](https://github.com/SolaceProducts/solace-kubernetes-quickstart ) to deploy the message broker:
 
 * Retrieve the Solace Kubernetes QuickStart from GitHub:
 
@@ -158,7 +158,7 @@ git clone https://github.com/SolaceProducts/solace-kubernetes-quickstart.git
 cd solace-kubernetes-quickstart
 ```
 
-* Update the Solace Kubernetes values.yaml configuration file for your target deployment (Please refer to the [Solace Kubernetes QuickStart](https://github.com/SolaceProducts/solace-kubernetes-quickstart) for further details):
+* Update the Solace Kubernetes values.yaml configuration file for your target deployment (Please refer to the [Solace Kubernetes QuickStart](https://github.com/SolaceProducts/solace-kubernetes-quickstart ) for further details):
 
 ```
 oc project solace-pubsub-ha   # adjust your project name as needed
@@ -342,7 +342,7 @@ See the [Solace Kubernetes Quickstart README](https://github.com/SolaceProducts/
 
 To test data traffic though the newly created message broker instance, visit the Solace Developer Portal and select your preferred programming language to [send and receive messages](http://dev.solace.com/get-started/send-receive-messages/ ). Under each language there is a Publish/Subscribe tutorial that will help you get started.
 
-Note: the Host will be the Public IP. It may be necessary to [open up external access to a port](https://github.com/SolaceProducts/solace-kubernetes-quickstart/tree/master#upgradingmodifying-the-message-broker-cluster) used by the particular messaging API if it is not already exposed.
+Note: the Host will be the Public IP. It may be necessary to [open up external access to a port](https://github.com/SolaceProducts/solace-kubernetes-quickstart/tree/master#upgradingmodifying-the-message-broker-cluster ) used by the particular messaging API if it is not already exposed.
 
 ![alt text](/resources/solace_tutorial.png "getting started publish/subscribe")
 
@@ -402,7 +402,7 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduc
 
 ## Authors
 
-See the list of [contributors](https://github.com/SolaceProducts/solace-openshift-quickstart/graphs/contributors) who participated in this project.
+See the list of [contributors](https://github.com/SolaceProducts/solace-openshift-quickstart/graphs/contributors ) who participated in this project.
 
 ## License
 

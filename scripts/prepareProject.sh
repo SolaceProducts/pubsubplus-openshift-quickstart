@@ -1,19 +1,19 @@
 #!/bin/bash
-# This script performs several operations necessary to prepare an OpenShift project for deploying
-#   the VMR HA software using a Helm Chart.   The following steps are necessary:
-#   1. Grant the necessary privileges to the Helm Tiller project so that the Tiller project may deploy the necessary components
-#       of the VMR HA software in its own project
-#   2. Grant the necessary OpenShift privileges to the VMR HA project as required for the correct operation of the VMR HA software
+# This script preapres an OpenShift project for deploying
+#   the Solace message broker software. The following steps are necessary:
+#   1. If using Helm (Tiller project detected) grant the necessary privileges to the Helm Tiller project so that the Tiller project
+#      may deploy the necessary components of the Solace message broker software in its own project
+#   2. Grant the necessary OpenShift privileges to the project hosting the Solace message broker as required
 # 
 # PREREQUISITES:
 # 1. If used, Helm client and server-side components (Tiller) have been already deployed in the OpenShift environment
 #
 #  Usage:
-#    sudo ./prepareProject.sh <vmrProjectName>
+#    sudo ./prepareProject.sh <projectName>
 #
 if [ $# -eq 0 ]; then
   echo "Usage: "
-  echo "./prepareProject.sh <VMR project name>"
+  echo "./prepareProject.sh <projectName>"
 fi
 
 PROJECT=$1
@@ -39,7 +39,7 @@ oadm policy add-cluster-role-to-user cluster-admin admin
 oadm policy add-cluster-role-to-user cluster-admin system::admin
 oadm policy add-cluster-role-to-user cluster-admin system:controller:service-controller
 
-# Create VMR HA project
+# Create project
 oc project ${PROJECT} &> /dev/null
 if [ $? -ne 0 ]; then
   oc new-project ${PROJECT}
@@ -47,7 +47,7 @@ else
   echo "Skipping project creation, project ${PROJECT} already exists..."
 fi
 
-# If deployed, grant the Tiller project the required access to deploy VMR HA project components
+# If deployed, grant the Tiller project the required access to deploy the Solace message router components
 if [[ "`oc get projects | grep tiller`" ]]; then
   echo "Tiller project detected, adding access to the ${1} project..."
   oc policy add-role-to-user edit system:serviceaccount:$TILLER:tiller
@@ -56,7 +56,7 @@ if [[ "`oc get projects | grep tiller`" ]]; then
   echo
 fi
 
-# Configure the required OpenShift Policies and SCC privileges for the operation of the VMR HA software
+# Configure the required OpenShift Policies and SCC privileges for the operation of the Solace message router software
 echo "Granting the ${1} project policies and SCC privileges for correct operation..."
 oc policy add-role-to-user edit system:serviceaccount:$PROJECT:default
 oadm policy add-cluster-role-to-user cluster-admin system:serviceaccount:$PROJECT:default
