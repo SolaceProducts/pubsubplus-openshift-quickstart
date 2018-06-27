@@ -53,7 +53,8 @@ fi
 # Configure the required OpenShift Policies and SCC privileges for the operation of the Solace message router software
 echo "Granting the ${1} project policies and SCC privileges for correct operation..."
 oc policy add-role-to-user edit system:serviceaccount:$PROJECT:default
-oadm policy add-cluster-role-to-user cluster-admin system:serviceaccount:$PROJECT:default
 oadm policy add-scc-to-user privileged system:serviceaccount:$PROJECT:default
 oadm policy add-scc-to-user anyuid system:serviceaccount:$PROJECT:default
+oadm policy add-cluster-role-to-user storage-admin admin
+
 
