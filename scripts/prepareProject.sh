@@ -24,7 +24,7 @@ function ocLogin() {
   oc whoami &> /dev/null
   if [ $? -ne 0 ]; then
       echo "Not logged into Openshift.  Now logging in."
-      oc login
+      oc login -u system:admin -n default
       oc version
   else
       echo "Already logged into OpenShift as `oc whoami`"
@@ -32,12 +32,6 @@ function ocLogin() {
 }
 ocLogin
 
-
-# Grant the admin user privileges to inspect OpenShift resources
-echo "Adding policies to service accounts for working with OpenShift projects..."
-oadm policy add-cluster-role-to-user cluster-admin admin
-oadm policy add-cluster-role-to-user cluster-admin system::admin
-oadm policy add-cluster-role-to-user cluster-admin system:controller:service-controller
 
 # Create project
 oc project ${PROJECT} &> /dev/null
@@ -52,14 +46,12 @@ if [[ "`oc get projects | grep tiller`" ]]; then
   echo "Tiller project detected, adding access to the ${1} project..."
   oc policy add-role-to-user edit system:serviceaccount:$TILLER:tiller
   oadm policy add-cluster-role-to-user storage-admin system:serviceaccount:$TILLER:tiller
-  oadm policy add-cluster-role-to-user cluster-admin system:serviceaccount:$TILLER:tiller
   echo
 fi
 
 # Configure the required OpenShift Policies and SCC privileges for the operation of the Solace message router software
 echo "Granting the ${1} project policies and SCC privileges for correct operation..."
 oc policy add-role-to-user edit system:serviceaccount:$PROJECT:default
-oadm policy add-cluster-role-to-user cluster-admin system:serviceaccount:$PROJECT:default
 oadm policy add-scc-to-user privileged system:serviceaccount:$PROJECT:default
 oadm policy add-scc-to-user anyuid system:serviceaccount:$PROJECT:default
 
