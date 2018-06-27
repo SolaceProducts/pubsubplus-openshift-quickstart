@@ -14,6 +14,7 @@
 if [ $# -eq 0 ]; then
   echo "Usage: "
   echo "./prepareProject.sh <projectName>"
+  exit 1
 fi
 
 PROJECT=$1
@@ -37,6 +38,7 @@ ocLogin
 oc project ${PROJECT} &> /dev/null
 if [ $? -ne 0 ]; then
   oc new-project ${PROJECT}
+  oc policy add-role-to-user admin admin -n ${PROJECT}
 else
   echo "Skipping project creation, project ${PROJECT} already exists..."
 fi
@@ -46,7 +48,6 @@ if [[ "`oc get projects | grep tiller`" ]]; then
   echo "Tiller project detected, adding access to the ${1} project..."
   oc policy add-role-to-user edit system:serviceaccount:$TILLER:tiller
   oadm policy add-cluster-role-to-user storage-admin system:serviceaccount:$TILLER:tiller
-  oadm policy add-cluster-role-to-user cluster-admin system:serviceaccount:$TILLER:tiller
   echo
 fi
 
