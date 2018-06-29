@@ -21,7 +21,7 @@ PROJECT=$1
 TILLER=tiller
 
 function ocLogin() {
-  # Log the user into OpenShift if they are not already logged in
+  # Log in as system:admin into OpenShift if not already logged in. This script requires a user with cluster-admin role
   oc whoami &> /dev/null
   if [ $? -ne 0 ]; then
       echo "Not logged into Openshift.  Now logging in."

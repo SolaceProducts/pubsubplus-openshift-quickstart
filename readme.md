@@ -111,7 +111,7 @@ cd ~/workspace/solace-openshift-quickstart/scripts
 
 ```
 cd ~/workspace/solace-openshift-quickstart/scripts
-./prepareProject.sh solace-pubsub-ha    # adjust your project name as needed here and in subsequent commands
+sudo ./prepareProject.sh solace-pubsub-ha    # adjust your project name as needed here and in subsequent commands
 ```
 
 ### Step 5 Load the message broker (Docker image) to your Docker Registry
