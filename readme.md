@@ -364,6 +364,7 @@ helm delete XXX-XXX  # your deployment - "plucking-squid" in the example above
 * If used (Option 2) OpenShift templates to deploy, use:
 
 ```
+cd ~/workspace/solace-openshift-quickstart/templates
 oc process -f <template-used> DEPLOYMENT_NAME=<deploymentname> | oc delete -f -
 ```
 
