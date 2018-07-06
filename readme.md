@@ -24,7 +24,7 @@ There are also two options for deploying a message broker onto your OpenShift de
 
 Steps to deploy the message broker:
 
-**Note:** You may skip Step 1 if you already have your own OpenShift environment deployed.
+**Hint:** You may skip Step 1 if you already have your own OpenShift environment deployed.
 
 ### Step 1: (Optional / AWS) Deploy OpenShift Container Platform onto AWS using the RedHat OpenShift AWS QuickStart Project
 
@@ -118,7 +118,7 @@ sudo ./prepareProject.sh solace-pubsub-ha    # adjust your project name as neede
 
 Deployment scripts will pull the Solace message broker image from a [docker registry](https://docs.docker.com/registry/ ). There are several [options which registry to use](https://docs.openshift.com/container-platform/3.7/architecture/infrastructure_components/image_registry.html#overview ) depending on the requirements of your project, see some examples in (Part II) of this step.
 
-**Note:** The free PubSub+ Standard Edition is available from the [Solace public Docker Hub registry](https://hub.docker.com/r/solace/solace-pubsub-standard/tags/ ). If pulling this image from a public registry meets your requirements you can skip the rest of this step. The Docker Registry URL will be `solace/solace-pubsub-standard:<TagName>`.
+**Hint:** You may skip the rest of this step if using the free PubSub+ Standard Edition available from the [Solace public Docker Hub registry](https://hub.docker.com/r/solace/solace-pubsub-standard/tags/ ). The Docker Registry URL to use will be `solace/solace-pubsub-standard:<TagName>`.
 
 * **(Part I)** Download a copy of the message broker Docker image.
 
@@ -163,19 +163,19 @@ cd solace-kubernetes-quickstart
 ```
 oc project solace-pubsub-ha   # adjust your project name as needed
 cd ~/workspace/solace-kubernetes-quickstart/solace
-# Edit values.yaml or overwrite with one of the examples
-#     HA config example
+# 1) Edit values.yaml or overwrite with one of the examples
+#     For HA config example:
 #        cp values-examples/prod1k-persist-ha-provisionPvc.yaml values.yaml
-#     non-HA config example
+#     For non-HA config example:
 #        cp values-examples/prod1k-direct-noha.yaml values.yaml
-# replace SOLOS_CLOUD_PROVIDER, SOLOS_IMAGE_REPO, SOLOS_IMAGE_TAG
+# 2) Replace SOLOS_CLOUD_PROVIDER, SOLOS_IMAGE_REPO, SOLOS_IMAGE_TAG
 vi values.yaml
-# Setup the password for the 'admin' user of the message broker
-# replace SOLOS_ADMIN_PASSWORD
+# 3) Setup the password for the 'admin' user of the message broker
+#        replace SOLOS_ADMIN_PASSWORD
 vi templates/secret.yaml
-# Initiate the deployment
+# 4) Initiate the deployment
 helm install . -f values.yaml
-# Wait until all pods running and ready
+# 5) Wait until all pods running and ready
 watch oc get statefulset,service,pods,pvc,pv
 ```
 * The following table lists example values for the ‘values.yaml’ file to deploy a message broker in a Highly-Available configuration using persistent storage.

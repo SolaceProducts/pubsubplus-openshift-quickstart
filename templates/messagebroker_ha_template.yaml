@@ -258,7 +258,7 @@ objects:
           fi
           ;;
         "")
-          echo "`date` WARN: ${APP}-Unable to deturmine config role, failing readiness check"
+          echo "`date` WARN: ${APP}-Unable to determine config role, failing readiness check"
           set_label "active" "false" $state_file
           exit 1
       esac
