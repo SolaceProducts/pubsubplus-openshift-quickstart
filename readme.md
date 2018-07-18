@@ -56,9 +56,9 @@ git clone https://github.com/SolaceProducts/solace-openshift-quickstart.git
 cd solace-openshift-quickstart/scripts
 # substitute your own parameters for the following exports
 # You can get the stack names e.g.: from the CloudFormation page of the AWS services console,
-# see the 'Overview' tab of the *nested* VPC or OpenShiftStack substacks.
+# see the 'Overview' tab of the *nested* OpenShiftStack and VPC substacks.
 # You can get the access keys from the AWS services console IAM > Users > Security credentials.
-export OPENSHIFTSTACK_STACKNAME=XXXXXXXXXXXXXXXXXXXXX
+export NESTEDOPENSHIFTSTACK_STACKNAME=XXXXXXXXXXXXXXXXXXXXX
 export VPC_STACKNAME=XXXXXXXXXXXXXXXXXXXXX
 export AWS_ACCESS_KEY_ID=XXXXXXXXXXXXXXXXXXXXX
 export AWS_SECRET_ACCESS_KEY=XXXXXXXXXXXXXXXXXXXXX
