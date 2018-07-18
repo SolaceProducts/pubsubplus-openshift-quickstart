@@ -58,22 +58,6 @@ do
 done
 echo
 
-# Tag public subnets so when creating a public service suitable public subnets can be found for creating the ELB"
-echo "Tagging public subnets"
-# get public subnets of the VPC
-SUBNETS=`aws ec2 describe-subnets --region $REGION --filters "Name=tag:aws:cloudformation:stack-name,Values=$VPC_STACKNAME" --filters "Name=tag:Network,Values=Public" --query Subnets[].SubnetId --output text`
-KUBE_CLUSTER_TAGKEY=`aws ec2 describe-tags --region $REGION --filters "Name=tag:aws:cloudformation:stack-name,Values=$NESTEDOPENSHIFTSTACK_STACKNAME" --filters Name=tag-key,Values=*kubernetes.io/cluster* --query 'Tags[0].Key' --output text`
-KUBE_CLUSTER_TAGVALUE=`aws ec2 describe-tags --region $REGION --filters "Name=tag:aws:cloudformation:stack-name,Values=$NESTEDOPENSHIFTSTACK_STACKNAME" --filters Name=tag-key,Values=*kubernetes.io/cluster* --query 'Tags[0].Value' --output text`
-if [[ -z "$SUBNETS" || -z "$KUBE_CLUSTER_TAGKEY" || -z "$KUBE_CLUSTER_TAGVALUE" ]]; then
-  echo "Couldn't identify subnets or tag names. Verify the required env variables are exported and valid:
-NESTEDOPENSHIFTSTACK_STACKNAME, VPC_STACKNAME, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY" 1>&2
-  exit 1
-fi
-# create the tags
-aws ec2 create-tags --region $REGION --resources $SUBNETS --tags Key=$KUBE_CLUSTER_TAGKEY,Value=$KUBE_CLUSTER_TAGVALUE
-aws ec2 create-tags --region $REGION --resources $SUBNETS --tags Key=kubernetes.io/role/elb,Value=
-echo ""
-
 # Update OpenShift Nodes (EC2 instances)
 echo "Updating OpenShift Nodes (EC2 instances)"
 OPENSHIFT_NODES_LIST=`aws ec2 describe-instances --region $REGION --filters "Name=tag:aws:cloudformation:stack-name,Values=$NESTEDOPENSHIFTSTACK_STACKNAME" --filters Name="tag:Name",Values="*nodes*" --query Reservations[].Instances[].PrivateIpAddress | awk -F'"' '{print $2}' | paste -sd " " -`
