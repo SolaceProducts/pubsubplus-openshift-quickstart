@@ -67,11 +67,11 @@ export AWS_SECRET_ACCESS_KEY=XXXXXXXXXXXXXXXXXXXXX
 ./configureAWSOpenShift.sh
 ```
 
-<p align="center">Verify you have access and can login to the OpenShift console. You can get the URL from the CloudFormation page of the AWS services console, see the 'Outputs' tab of the *nested* OpenShiftStack substack</p>
+Verify you have access and can login to the OpenShift console. You can get the URL from the CloudFormation page of the AWS services console, see the 'Outputs' tab of the *nested* OpenShiftStack substack.
 
 ![alt text](/resources/GetOpenShiftURL.png "Getting to OpenShift console URL")
 
-OpenShift deployment example with nested OpenShiftStack, VPCStack, tabs, keys and values. 
+<p align="center">OpenShift deployment example with nested OpenShiftStack, VPCStack, tabs, keys and values</p>
 
 
 ### Step 2: Prepare for the deployment
