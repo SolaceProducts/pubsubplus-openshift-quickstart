@@ -67,9 +67,11 @@ export AWS_SECRET_ACCESS_KEY=XXXXXXXXXXXXXXXXXXXXX
 ./configureAWSOpenShift.sh
 ```
 
-Verify you have access and can login to the OpenShift console. You can get the URL from the CloudFormation page of the AWS services console, see the 'Outputs' tab of the *nested* OpenShiftStack substack:
+<p align="center">Verify you have access and can login to the OpenShift console. You can get the URL from the CloudFormation page of the AWS services console, see the 'Outputs' tab of the *nested* OpenShiftStack substack</p>
 
 ![alt text](/resources/GetOpenShiftURL.png "Getting to OpenShift console URL")
+
+OpenShift deployment example with nested OpenShiftStack, VPCStack, tabs, keys and values. 
 
 
 ### Step 2: Prepare for the deployment
@@ -190,18 +192,6 @@ helm install . -f values.yaml
 # Wait until all pods running and ready and the active message broker pod label is "active=true"
 watch oc get statefulset,service,pods,pvc,pv --show-labels
 ```
-
-* The following table lists example values for the ‘values.yaml’ file to deploy a message broker in a Highly-Available configuration using persistent storage.
-
-  |Variable                |Value                 |Description                |
-  |------------------------|----------------------|---------------------------|
-  |cloudProvider           |aws                   |Set to 'aws' when deploying a message broker in an OpenShift / AWS environment|
-  |solace / redundancy     |true                  |Set to ‘true’ for a message broker HA configuration|
-  |image / repository      |docker repo URI       |The repository URI of your docker repo including the location of the message broker docker image|
-  |image / tag             |docker repo image tag |The associated Image Tag of the message broker docker image|
-  |storage / persistent    |true                  |Set to ‘true’ to configure persistent disks to store message broker data|
-  |storage / type          |standard              |Set to ‘standard’ to use lower-cost / standard performance disk types (AWS GP2)|
-  |storage / size          |30Gi                  |Set to the minimum number of gigabytes for the message broker data storage.  Refer to message broker documentation for further details.|
 
 ### Step 6: (Option 2) Deploy the message broker using the OpenShift templates included in this project
 
