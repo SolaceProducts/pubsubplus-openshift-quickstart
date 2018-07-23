@@ -98,9 +98,7 @@ cd ~/workspace/solace-openshift-quickstart/scripts
 ```
 
   **Important:** After running the above script, note the export statements for the following environment variables from the output - copy and run them. It is also recommended to add them to `~/.bashrc` on your machine so they are automatically sourced at future sessions (These environment variables are required every time when running the `helm` client tool):
-     * HELM_HOME
-     * TILLER_NAMESPACE
-     * PATH
+  `HELM_HOME`, `TILLER_NAMESPACE`, `PATH`
 
 * **(Part II)** Install the Helm server-side ‘Tiller’ component.  Note, you will be prompted to log into OpenShift if you have not already done so. If you used Step 1 to deploy OpenShift, the requested server URL is the same as the OpenShift console URL, the username is `admin` and the password is as specified in the CloudFormation template. Otherwise use the values specific to your environment.
 
