@@ -97,7 +97,7 @@ cd ~/workspace/solace-openshift-quickstart/scripts
 ./deployHelm.sh client
 ```
 
-* After running the above script, note the export statements for the following environment variables from the output - copy and run them. It is also recommended to add them to `~/.bashrc` on your machine so they are automatically sourced at future sessions (These environment variables are required every time when running the `helm` client tool):
+  **Important:** After running the above script, note the export statements for the following environment variables from the output - copy and run them. It is also recommended to add them to `~/.bashrc` on your machine so they are automatically sourced at future sessions (These environment variables are required every time when running the `helm` client tool):
   * HELM_HOME
   * TILLER_NAMESPACE
   * PATH
@@ -166,8 +166,12 @@ cd solace-kubernetes-quickstart
 
 Notes:
 
-* `SOLACE_IMAGE_URL` is optional if using the latest Solace PubSub+ Standard edition message broker image from the Solace public Docker Hub registry
+* Providing `-i SOLACE_IMAGE_URL` is optional (see [Step 5](#step-5-load-the-message-broker-docker-image-to-your-docker-registry ) if using the latest Solace PubSub+ Standard edition message broker image from the Solace public Docker Hub registry
 * Set the cloud provider option to `-c aws` when deploying a message broker in an OpenShift / AWS environment
+* Ensure `helm` runs by executing - if not 
+```
+    helm version   # shall return both client and server versions
+```
 
 HA deployment example:
 
