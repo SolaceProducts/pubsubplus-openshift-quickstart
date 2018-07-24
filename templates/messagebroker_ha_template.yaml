@@ -2,9 +2,9 @@
 apiVersion: v1
 kind: Template
 metadata:
-  name: solace-vmr-ha-template
+  name: solace-messagebroker-ha-template
   annotations:
-    description: Deploys Solace VMR in an HA configuration using persistent storage
+    description: Deploys Solace Message Broker in an HA configuration using persistent storage
 objects:
 
 - kind: Secret
@@ -14,11 +14,11 @@ objects:
     labels:
       heritage: Tiller
       release: "${DEPLOYMENT_NAME}"
-      chart: solace-0.2.0
+      chart: solace-0.3.0
       app: solace
   type: Opaque
   data:
-    username_admin_password: "${VMR_ADMIN_PASSWORD}"
+    username_admin_password: "${MESSAGEBROKER_ADMIN_PASSWORD}"
 
 - kind: ConfigMap
   apiVersion: v1
@@ -27,7 +27,7 @@ objects:
     labels:
       heritage: Tiller
       release: "${DEPLOYMENT_NAME}"
-      chart: solace-0.2.0
+      chart: solace-0.3.0
       app: solace
   data:
     init.sh: |-
@@ -184,7 +184,7 @@ objects:
                 -q "<rpc semp-version='soltr/8_5VMR'><admin><config-sync><${resync_step}><router/></${resync_step}></config-sync></admin></rpc>"
           /mnt/disks/solace/semp_query.sh -n admin -p ${password} -u http://localhost:8080/SEMP \
                 -q "<rpc semp-version='soltr/8_5VMR'><admin><config-sync><${resync_step}><vpn-name>default</vpn-name></${resync_step}></config-sync></admin></rpc>"
-          echo "`date` INFO: ${APP}-Solace VMR bringup complete"
+          echo "`date` INFO: ${APP}-Solace Message Broker bringup complete"
         fi # if not monitor
         exit 0
 
@@ -258,7 +258,7 @@ objects:
           fi
           ;;
         "")
-          echo "`date` WARN: ${APP}-Unable to deturmine config role, failing readiness check"
+          echo "`date` WARN: ${APP}-Unable to determine config role, failing readiness check"
           set_label "active" "false" $state_file
           exit 1
       esac
@@ -386,7 +386,7 @@ objects:
     labels:
       heritage: Tiller
       release: "${DEPLOYMENT_NAME}"
-      chart: solace-0.2.0
+      chart: solace-0.3.0
       app: solace
     annotations:
       service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
@@ -406,7 +406,7 @@ objects:
     labels:
       heritage: Tiller
       release: "${DEPLOYMENT_NAME}"
-      chart: solace-0.2.0
+      chart: solace-0.3.0
       app: solace #end gcp
   spec:
     type: LoadBalancer
@@ -446,12 +446,15 @@ objects:
     name: "${DEPLOYMENT_NAME}-solace"
     labels:
       app: solace
-      chart: solace-0.2.0
+      chart: solace-0.3.0
       release: "${DEPLOYMENT_NAME}"
       heritage: Tiller
   spec:
     serviceName: "${DEPLOYMENT_NAME}-solace-discovery"
     replicas: 3
+    podManagementPolicy: Parallel
+    updateStrategy: 
+      type: RollingUpdate
     template:
       metadata:
         labels:
@@ -460,7 +463,7 @@ objects:
       spec:
         containers:
         - name: solace
-          image: "${DOCKER_REGISTRY_URL}:${VMR_IMAGE_TAG}"
+          image: "${DOCKER_REGISTRY_URL}:${MESSAGEBROKER_IMAGE_TAG}"
           imagePullPolicy: IfNotPresent
           resources:
             requests:
@@ -480,7 +483,7 @@ objects:
             exec:
               command:
               - /mnt/disks/solace/readiness_check.sh
-              - "6"
+              - "7"
           securityContext:
             privileged: true
             capabilities:
@@ -566,11 +569,11 @@ objects:
         accessModes: [ "ReadWriteOnce" ]
         resources:
           requests:
-            storage: "${VMR_STORAGE_SIZE}"
+            storage: "${MESSAGEBROKER_STORAGE_SIZE}"
 
 parameters:
   - name: DEPLOYMENT_NAME
-    displayName: Solace VMR Deployment Name
+    displayName: Solace Message Broker Deployment Name
     description: The prefix to use for object names
     generate: expression
     from: '[A-Z0-9]{8}'
@@ -578,21 +581,21 @@ parameters:
     required: true
   - name: DOCKER_REGISTRY_URL
     displayName: Docker Registry URL
-    description: The Docker registry URL for the registry containing the Solace VMR docker image
+    description: The Docker registry URL for the registry containing the Solace Message Broker docker image
     value: docker_registry_url
     required: true
-  - name: VMR_IMAGE_TAG
-    displayName: Solace VMR Docker Image Tag
-    description: The Docker image tag for the Solace VMR docker image from your Docker registry
-    value: solace_vmr_image_tag
+  - name: MESSAGEBROKER_IMAGE_TAG
+    displayName: Solace Message Broker Docker Image Tag
+    description: The Docker image tag for the Solace Message Broker docker image from your Docker registry
+    value: solace_messagebroker_image_tag
     required: true
-  - name: VMR_ADMIN_PASSWORD
+  - name: MESSAGEBROKER_ADMIN_PASSWORD
     displayName: Base64 encoded password for Solace username 'admin'
-    description: The VMR 'admin' user's password (base64 encoded).  This Solace OpenShift template will create an administrative user with username 'admin' with specified password.
+    description: The Message Broker 'admin' user's password (base64 encoded).  This Solace OpenShift template will create an administrative user with username 'admin' with specified password.
     value: "cEBzc3cwcmQ=" # password 'p@ssw0rd'
     required: true
-  - name: VMR_STORAGE_SIZE
-    displayName: Solace VMR Persistent Storage Disk Size
-    description: The size in gigabytes for a VMR Pod's persistent volume (with suffix 'Gi'), example 30Gi for 30 gigabytes
+  - name: MESSAGEBROKER_STORAGE_SIZE
+    displayName: Solace Message Broker Persistent Storage Disk Size
+    description: The size in gigabytes for a Message Broker Pod's persistent volume (with suffix 'Gi'), example 30Gi for 30 gigabytes
     value: 30Gi
     required: true
