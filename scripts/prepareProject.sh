@@ -55,5 +55,5 @@ echo "Granting the ${1} project policies and SCC privileges for correct operatio
 oc policy add-role-to-user edit system:serviceaccount:$PROJECT:default
 oc adm policy add-scc-to-user privileged system:serviceaccount:$PROJECT:default
 oc adm policy add-scc-to-user anyuid system:serviceaccount:$PROJECT:default
-
+oc adm policy add-cluster-role-to-user storage-admin admin
 

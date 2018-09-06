@@ -49,6 +49,9 @@ function deployHelmClient () {
     curl -s "https://storage.googleapis.com/kubernetes-helm/helm-v${HELM_VERSION}-linux-amd64.tar.gz" | tar xz
     $HOME/linux-amd64/helm init --client-only
   
+    echo "#############################################################"
+    echo "Client install completed. Ensure following environment variables are exported:"
+    
     echo "export PATH=\$PATH:\$HOME/linux-amd64"
     export PATH=$PATH:~/linux-amd64
 
