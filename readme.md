@@ -88,13 +88,14 @@ git clone https://github.com/SolaceProducts/solace-openshift-quickstart.git
 cd solace-openshift-quickstart
 ```
 
-### Step 3: (Optional: only for Deployment option 1 - use the Solace Kubernetes QuickStart to deploy the message broker) Install the Helm client and server-side tools
+### Step 3: (Optional: only execute for Deployment option 1 - use the Solace Kubernetes QuickStart to deploy the message broker) Install the Helm client and server-side tools
 
 * **(Part I)** Use the ‘deployHelm.sh’ script to deploy the Helm client and server-side components.  Begin by installing the Helm client tool:
 
 ```
 cd ~/workspace/solace-openshift-quickstart/scripts
 ./deployHelm.sh client
+# Copy and run the export statuments from the script output!
 ```
 
   **Important:** After running the above script, note the **export** statements for the following environment variables from the output - copy and run them. It is also recommended to add them to `~/.bashrc` on your machine so they are automatically sourced at future sessions (These environment variables are required every time when running the `helm` client tool):
@@ -113,7 +114,7 @@ cd ~/workspace/solace-openshift-quickstart/scripts
 
 ```
 cd ~/workspace/solace-openshift-quickstart/scripts
-sudo ./prepareProject.sh solace-pubsub-ha    # adjust your project name as needed here and in subsequent commands
+sudo ./prepareProject.sh solace-pubsub    # adjust your project name as needed here and in subsequent commands
 ```
 
 ### Step 5: Optional: Load the message broker (Docker image) to your Docker Registry
@@ -146,7 +147,7 @@ Deployment scripts will pull the Solace message broker image from a [docker regi
 # Required if using ECR for docker registry
 sudo aws configure       # provide AWS config for root
 cd ~/workspace/solace-openshift-quickstart/scripts
-sudo ./addECRsecret.sh solace-pubsub-ha   # adjust your project name as needed
+sudo ./addECRsecret.sh solace-pubsub   # adjust your project name as needed
 ```
 
 ### Step 6: (Option 1) Deploy the message broker using the Solace Kubernetes QuickStart
@@ -172,19 +173,19 @@ Notes:
 HA deployment example:
 
 ```
-oc project solace-pubsub-ha   # adjust your project name as needed
+oc project solace-pubsub   # adjust your project name as needed
 cd ~/workspace/solace-kubernetes-quickstart/solace
 ../scripts/configure.sh -p <ADMIN_PASSWORD> -c aws -v values-examples/prod1k-persist-ha-provisionPvc.yaml -i <SOLACE_IMAGE_URL> 
 # Initiate the deployment
 helm install . -f values.yaml
 # Wait until all pods running and ready and the active message broker pod label is "active=true"
-watch oc get statefulset,service,pods,pvc,pv --show-labels
+watch oc get pods --show-labels
 ```
 
 non-HA deployment example:
 
 ```
-oc project solace-pubsub-ha   # adjust your project name as needed
+oc project solace-pubsub   # adjust your project name as needed
 cd ~/workspace/solace-kubernetes-quickstart/solace
 ../scripts/configure.sh -p <ADMIN_PASSWORD> -c aws -v values-examples/prod1k-persist-noha-provisionPvc.yaml -i <SOLACE_IMAGE_URL> 
 # Initiate the deployment
@@ -209,7 +210,7 @@ You can deploy the message broker in either a single-node or high-availability c
 * For a **Single-Node** configuration:
   * Process the Solace 'Single Node' OpenShift template to deploy the message broker in a single-node configuration.  Specify values for the DOCKER_REGISTRY_URL, MESSAGEBROKER_IMAGE_TAG, MESSAGEBROKER_STORAGE_SIZE, and MESSAGEBROKER_ADMIN_PASSWORD parameters:
 ```
-oc project solace-pubsub-ha   # adjust your project name as needed
+oc project solace-pubsub   # adjust your project name as needed
 cd  ~/workspace/solace-openshift-quickstart/templates
 oc process -f messagebroker_singlenode_template.yaml DEPLOYMENT_NAME=test-singlenode DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> MESSAGEBROKER_IMAGE_TAG=<replace with your Solace message broker docker image tag> MESSAGEBROKER_STORAGE_SIZE=30Gi MESSAGEBROKER_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
 # Wait until all pods running and ready
@@ -219,7 +220,7 @@ watch oc get statefulset,service,pods,pvc,pv
 * For a **High-Availability** configuration:
   * Process the Solace 'HA' OpenShift template to deploy the message broker in a high-availability configuration.  Specify values for the DOCKER_REGISTRY_URL, MESSAGEBROKER_IMAGE_TAG, MESSAGEBROKER_STORAGE_SIZE, and MESSAGEBROKER_ADMIN_PASSWORD parameters:
 ```
-oc project solace-pubsub-ha   # adjust your project name as needed
+oc project solace-pubsub   # adjust your project name as needed
 cd  ~/workspace/solace-openshift-quickstart/templates
 oc process -f messagebroker_ha_template.yaml DEPLOYMENT_NAME=test-ha DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> MESSAGEBROKER_IMAGE_TAG=<replace with your Solace message broker docker image tag> MESSAGEBROKER_STORAGE_SIZE=30Gi MESSAGEBROKER_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
 # Wait until all pods running and ready
@@ -253,14 +254,14 @@ NAME                                          CAPACITY   ACCESSMODES   RECLAIMPO
 pv/pvc-01e8785b-74b4-11e8-ac35-0afbbfab169a   1Gi        RWO           Delete          Bound     openshift-ansible-service-broker/etcd           gp2                                 4d        failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1b
 pv/pvc-229cf3d4-74b4-11e8-ba4e-02b74a526708   1Gi        RWO           Delete          Bound     aws-service-broker/etcd                         gp2                                 4d        failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1b
 pv/pvc-cf27bd8c-74b3-11e8-ac35-0afbbfab169a   10Gi       RWO           Delete          Bound     openshift-infra/metrics-cassandra-1             gp2                                 4d        failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1c
-pv/pvc-e2e20e0f-7880-11e8-b199-06c6ba3800d0   30Gi       RWO           Delete          Bound     solace-pubsub-ha/data-plucking-squid-solace-0   plucking-squid-standard             3m        failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1c
-pv/pvc-e2e4379c-7880-11e8-b199-06c6ba3800d0   30Gi       RWO           Delete          Bound     solace-pubsub-ha/data-plucking-squid-solace-1   plucking-squid-standard             3m        failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1a
-pv/pvc-e2e6e88d-7880-11e8-b199-06c6ba3800d0   30Gi       RWO           Delete          Bound     solace-pubsub-ha/data-plucking-squid-solace-2   plucking-squid-standard             3m        failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1b
+pv/pvc-e2e20e0f-7880-11e8-b199-06c6ba3800d0   30Gi       RWO           Delete          Bound     solace-pubsub/data-plucking-squid-solace-0   plucking-squid-standard             3m        failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1c
+pv/pvc-e2e4379c-7880-11e8-b199-06c6ba3800d0   30Gi       RWO           Delete          Bound     solace-pubsub/data-plucking-squid-solace-1   plucking-squid-standard             3m        failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1a
+pv/pvc-e2e6e88d-7880-11e8-b199-06c6ba3800d0   30Gi       RWO           Delete          Bound     solace-pubsub/data-plucking-squid-solace-2   plucking-squid-standard             3m        failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1b
 [ec2-user@ip-10-0-23-198 ~]$
 [ec2-user@ip-10-0-23-198 ~]$
 [ec2-user@ip-10-0-23-198 ~]$ oc describe svc
 Name:                   plucking-squid-solace
-Namespace:              solace-pubsub-ha
+Namespace:              solace-pubsub
 Labels:                 app=solace
                         chart=solace-0.3.0
                         heritage=Tiller
@@ -288,7 +289,7 @@ Events:
 
 
 Name:                   plucking-squid-solace-discovery
-Namespace:              solace-pubsub-ha
+Namespace:              solace-pubsub
 Labels:                 app=solace
                         chart=solace-0.3.0
                         heritage=Tiller
@@ -383,7 +384,7 @@ oc delete pvc <pvc-name>
 To remove the project or to start over from Step 4 in a clean state, delete the project using the OpenShift console or the command line. For more details, refer to the [OpenShift Projects](https://docs.openshift.com/enterprise/3.0/dev_guide/projects.html ) documentation.
 
 ```
-oc delete project solace-pubsub-ha   # adjust your project name as needed
+oc delete project solace-pubsub   # adjust your project name as needed
 ```
 
 ### Deleting the OpenShift Container Platform deployment
