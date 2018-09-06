@@ -74,7 +74,7 @@ Verify you have access and can login to the OpenShift console. You can get the U
 <p align="center">OpenShift deployment example with nested OpenShiftStack, VPCStack, tabs, keys and values</p>
 
 
-### Step 2: Prepare for the deployment
+### Step 2: Clone the OpenShift quick start in your workspace
 
 **Note:** This and subsequent steps shall be executed on a host having the OpenShift client tools and able to reach your OpenShift cluster nodes - conveniently, this can be one of the *openshift-master* servers.
 
@@ -108,9 +108,9 @@ cd ~/workspace/solace-openshift-quickstart/scripts
 ./deployHelm.sh server
 ```
 
-### Step 4: Use scripts in the Solace OpenShift QuickStart to configure a project to host the message broker HA deployment
+### Step 4: Create and configure a project to host the message broker HA deployment
 
-* Use the ‘prepareProject.sh’ script to create and configure an OpenShift project that meets requirements of the message broker HA deployment:
+* Use the ‘prepareProject.sh’ script the Solace OpenShift QuickStart to create and configure an OpenShift project that meets requirements of the message broker HA deployment:
 
 ```
 cd ~/workspace/solace-openshift-quickstart/scripts
