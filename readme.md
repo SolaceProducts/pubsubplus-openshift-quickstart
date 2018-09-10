@@ -2,7 +2,7 @@
 
 ## Purpose of this Repository
 
-This repository provides an example of how to deploy Solace PubSub+ software message brokers onto an OpenShift 3.7 or 3.9 platform. There are [multiple ways](https://docs.openshift.com/index.html ) to get to an OpenShift platform, including [MiniShift](https://github.com/minishift/minishift#welcome-to-minishift ). This guide will specifically use the Red Hat OpenShift Container Platform for deploying an HA group but concepts are transferable to other compatible platforms. There will be also hints for developers on how to set up a simple single-node MiniKube deployment using MiniShift.
+This repository provides an example of how to deploy Solace PubSub+ software message brokers onto an OpenShift 3.7 or 3.9 platform. There are [multiple ways](https://docs.openshift.com/index.html ) to get to an OpenShift platform, including [MiniShift](https://github.com/minishift/minishift#welcome-to-minishift ). This guide will specifically use the Red Hat OpenShift Container Platform for deploying an HA group but concepts are transferable to other compatible platforms. There will be also hints on how to set up a simple single-node MiniKube deployment using MiniShift for development, testing or proof of concept purposes.
 
 For the Red Hat OpenShift Container Platform, we utilize the [RedHat OpenShift on AWS QuickStart](https://aws.amazon.com/quickstart/architecture/openshift/ ) project to deploy a Red Hat OpenShift Container Platform on AWS in a highly redundant configuration, spanning 3 zones.
 
@@ -19,8 +19,8 @@ The Solace PubSub+ software message broker meets the needs of big data, cloud mi
 The following steps describe how to deploy a message broker onto an OpenShift environment. Optional steps are provided about setting up a Red Hat OpenShift Container Platform on Amazon AWS infrastructure (marked as Optional / AWS) and if you use AWS Elastic Container Registry to host the Solace message broker Docker image (marked as Optional / ECR).
 
 There are also two options for deploying a message broker onto your OpenShift deployment:
-* (Deployment option 1): This option allows great flexibility using the Kubernetes `Helm` tool to automate the process of message broker deployment through a wide range of configuration options including in-service rolling upgrade of the message broker. The [Solace Kubernetes QuickStart project](https://github.com/SolaceProducts/solace-kubernetes-quickstart ) will be referred to deploy the message broker onto your OpenShift environment.
-* (Deployment option 2): This option can be used directly, without any additional tool to deploy the message broker in a limited number of configurations, using OpenShift templates included in this project.
+* (Deployment option 1, using Helm): This option allows great flexibility using the Kubernetes `Helm` tool to automate the process of message broker deployment through a wide range of configuration options including in-service rolling upgrade of the message broker. The [Solace Kubernetes QuickStart project](https://github.com/SolaceProducts/solace-kubernetes-quickstart ) will be referred to deploy the message broker onto your OpenShift environment.
+* (Deployment option 2, using OpenShift templates): This option can be used directly, without any additional tool to deploy the message broker in a limited number of configurations, using OpenShift templates included in this project.
 
 This is a 6 steps process with some steps being optional. Steps to deploy the message broker:
 
@@ -410,10 +410,34 @@ cd ~/solace-openshift-quickstart/scripts
 
 Now the OpenShift stack delete can be initiated from the AWS CloudFormation console.
 
-## Running in unprivileged container
+## Running the message broker in unprivileged container
 
-TODO: add text here
-https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+The default deployment grants privileged security settings (`securityContext`) to the container where the Solace message broker is deployed. For a more strict deployment scenario it may be required that the message broker gets deployed in an unprivileged container with only the minimum necessary additional fine-grained [Linux capabilities](http://man7.org/linux/man-pages/man7/capabilities.7.html ) opened up that are required by the broker operation.
+
+To deploy the message broker in unprivileged security context the followings are required:
+
+* A custom [OpenShift SCC](https://docs.openshift.com/container-platform/3.9/architecture/additional_concepts/authorization.html#security-context-constraints ) defining the fine grained permissions above the "restricted" SCC needs to be created and assigned to the deployment user of the project. See the [sccForUnprivilegedCont.yaml](https://github.com/SolaceDev/solace-openshift-quickstart/blob/NoPrivTest/scripts/templates/sccForUnprivilegedCont.yaml ) file in this project. 
+
+In [Step 4](#step-4-create-and-configure-a-project-to-host-the-message-broker-ha-deployment ) specify `deployInUnprivileged` when preparing the project. This will create and assign the custom SCC instead of the privileged one:
+
+```
+cd ~/workspace/solace-openshift-quickstart/scripts
+sudo ./prepareProject.sh solace-pubsub deployInUnprivileged    # adjust your project name as needed here
+```
+
+* The requested `securityContext` for the container shall be changed to `privileged: false`.
+* Additionally, any privileged ports (port numbers less than 1024) used need to be reconfigured. For example, port 22 needs to be reconfigured to e.g.: 22222.
+
+The OpenShift template [messagebroker_ha_template_for_unprivileged_container.yaml](https://github.com/SolaceProducts/solace-openshift-quickstart/blob/master/templates/messagebroker_ha_template_for_unprivileged_container.yaml ) shows an example of the modifications required, compare it with [messagebroker_ha_template.yaml](https://github.com/SolaceProducts/solace-openshift-quickstart/blob/master/templates/messagebroker_ha_template.yaml ). 
+
+In [Step 6, Option 2](#step-6-option-2-deploy-the-message-broker-using-the-openshift-templates-included-in-this-project ) use the modified template:
+
+```
+cd  ~/workspace/solace-openshift-quickstart/templates
+oc process -f messagebroker_ha_template_for_unprivileged_container.yaml ... | oc create -f -
+```
+
+If using Helm (Option 1) for the deployment modify the `solace` chart accordingly. The files to modify include `values.xml`, `templates\solaceConfigMap.yaml` and `templates\solaceStatefullSet.yaml`.
 
 ## Contributing
 
