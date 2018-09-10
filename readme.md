@@ -1,10 +1,10 @@
-# Deploying a Solace PubSub+ Software Message Broker HA Group onto an OpenShift 3.7 platform
+# Deploying a Solace PubSub+ Software Message Broker onto an OpenShift 3.7 or 3.9 platform
 
 ## Purpose of this Repository
 
-This repository provides an example of how to deploy Solace PubSub+ software message brokers onto an OpenShift 3.7 platform. There are [multiple ways](https://docs.openshift.com/index.html ) to get to an OpenShift platform, including [MiniShift](https://github.com/minishift/minishift#welcome-to-minishift ). This guide will specifically use the Red Hat OpenShift Container Platform 3.7 but concepts are transferable to other compatible platforms.
+This repository provides an example of how to deploy Solace PubSub+ software message brokers onto an OpenShift 3.7 or 3.9 platform. There are [multiple ways](https://docs.openshift.com/index.html ) to get to an OpenShift platform, including [MiniShift](https://github.com/minishift/minishift#welcome-to-minishift ). This guide will specifically use the Red Hat OpenShift Container Platform for deploying an HA group but concepts are transferable to other compatible platforms. There will be also hints for developers on how to set up a simple single-node MiniKube deployment using MiniShift.
 
-We utilize the [RedHat OpenShift on AWS QuickStart](https://aws.amazon.com/quickstart/architecture/openshift/ ) project to deploy a Red Hat OpenShift Container Platform on AWS in a highly redundant configuration, spanning 3 zones.
+For the Red Hat OpenShift Container Platform, we utilize the [RedHat OpenShift on AWS QuickStart](https://aws.amazon.com/quickstart/architecture/openshift/ ) project to deploy a Red Hat OpenShift Container Platform on AWS in a highly redundant configuration, spanning 3 zones.
 
 This repository expands on the [Solace Kubernetes Quickstart](https://github.com/SolaceProducts/solace-kubernetes-quickstart ) to provide an example of how to deploy Solace PubSub+ software message brokers in an HA configuration on the OpenShift Container Platform running in AWS.
 
@@ -22,9 +22,11 @@ There are also two options for deploying a message broker onto your OpenShift de
 * (Deployment option 1): This option allows great flexibility using the Kubernetes `Helm` tool to automate the process of message broker deployment through a wide range of configuration options including in-service rolling upgrade of the message broker. The [Solace Kubernetes QuickStart project](https://github.com/SolaceProducts/solace-kubernetes-quickstart ) will be referred to deploy the message broker onto your OpenShift environment.
 * (Deployment option 2): This option can be used directly, without any additional tool to deploy the message broker in a limited number of configurations, using OpenShift templates included in this project.
 
-Steps to deploy the message broker:
+This is a 6 steps process with some steps being optional. Steps to deploy the message broker:
 
 **Hint:** You may skip Step 1 if you already have your own OpenShift environment deployed.
+
+> Note: If using MiniShift follow the [instructions to get to a working MiniShift deployment](https://docs.okd.io/latest/minishift/getting-started/index.html ). If using MiniShift in a Windows environment one easy way to follow the shell scripts of this guide is to use [Git BASH for Windows](https://gitforwindows.org/ ) and ensure any script files are using unix style line endings by running the `dostounix` tool if needed. 
 
 ### Step 1: (Optional / AWS) Deploy OpenShift Container Platform onto AWS using the RedHat OpenShift AWS QuickStart Project
 
@@ -39,7 +41,7 @@ Steps to deploy the message broker:
 
 * (Part II) Once you have deployed OpenShift using the AWS QuickStart you will have to perform additional steps to re-configure OpenShift to integrate fully with AWS.  For full details, please refer to the RedHat OpenShift documentation for configuring OpenShift for AWS:
 
-  * [OpenShift > Configuring for AWS](https://docs.openshift.com/container-platform/3.7/install_config/configuring_aws.html )
+  * [OpenShift > Configuring for AWS](https://docs.openshift.com/container-platform/3.9/install_config/configuring_aws.html )
   
   To help with that this quick start provides a script to automate the execution of the required steps:
   
@@ -74,7 +76,7 @@ Verify you have access and can login to the OpenShift console. You can get the U
 <p align="center">OpenShift deployment example with nested OpenShiftStack, VPCStack, tabs, keys and values</p>
 
 
-### Step 2: Clone the Solace OpenShift QuickStart (this repo) in your workspace
+### Step 2: Clone the Solace OpenShift QuickStart (this repo) into your workspace
 
 **Note:** This and subsequent steps shall be executed on a host having the OpenShift client tools and able to reach your OpenShift cluster nodes - conveniently, this can be one of the *openshift-master* servers.
 
@@ -92,15 +94,17 @@ cd solace-openshift-quickstart
 
 * **(Part I)** Use the ‘deployHelm.sh’ script to deploy the Helm client and server-side components.  Begin by installing the Helm client tool:
 
+> Note: If using MiniShift get the [Helm executable](https://storage.googleapis.com/kubernetes-helm/helm-v2.9.1-windows-amd64.zip ) and put it in a directory on your path before running the following script.
+
 ```
 cd ~/workspace/solace-openshift-quickstart/scripts
 ./deployHelm.sh client
 # Copy and run the export statuments from the script output!
 ```
 
-  **Important:** After running the above script, note the **export** statements for the following environment variables from the output - copy and run them. It is also recommended to add them to `~/.bashrc` on your machine so they are automatically sourced at future sessions (These environment variables are required every time when running the `helm` client tool):
-  `HELM_HOME`, `TILLER_NAMESPACE`, `PATH`
+  **Important:** After running the above script, note the **export** statements for the following environment variables from the output - copy and run them. It is also recommended to add them to `~/.bashrc` on your machine so they are automatically sourced at future sessions (These environment variables are required every time when running the `helm` client tool).
 
+  
 * **(Part II)** Install the Helm server-side ‘Tiller’ component.  Note, you will be prompted to log into OpenShift if you have not already done so. If you used Step 1 to deploy OpenShift, the requested server URL is the same as the OpenShift console URL, the username is `admin` and the password is as specified in the CloudFormation template. Otherwise use the values specific to your environment.
 
 ```
@@ -117,9 +121,11 @@ cd ~/workspace/solace-openshift-quickstart/scripts
 sudo ./prepareProject.sh solace-pubsub    # adjust your project name as needed here and in subsequent commands
 ```
 
+> Note: If using MiniShift on Windows the `sudo` command is not necessary.
+
 ### Step 5: Optional: Load the message broker (Docker image) to your Docker Registry
 
-Deployment scripts will pull the Solace message broker image from a [docker registry](https://docs.docker.com/registry/ ). There are several [options which registry to use](https://docs.openshift.com/container-platform/3.7/architecture/infrastructure_components/image_registry.html#overview ) depending on the requirements of your project, see some examples in (Part II) of this step.
+Deployment scripts will pull the Solace message broker image from a [docker registry](https://docs.docker.com/registry/ ). There are several [options which registry to use](https://docs.openshift.com/container-platform/3.9/architecture/infrastructure_components/image_registry.html#overview ) depending on the requirements of your project, see some examples in (Part II) of this step.
 
 **Hint:** You may skip the rest of this step if using the free PubSub+ Standard Edition available from the [Solace public Docker Hub registry](https://hub.docker.com/r/solace/solace-pubsub-standard/tags/ ). The Docker Registry URL to use will be `solace/solace-pubsub-standard:<TagName>`.
 
@@ -139,7 +145,7 @@ Deployment scripts will pull the Solace message broker image from a [docker regi
 
   Options include:
 
-  * You can choose to use [OpenShift's docker registry.](https://docs.openshift.com/container-platform/3.7/install_config/registry/deploy_registry_existing_clusters.html )
+  * You can choose to use [OpenShift's docker registry.](https://docs.openshift.com/container-platform/3.9/install_config/registry/deploy_registry_existing_clusters.html )
 
   * **(Optional / ECR)** You can utilize the AWS Elastic Container Registry (ECR) to host the message broker Docker image. For more information, refer to [Amazon Elastic Container Registry](https://aws.amazon.com/ecr/ ). If you are using ECR as your Docker registry then you must add the ECR login credentials (as an OpenShift secret) to your message broker HA deployment.  This project contains a helper script to execute this step:
 
@@ -304,7 +310,10 @@ Session Affinity:       None
 Events:                 <none>
 ```
 
-Note, the **'LoadBalancer Ingress'** value listed in the service description above.  This is the publicly accessible Solace Connection URI for messaging clients and management. In the example it is `ae2dd15e2788011e8b19906c6ba3800d-1889414054.eu-central-1.elb.amazonaws.com`.
+Find the **'LoadBalancer Ingress'** value listed in the service description above.  This is the publicly accessible Solace Connection URI for messaging clients and management. In the example it is `ae2dd15e2788011e8b19906c6ba3800d-1889414054.eu-central-1.elb.amazonaws.com`.
+
+> Note: If using MiniShift an additional step is required to expose the service: `oc export svc plucking-squid-solace`. This will return a service definition with nodePort port numbers for each message router service. Use these port mumbers together with MiniShift's public IP address which can be obtained from the command `minishift ip`.
+
 
 ### Viewing bringup logs
 
@@ -400,6 +409,11 @@ cd ~/solace-openshift-quickstart/scripts
 ```
 
 Now the OpenShift stack delete can be initiated from the AWS CloudFormation console.
+
+## Running in unprivileged container
+
+TODO: add text here
+https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
 
 ## Contributing
 

@@ -54,16 +54,21 @@ function deployHelmClient () {
     
     echo "export PATH=\$PATH:\$HOME/linux-amd64"
     export PATH=$PATH:~/linux-amd64
-
-    echo "export HELM_HOME=\$HOME/.helm"
-    export HELM_HOME=$HOME/.helm
-
-    echo "export TILLER_NAMESPACE=${TILLER_PROJECT}"
-    export TILLER_NAMESPACE=$TILLER_PROJECT
   else
-    echo "Skipping Helm client installation, Helm is already installed"
+    echo "Skipping Helm client installation, Helm is already installed."
     echo "  helm executable found in --> $(which helm)"
+    helm init --client-only
+  
+    echo "#############################################################"
+    echo "Ensure following environment variables are exported:"
   fi
+
+  echo "export HELM_HOME=\$HOME/.helm"
+  export HELM_HOME=$HOME/.helm
+
+  echo "export TILLER_NAMESPACE=${TILLER_PROJECT}"
+  export TILLER_NAMESPACE=$TILLER_PROJECT
+  
 }
 
 function deployHelmServer() {
