@@ -429,7 +429,7 @@ Now the OpenShift stack delete can be initiated from the AWS CloudFormation cons
 
 In this QuickStart the message broker gets deployed in an unprivileged container with necessary additional fine-grained [Linux capabilities](http://man7.org/linux/man-pages/man7/capabilities.7.html ) opened up that are required by the broker operation.
 
-To deploy the message broker in unprivileged security context the followings are required and are already taken care of by the scripts:
+To deploy the message broker in unprivileged container the followings are required and are already taken care of by the scripts:
 
 * A custom [OpenShift SCC](https://docs.openshift.com/container-platform/3.9/architecture/additional_concepts/authorization.html#security-context-constraints ) defining the fine grained permissions above the "restricted" SCC needs to be created and assigned to the deployment user of the project. See the [sccForUnprivilegedCont.yaml](https://github.com/SolaceDev/solace-openshift-quickstart/blob/NoPrivTest/scripts/templates/sccForUnprivilegedCont.yaml ) file in this repo. 
 * The requested `securityContext` for the container shall be `privileged: false`
