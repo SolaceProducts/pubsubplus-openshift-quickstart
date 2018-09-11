@@ -364,7 +364,7 @@ Once you have launched the terminal emulator to the message broker pod you may a
 
 ![alt text](/resources/Solace-Primary-Pod-Terminal-CLI.png "Message Broker CLI via OpenShift UI Terminal emulator")
 
-See the [Solace Kubernetes Quickstart README](https://github.com/SolaceProducts/solace-kubernetes-quickstart/tree/master#gaining-admin-access-to-the-message-broker ) for more details including admin and ssh access to the individual message brokers.
+See the [Solace Kubernetes Quickstart README](https://github.com/SolaceProducts/solace-kubernetes-quickstart/tree/master#gaining-admin-access-to-the-message-broker ) for more details including admin and SSH access to the individual message brokers.
 
 ## Testing data access to the message broker
 
@@ -433,7 +433,7 @@ To deploy the message broker in unprivileged container the followings are requir
 
 * A custom [OpenShift SCC](https://docs.openshift.com/container-platform/3.9/architecture/additional_concepts/authorization.html#security-context-constraints ) defining the fine grained permissions above the "restricted" SCC needs to be created and assigned to the deployment user of the project. See the [sccForUnprivilegedCont.yaml](https://github.com/SolaceDev/solace-openshift-quickstart/blob/NoPrivTest/scripts/templates/sccForUnprivilegedCont.yaml ) file in this repo. 
 * The requested `securityContext` for the container shall be `privileged: false`
-* Additionally, any privileged ports (port numbers less than 1024) used need to be reconfigured. For example, port 22 for ssh access needs to be reconfigured to e.g.: 22222. Note the this is at the pod level and the load balancer has been configured to expose ssh at port 22 at the publicly accessible Solace Connection URI.
+* Additionally, any privileged ports (port numbers less than 1024) used need to be reconfigured. For example, port 22 for SSH access needs to be reconfigured to e.g.: 22222. Note the this is at the pod level and the load balancer has been configured to expose SSH at port 22 at the publicly accessible Solace Connection URI.
 
 ## Contributing
 
