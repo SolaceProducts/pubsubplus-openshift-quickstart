@@ -277,15 +277,30 @@ Selector:               active=true,app=solace,release=plucking-squid
 Type:                   LoadBalancer
 IP:                     172.30.15.249
 LoadBalancer Ingress:   ae2dd15e2788011e8b19906c6ba3800d-1889414054.eu-central-1.elb.amazonaws.com
-Port:                   ssh     22/TCP
-NodePort:               ssh     30811/TCP
-Endpoints:              10.129.0.11:22
-Port:                   semp    8080/TCP
-NodePort:               semp    30295/TCP
-Endpoints:              10.129.0.11:8080
-Port:                   smf     55555/TCP
-NodePort:               smf     30079/TCP
-Endpoints:              10.129.0.11:55555
+Port:                   ssh  22/TCP
+TargetPort:             2222/TCP
+NodePort:               ssh  31569/TCP
+Endpoints:              10.128.2.11:2222
+Port:                   semp  8080/TCP
+TargetPort:             8080/TCP
+NodePort:               semp  31260/TCP
+Endpoints:              10.128.2.11:8080
+Port:                   smf  55555/TCP
+TargetPort:             55555/TCP
+NodePort:               smf  32027/TCP
+Endpoints:              10.128.2.11:55555
+Port:                   semptls  943/TCP
+TargetPort:             60943/TCP
+NodePort:               semptls  31243/TCP
+Endpoints:              10.128.2.11:60943
+Port:                   web  80/TCP
+TargetPort:             60080/TCP
+NodePort:               web  32240/TCP
+Endpoints:              10.128.2.11:60080
+Port:                   webtls  443/TCP
+TargetPort:             60443/TCP
+NodePort:               webtls  30548/TCP
+Endpoints:              10.128.2.11:60443
 Session Affinity:       None
 Events:
   FirstSeen     LastSeen        Count   From                    SubObjectPath   Type            Reason                  Message
@@ -414,11 +429,11 @@ Now the OpenShift stack delete can be initiated from the AWS CloudFormation cons
 
 In this QuickStart the message broker gets deployed in an unprivileged container with necessary additional fine-grained [Linux capabilities](http://man7.org/linux/man-pages/man7/capabilities.7.html ) opened up that are required by the broker operation.
 
-To deploy the message broker in unprivileged security context the followings are required and are already taken care of:
+To deploy the message broker in unprivileged security context the followings are required and are already taken care of by the scripts:
 
 * A custom [OpenShift SCC](https://docs.openshift.com/container-platform/3.9/architecture/additional_concepts/authorization.html#security-context-constraints ) defining the fine grained permissions above the "restricted" SCC needs to be created and assigned to the deployment user of the project. See the [sccForUnprivilegedCont.yaml](https://github.com/SolaceDev/solace-openshift-quickstart/blob/NoPrivTest/scripts/templates/sccForUnprivilegedCont.yaml ) file in this repo. 
 * The requested `securityContext` for the container shall be `privileged: false`
-* Additionally, any privileged ports (port numbers less than 1024) used need to be reconfigured. For example, port 22 needs to be reconfigured to e.g.: 22222.
+* Additionally, any privileged ports (port numbers less than 1024) used need to be reconfigured. For example, port 22 for ssh access needs to be reconfigured to e.g.: 22222. Note the this is at the pod level and the load balancer has been configured to expose ssh at port 22 at the publicly accessible Solace Connection URI.
 
 ## Contributing
 
