@@ -9,11 +9,11 @@
 # 1. If used, Helm client and server-side components (Tiller) have been already deployed in the OpenShift environment
 #
 #  Usage:
-#    sudo ./prepareProject.sh <projectName> [deployInUnprivileged]
+#    sudo ./prepareProject.sh <projectName>
 #
 if [ $# -eq 0 ]; then
   echo "Usage: "
-  echo "./prepareProject.sh <projectName> [deployInUnprivileged]"
+  echo "./prepareProject.sh <projectName>"
   exit 1
 fi
 
@@ -53,13 +53,8 @@ fi
 # Configure the required OpenShift Policies and SCC privileges for the operation of the Solace message router software
 echo "Granting the ${1} project policies and SCC privileges for correct operation..."
 oc policy add-role-to-user edit system:serviceaccount:$PROJECT:default
-if [[ "$2" == "deployInUnprivileged" ]] ; then 
-  echo "Setting up deployment in unprivileged container:"
-  oc create -f templates/sccForUnprivilegedCont.yaml
-  oc adm policy add-scc-to-user scc-solace-in-unprivileged-container system:serviceaccount:$PROJECT:default
-else
-  oc adm policy add-scc-to-user privileged system:serviceaccount:$PROJECT:default
-  oc adm policy add-scc-to-user anyuid system:serviceaccount:$PROJECT:default
-fi
+echo "Setting up deployment in unprivileged container:"
+oc create -f templates/sccForUnprivilegedCont.yaml
+oc adm policy add-scc-to-user scc-solace-in-unprivileged-container system:serviceaccount:$PROJECT:default
 oc adm policy add-cluster-role-to-user storage-admin admin
 

@@ -26,7 +26,7 @@ This is a 6 steps process with some steps being optional. Steps to deploy the me
 
 **Hint:** You may skip Step 1 if you already have your own OpenShift environment deployed.
 
-> Note: If using MiniShift follow the [instructions to get to a working MiniShift deployment](https://docs.okd.io/latest/minishift/getting-started/index.html ). If using MiniShift in a Windows environment one easy way to follow the shell scripts of this guide is to use [Git BASH for Windows](https://gitforwindows.org/ ) and ensure any script files are using unix style line endings by running the `dostounix` tool if needed. 
+> Note: If using MiniShift follow the [instructions to get to a working MiniShift deployment](https://docs.okd.io/latest/minishift/getting-started/index.html ). If using MiniShift in a Windows environment one easy way to follow the shell scripts in this guide is to use [Git BASH for Windows](https://gitforwindows.org/ ) and ensure any script files are using unix style line endings by running the `dostounix` tool if needed. 
 
 ### Step 1: (Optional / AWS) Deploy OpenShift Container Platform onto AWS using the RedHat OpenShift AWS QuickStart Project
 
@@ -121,7 +121,7 @@ cd ~/workspace/solace-openshift-quickstart/scripts
 sudo ./prepareProject.sh solace-pubsub    # adjust your project name as needed here and in subsequent commands
 ```
 
-> Note: If using MiniShift on Windows the `sudo` command is not necessary.
+> Note: If using MiniShift on Windows it is not necessary to use `sudo` for the `prepareProject.sh` script because the default user is already system:admin.
 
 ### Step 5: Optional: Load the message broker (Docker image) to your Docker Registry
 
@@ -197,7 +197,7 @@ cd ~/workspace/solace-kubernetes-quickstart/solace
 # Initiate the deployment
 helm install . -f values.yaml
 # Wait until all pods running and ready and the active message broker pod label is "active=true"
-watch oc get statefulset,service,pods,pvc,pv --show-labels
+watch oc get pods --show-labels
 ```
 
 ### Step 6: (Option 2) Deploy the message broker using the OpenShift templates included in this project
@@ -412,32 +412,13 @@ Now the OpenShift stack delete can be initiated from the AWS CloudFormation cons
 
 ## Running the message broker in unprivileged container
 
-The default deployment grants privileged security settings (`securityContext`) to the container where the Solace message broker is deployed. For a more strict deployment scenario it may be required that the message broker gets deployed in an unprivileged container with only the minimum necessary additional fine-grained [Linux capabilities](http://man7.org/linux/man-pages/man7/capabilities.7.html ) opened up that are required by the broker operation.
+In this QuickStart the message broker gets deployed in an unprivileged container with necessary additional fine-grained [Linux capabilities](http://man7.org/linux/man-pages/man7/capabilities.7.html ) opened up that are required by the broker operation.
 
-To deploy the message broker in unprivileged security context the followings are required:
+To deploy the message broker in unprivileged security context the followings are required and are already taken care of:
 
-* A custom [OpenShift SCC](https://docs.openshift.com/container-platform/3.9/architecture/additional_concepts/authorization.html#security-context-constraints ) defining the fine grained permissions above the "restricted" SCC needs to be created and assigned to the deployment user of the project. See the [sccForUnprivilegedCont.yaml](https://github.com/SolaceDev/solace-openshift-quickstart/blob/NoPrivTest/scripts/templates/sccForUnprivilegedCont.yaml ) file in this project. 
-
-In [Step 4](#step-4-create-and-configure-a-project-to-host-the-message-broker-ha-deployment ) specify `deployInUnprivileged` when preparing the project. This will create and assign the custom SCC instead of the privileged one:
-
-```
-cd ~/workspace/solace-openshift-quickstart/scripts
-sudo ./prepareProject.sh solace-pubsub deployInUnprivileged    # adjust your project name as needed here
-```
-
-* The requested `securityContext` for the container shall be changed to `privileged: false`.
+* A custom [OpenShift SCC](https://docs.openshift.com/container-platform/3.9/architecture/additional_concepts/authorization.html#security-context-constraints ) defining the fine grained permissions above the "restricted" SCC needs to be created and assigned to the deployment user of the project. See the [sccForUnprivilegedCont.yaml](https://github.com/SolaceDev/solace-openshift-quickstart/blob/NoPrivTest/scripts/templates/sccForUnprivilegedCont.yaml ) file in this repo. 
+* The requested `securityContext` for the container shall be `privileged: false`
 * Additionally, any privileged ports (port numbers less than 1024) used need to be reconfigured. For example, port 22 needs to be reconfigured to e.g.: 22222.
-
-The OpenShift template [messagebroker_ha_template_for_unprivileged_container.yaml](https://github.com/SolaceProducts/solace-openshift-quickstart/blob/master/templates/messagebroker_ha_template_for_unprivileged_container.yaml ) shows an example of the modifications required, compare it with [messagebroker_ha_template.yaml](https://github.com/SolaceProducts/solace-openshift-quickstart/blob/master/templates/messagebroker_ha_template.yaml ). 
-
-In [Step 6, Option 2](#step-6-option-2-deploy-the-message-broker-using-the-openshift-templates-included-in-this-project ) use the modified template:
-
-```
-cd  ~/workspace/solace-openshift-quickstart/templates
-oc process -f messagebroker_ha_template_for_unprivileged_container.yaml ... | oc create -f -
-```
-
-If using Helm (Option 1) for the deployment modify the `solace` chart accordingly. The files to modify include `values.xml`, `templates\solaceConfigMap.yaml` and `templates\solaceStatefullSet.yaml`.
 
 ## Contributing
 
