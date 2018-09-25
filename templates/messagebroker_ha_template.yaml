@@ -51,7 +51,6 @@ objects:
           namespace=default
         fi
         service="${DEPLOYMENT_NAME}-solace"
-        service="${DEPLOYMENT_NAME}-solace"
         # Deal with the fact we cannot accept "-" in routre names
         service_name=$(echo ${service} | sed 's/-//g')
         export routername=$(echo $(hostname) | sed 's/-//g')
@@ -84,7 +83,6 @@ objects:
     config-sync-check.sh: |-
         #!/bin/bash
         APP=`basename "$0"`
-        yum install -y jq
         # [TODO] KBARR not using correct method of finding ordinal until we bump min Kubernetes release above 1.8.1
         # https://github.com/kubernetes/kubernetes/issues/40651
         # node_ordinal=$(STATEFULSET_ORDINAL)
@@ -103,7 +101,7 @@ objects:
             role_results=`/mnt/disks/solace/semp_query.sh -n admin -p ${password} -u http://localhost:8080/SEMP \
                   -q "<rpc semp-version='soltr/8_5VMR'><show><redundancy><detail/></redundancy></show></rpc>" \
                   -v "/rpc-reply/rpc/show/redundancy/active-standby-role[text()]"`
-            case "`echo ${role_results} | jq '.valueSearchResult' -`" in
+            case "`echo ${role_results} | xmllint -xpath "string(returnInfo/valueSearchResult)" -`" in
               "Primary")
               role="primary"
               break
@@ -128,7 +126,7 @@ objects:
             online_results=`/mnt/disks/solace/semp_query.sh -n admin -p ${password} -u http://localhost:8080/SEMP \
                 -q "<rpc semp-version='soltr/8_5VMR'><show><redundancy><detail/></redundancy></show></rpc>" \
                 -v "/rpc-reply/rpc/show/redundancy/virtual-routers/${role}/status/activity[text()]"`
-            local_activity=`echo ${online_results} | jq '.valueSearchResult' -`
+            local_activity=`echo ${online_results} | xmllint -xpath "string(returnInfo/valueSearchResult)" -`
             echo "`date` INFO: ${APP}-Local activity state is: ${local_activity}"
             run_time=$((${count} * ${pause}))
             case "${local_activity}" in
@@ -165,7 +163,7 @@ objects:
               online_results=`/mnt/disks/solace/semp_query.sh -n admin -p ${password} -u http://localhost:8080/SEMP \
                   -q "<rpc semp-version='soltr/8_5VMR'><show><redundancy><detail/></redundancy></show></rpc>" \
                   -v "/rpc-reply/rpc/show/redundancy/virtual-routers/${role}/status/detail/priority-reported-by-mate/summary[text()]"`
-              mate_activity=`echo ${online_results} | jq '.valueSearchResult' -`
+              mate_activity=`echo ${online_results} | xmllint -xpath "string(returnInfo/valueSearchResult)" -`
               echo "`date` INFO: ${APP}-Mate activity state is: ${mate_activity}"
               run_time=$((${count} * ${pause}))
               case "${mate_activity}" in
@@ -215,18 +213,15 @@ objects:
       # note that there are no re-tries here, if check fails the return not ready.
       APP=`basename "$0"`
       version=${1}
-
       password=`cat /mnt/disks/secrets/username_admin_password`
-      return_code=0
       state_file=/tmp/activity_state
       if [ ! -f ${state_file} ]; then
         echo "State file not found, creating!"
         echo "false" > ${state_file}
       fi
-      echo "`date` INFO: ${APP}-node oridinal"
+      echo "`date` INFO: ${APP}-node ordinal: ${node_ordinal}"
       IFS='-' read -ra host_array <<< $(hostname)
       node_ordinal=${host_array[-1]}
-
       if [ "${node_ordinal}" = "2" ]; then
         echo "`date` INFO: ${APP}-Monitor node ready check"
         # Note that when dealing with Monitor, only need to be concerned and readiness response.
@@ -235,7 +230,7 @@ objects:
         role_results=`/mnt/disks/solace/semp_query.sh -n admin -p ${password} -u http://localhost:8080/SEMP \
                 -q "<rpc semp-version='soltr/8_5VMR'><show><redundancy><group/></redundancy></show></rpc>" \
                 -c "/rpc-reply/rpc/show/redundancy/group-node/status[text() = \"Online\"]"`
-        if [ `echo ${role_results} | jq '.countSearchResult' -` -eq 3 ]; then
+        if [ `echo ${role_results} |  xmllint -xpath "string(returnInfo/countSearchResult)" -` -eq 3 ]; then
           echo "`date` INFO: ${APP}-Monitor node is redundancy ready"
           exit 0
         else
@@ -279,7 +274,7 @@ objects:
       online_results=`/mnt/disks/solace/semp_query.sh -n admin -p ${password} -u http://localhost:8080/SEMP \
               -q "<rpc semp-version='soltr/8_5VMR'><show><redundancy><detail/></redundancy></show></rpc>" \
               -v "/rpc-reply/rpc/show/redundancy/virtual-routers/${config_role}/status/activity[text()]"`
-      local_activity=`echo ${online_results} | jq '.valueSearchResult' -`
+      local_activity=`echo ${online_results} | xmllint -xpath "string(returnInfo/valueSearchResult)" -`
       echo "`date` INFO: ${APP}-Local activity state is: ${local_activity}"
       case "${local_activity}" in
         "Local Active")
@@ -304,7 +299,6 @@ objects:
           exit 1
           ;;
       esac
-
 
     semp_query.sh: |-
         #!/bin/bash
@@ -342,7 +336,7 @@ objects:
                     ,url=${url} ,value_search=${value_search} ,Leftovers: $@" >&2
         if [[ ${url} = "" || ${name} = "" || ${password} = "" || ${query} = "" ]]; then
             echo "`date` ERROR: ${APP}-${script_name}: url, name, password and query are madatory fields" >&2
-            echo  '{"errorInfo":"missing parameter"}'
+            echo  '<returnInfo><errorInfo>missing parameter</errorInfo></returnInfo>'
             exit 1
           fi
         query_response=`curl -sS -u ${name}:${password} ${url} -d "${query}"`
@@ -355,14 +349,14 @@ objects:
 
         if [[ -z ${query_response_code} && ${query_response_code} != "ok" ]]; then
             echo "`date` ERROR: ${APP}-${script_name}: Query failed, bad return code -${query_response}-" >&2
-            echo  "{\"errorInfo\":\"query failed -${query_response_code}-\"}"
+            echo  "<returnInfo><errorInfo>query failed -${query_response_code}-</errorInfo></returnInfo>"
             exit 1
         fi
         echo "`date` INFO: ${APP}-${script_name}: Query passed ${query_response_code}" >&2
         if [[ ! -z $value_search ]]; then
             value_result=`echo $query_response | xmllint -xpath "string($value_search)" -`
             echo "`date` INFO: ${APP}-${script_name}: Value search $value_search returned ${value_result}" >&2
-            echo  "{\"errorInfo\":\"\",\"valueSearchResult\":\"${value_result}\"}"
+            echo  "<returnInfo><errorInfo></errorInfo><valueSearchResult>${value_result}</valueSearchResult></returnInfo>"
             exit 0
         fi
         if [[ ! -z $count_search ]]; then
@@ -370,7 +364,7 @@ objects:
             count_string=`echo $count_search | cut -d '"' -f 2`
             count_result=`echo ${count_line} | tr "><" "\n" | grep -c ${count_string}`
             echo -e "`date` INFO: ${APP}-${script_name}: \n\t count search: $count_search \n\t count_line: ${count_line} \n\t count_string: ${count_string} \n\t count_result: ${count_result}" >&2
-            echo  "{\"errorInfo\":\"\",\"countSearchResult\":${count_result}}"
+            echo  "<returnInfo><errorInfo></errorInfo><countSearchResult>${count_result}</countSearchResult></returnInfo>"
             exit 0
         fi
 
