@@ -26,7 +26,7 @@ This is a 6 steps process with some steps being optional. Steps to deploy the me
 
 **Hint:** You may skip Step 1 if you already have your own OpenShift environment deployed.
 
-> Note: If using MiniShift follow the [instructions to get to a working MiniShift deployment](https://docs.okd.io/latest/minishift/getting-started/index.html ). If using MiniShift in a Windows environment one easy way to follow the shell scripts in this guide is to use [Git BASH for Windows](https://gitforwindows.org/ ) and ensure any script files are using unix style line endings by running the `dostounix` tool if needed. 
+> Note: If using MiniShift follow the [instructions to get to a working MiniShift deployment](https://docs.okd.io/latest/minishift/getting-started/index.html ). If using MiniShift in a Windows environment one easy way to follow the shell scripts in the subsequent steps of this guide is to use [Git BASH for Windows](https://gitforwindows.org/ ) and ensure any script files are using unix style line endings by running the `dostounix` tool if needed. 
 
 ### Step 1: (Optional / AWS) Deploy OpenShift Container Platform onto AWS using the RedHat OpenShift AWS QuickStart Project
 
@@ -37,7 +37,8 @@ This is a 6 steps process with some steps being optional. Steps to deploy the me
   **Important:** As described in above documentation, this deployment requires a Red Hat account with a valid Red Hat subscription to OpenShift and will consume 10 OpenShift entitlements in a maximum redundancy configuration. When no longer needed ensure to follow the steps in the [Deleting the OpenShift Container Platform deployment](#deleting-the-openshift-container-platform-deployment ) section of this guide to free up the entitlements.
 
   This deployment will create 10 EC2 instances: an *ansible-configserver* and three of each *openshift-etcd*, *openshift-master* and *openshift-nodes* servers. <br>
-  Note that only the *ansible-configserver* is exposed externally in a public subnet. To access the other servers that are in a private subnet, first [SSH into](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html ) the *ansible-configserver* instance then use that instance as a bastion host to SSH into the target server using it's private IP. For that we recommend enabling [SSH agent forwarding](https://developer.github.com/v3/guides/using-ssh-agent-forwarding/ ) on your local machine to avoid storing private keys remotely.
+  
+  **Note:** only the "*ansible-configserver*" is exposed externally in a public subnet. To access the other servers that are in a private subnet, first [SSH into](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html ) the *ansible-configserver* instance then use that instance as a bastion host to SSH into the target server using it's private IP. For that we recommend enabling [SSH agent forwarding](https://developer.github.com/v3/guides/using-ssh-agent-forwarding/ ) on your local machine to avoid the insecure option of copying and storing private keys remotely on the *ansible-configserver*.
 
 * (Part II) Once you have deployed OpenShift using the AWS QuickStart you will have to perform additional steps to re-configure OpenShift to integrate fully with AWS.  For full details, please refer to the RedHat OpenShift documentation for configuring OpenShift for AWS:
 
@@ -49,7 +50,7 @@ This is a 6 steps process with some steps being optional. Steps to deploy the me
    * Tag public subnets so when creating a public service suitable public subnets can be found
    * Re-configure OpenShift Masters and OpenShift Nodes to make OpenShift aware of AWS deployment specifics
    
-  SSH into the *ansible-configserver* then follow the commands. The script will end with listing the private IP of the *openshift-master* servers, one of which you will need to SSH into for the next step, as described in (Part I).
+  SSH into the *ansible-configserver* then follow the commands.
   
 ```
 ## On the ansible-configserver server
@@ -69,21 +70,33 @@ export AWS_SECRET_ACCESS_KEY=XXXXXXXXXXXXXXXXXXXXX
 ./configureAWSOpenShift.sh
 ```
 
-Verify you have access and can login to the OpenShift console. You can get the URL from the CloudFormation page of the AWS services console, see the 'Outputs' tab of the *nested* OpenShiftStack substack.
+The script will end with listing the private IP of the *openshift-master* servers, one of which you will need to SSH into for the next step. The command to access it is `ssh <master-ip>` with SSH agent forwarding enabled.
+
+Also verify you have access and can login to the OpenShift console. You can get the URL from the CloudFormation page of the AWS services console, see the 'Outputs' tab of the *nested* OpenShiftStack substack.
 
 ![alt text](/resources/GetOpenShiftURL.png "Getting to OpenShift console URL")
 
 <p align="center">OpenShift deployment example with nested OpenShiftStack, VPCStack, tabs, keys and values</p>
 
 
-### Step 2: Clone the Solace OpenShift QuickStart (this repo) into your workspace
+### Step 2: Prepare your workspace
 
-**Note:** This and subsequent steps shall be executed on a host having the OpenShift client tools and able to reach your OpenShift cluster nodes - conveniently, this can be one of the *openshift-master* servers.
+**Important:** This and subsequent steps shall be executed on a host having the OpenShift client tools and able to reach your OpenShift cluster nodes - conveniently, this can be one of the *openshift-master* servers.
+
+> If using MiniShift, continue using your terminal.
+
+* SSH into your selected host and ensure you are logged in to OpenShift. If you used Step 1 to deploy OpenShift, the requested server URL is the same as the OpenShift console URL, the username is `admin` and the password is as specified in the CloudFormation template. Otherwise use the values specific to your environment.
+
+```
+## On an openshift-master server
+oc whoami  
+# if not logged in yet
+oc login   
+```
 
 * The Solace OpenShift QuickStart project contains useful scripts to help you prepare an OpenShift project for message broker deployment. SSH into your selected host and retrieve the project:
 
 ```
-## On an openshift-master server
 mkdir ~/workspace
 cd ~/workspace
 git clone https://github.com/SolaceProducts/solace-openshift-quickstart.git
@@ -94,7 +107,7 @@ cd solace-openshift-quickstart
 
 * **(Part I)** Use the ‘deployHelm.sh’ script to deploy the Helm client and server-side components.  Begin by installing the Helm client tool:
 
-> Note: If using MiniShift get the [Helm executable](https://storage.googleapis.com/kubernetes-helm/helm-v2.9.1-windows-amd64.zip ) and put it in a directory on your path before running the following script.
+> If using MiniShift, get the [Helm executable](https://storage.googleapis.com/kubernetes-helm/helm-v2.9.1-windows-amd64.zip ) and put it in a directory on your path before running the following script.
 
 ```
 cd ~/workspace/solace-openshift-quickstart/scripts
@@ -105,7 +118,7 @@ cd ~/workspace/solace-openshift-quickstart/scripts
   **Important:** After running the above script, note the **export** statements for the following environment variables from the output - copy and run them. It is also recommended to add them to `~/.bashrc` on your machine so they are automatically sourced at future sessions (These environment variables are required every time when running the `helm` client tool).
 
   
-* **(Part II)** Install the Helm server-side ‘Tiller’ component.  Note, you will be prompted to log into OpenShift if you have not already done so. If you used Step 1 to deploy OpenShift, the requested server URL is the same as the OpenShift console URL, the username is `admin` and the password is as specified in the CloudFormation template. Otherwise use the values specific to your environment.
+* **(Part II)** Install the Helm server-side ‘Tiller’ component:
 
 ```
 cd ~/workspace/solace-openshift-quickstart/scripts
@@ -386,7 +399,7 @@ To delete the deployment or to start over from Step 6 in a clean state:
 
 ```
 helm list   # will list the releases (deployments)
-helm delete XXX-XXX  # your deployment - "plucking-squid" in the example above
+helm delete XXX-XXX  # will delete instances related to your deployment - "plucking-squid" in the example above
 ```
 
 * If used (Option 2) OpenShift templates to deploy, use:
@@ -433,7 +446,7 @@ To deploy the message broker in unprivileged container the followings are requir
 
 * A custom [OpenShift SCC](https://docs.openshift.com/container-platform/3.9/architecture/additional_concepts/authorization.html#security-context-constraints ) defining the fine grained permissions above the "restricted" SCC needs to be created and assigned to the deployment user of the project. See the [sccForUnprivilegedCont.yaml](https://github.com/SolaceDev/solace-openshift-quickstart/blob/NoPrivTest/scripts/templates/sccForUnprivilegedCont.yaml ) file in this repo. 
 * The requested `securityContext` for the container shall be `privileged: false`
-* Additionally, any privileged ports (port numbers less than 1024) used need to be reconfigured. For example, port 22 for SSH access needs to be reconfigured to e.g.: 22222. Note the this is at the pod level and the load balancer has been configured to expose SSH at port 22 at the publicly accessible Solace Connection URI.
+* Additionally, any privileged ports (port numbers less than 1024) used need to be reconfigured. For example, port 22 for SSH access needs to be reconfigured to e.g.: 22222. Note that this is at the pod level and the load balancer has been configured to expose SSH at port 22 at the publicly accessible Solace Connection URI.
 
 ## Contributing
 
