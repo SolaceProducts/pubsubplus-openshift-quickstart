@@ -13,7 +13,7 @@
 #    . ./deployHelm.sh server
 #
 TILLER_PROJECT=tiller
-HELM_VERSION=2.7.2
+HELM_VERSION=2.9.1
 
 function helmVersion() {
   which helm &> /dev/null  
@@ -49,18 +49,26 @@ function deployHelmClient () {
     curl -s "https://storage.googleapis.com/kubernetes-helm/helm-v${HELM_VERSION}-linux-amd64.tar.gz" | tar xz
     $HOME/linux-amd64/helm init --client-only
   
+    echo "#############################################################"
+    echo "Client install completed. Ensure following environment variables are exported:"
+    
     echo "export PATH=\$PATH:\$HOME/linux-amd64"
     export PATH=$PATH:~/linux-amd64
-
-    echo "export HELM_HOME=\$HOME/.helm"
-    export HELM_HOME=$HOME/.helm
-
-    echo "export TILLER_NAMESPACE=${TILLER_PROJECT}"
-    export TILLER_NAMESPACE=$TILLER_PROJECT
   else
-    echo "Skipping Helm client installation, Helm is already installed"
+    echo "Skipping Helm client installation, Helm is already installed."
     echo "  helm executable found in --> $(which helm)"
+    helm init --client-only
+  
+    echo "#############################################################"
+    echo "Ensure following environment variables are exported:"
   fi
+
+  echo "export HELM_HOME=\$HOME/.helm"
+  export HELM_HOME=$HOME/.helm
+
+  echo "export TILLER_NAMESPACE=${TILLER_PROJECT}"
+  export TILLER_NAMESPACE=$TILLER_PROJECT
+  
 }
 
 function deployHelmServer() {

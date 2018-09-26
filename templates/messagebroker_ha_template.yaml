@@ -34,7 +34,10 @@ objects:
       # export username_admin_passwordfilepath=/mnt/disks/secrets/username_admin_password
         export username_admin_password=`cat /mnt/disks/secrets/username_admin_password`
         export username_admin_globalaccesslevel=admin
-        export service_ssh_port='22'
+        export service_ssh_port='2222'
+        export service_webtransport_port='60080'
+        export service_webtransport_tlsport='60443'
+        export service_semp_tlsport='60943'
         export logging_debug_output=stdout
         export system_scaling_maxconnectioncount="1000"
         # [TODO] KBARR not using correct method of finding ordinal until we bump min Kubernetes release above 1.8.1
@@ -62,7 +65,7 @@ objects:
         export redundancy_group_node_${service_name}2_connectvia=${service}-2.${service}-discovery.${namespace}.svc
 
         case ${node_ordinal} in
-        0 )
+        0)
          export nodetype=message_routing
          export redundancy_matelink_connectvia=${service}-1.${service}-discovery.${namespace}.svc
          export redundancy_activestandbyrole=primary
@@ -80,7 +83,6 @@ objects:
     config-sync-check.sh: |-
         #!/bin/bash
         APP=`basename "$0"`
-        yum install -y jq
         # [TODO] KBARR not using correct method of finding ordinal until we bump min Kubernetes release above 1.8.1
         # https://github.com/kubernetes/kubernetes/issues/40651
         # node_ordinal=$(STATEFULSET_ORDINAL)
@@ -99,12 +101,12 @@ objects:
             role_results=`/mnt/disks/solace/semp_query.sh -n admin -p ${password} -u http://localhost:8080/SEMP \
                   -q "<rpc semp-version='soltr/8_5VMR'><show><redundancy><detail/></redundancy></show></rpc>" \
                   -v "/rpc-reply/rpc/show/redundancy/active-standby-role[text()]"`
-            case "`echo ${role_results} | jq '.valueSearchResult' -`" in
-              "\"Primary\"")
+            case "`echo ${role_results} | xmllint -xpath "string(returnInfo/valueSearchResult)" -`" in
+              "Primary")
               role="primary"
               break
               ;;
-              "\"Backup\"")
+              "Backup")
               role="backup"
               break
               ;;
@@ -124,18 +126,18 @@ objects:
             online_results=`/mnt/disks/solace/semp_query.sh -n admin -p ${password} -u http://localhost:8080/SEMP \
                 -q "<rpc semp-version='soltr/8_5VMR'><show><redundancy><detail/></redundancy></show></rpc>" \
                 -v "/rpc-reply/rpc/show/redundancy/virtual-routers/${role}/status/activity[text()]"`
-            local_activity=`echo ${online_results} | jq '.valueSearchResult' -`
+            local_activity=`echo ${online_results} | xmllint -xpath "string(returnInfo/valueSearchResult)" -`
             echo "`date` INFO: ${APP}-Local activity state is: ${local_activity}"
             run_time=$((${count} * ${pause}))
             case "${local_activity}" in
-              "\"Local Active\"")
+              "Local Active")
                 echo "`date` INFO: ${APP}-Redundancy is up locally Active, after ${run_time} seconds"
                 echo "`date` INFO: "We should only be here on new cluster create, if not likely a bug"
                 echo "`date` INFO: "   will issue a assert master to get back into sync"                              
                 resync_step="assert-master"
                 break
                 ;;
-              "\"Mate Active\"")
+              "Mate Active")
                 echo "`date` INFO: ${APP}-Redundancy is up mate Active, after ${run_time} seconds" 
                 echo "`date` INFO: "This is normal state if we are backup or recreated later on"
                 echo "`date` INFO: "   will issue a resync master to get back into sync"            
@@ -161,11 +163,11 @@ objects:
               online_results=`/mnt/disks/solace/semp_query.sh -n admin -p ${password} -u http://localhost:8080/SEMP \
                   -q "<rpc semp-version='soltr/8_5VMR'><show><redundancy><detail/></redundancy></show></rpc>" \
                   -v "/rpc-reply/rpc/show/redundancy/virtual-routers/${role}/status/detail/priority-reported-by-mate/summary[text()]"`
-              mate_activity=`echo ${online_results} | jq '.valueSearchResult' -`
+              mate_activity=`echo ${online_results} | xmllint -xpath "string(returnInfo/valueSearchResult)" -`
               echo "`date` INFO: ${APP}-Mate activity state is: ${mate_activity}"
               run_time=$((${count} * ${pause}))
               case "${mate_activity}" in
-                "\"Standby\"")
+                "Standby")
                   echo "`date` INFO: ${APP}-Redundancy is up end-to-end, Local Active Mate Standby, after ${run_time} seconds"
                   break
                   ;;
@@ -211,18 +213,15 @@ objects:
       # note that there are no re-tries here, if check fails the return not ready.
       APP=`basename "$0"`
       version=${1}
-
       password=`cat /mnt/disks/secrets/username_admin_password`
-      return_code=0
       state_file=/tmp/activity_state
       if [ ! -f ${state_file} ]; then
         echo "State file not found, creating!"
         echo "false" > ${state_file}
       fi
-      echo "`date` INFO: ${APP}-node oridinal"
+      echo "`date` INFO: ${APP}-node ordinal: ${node_ordinal}"
       IFS='-' read -ra host_array <<< $(hostname)
       node_ordinal=${host_array[-1]}
-
       if [ "${node_ordinal}" = "2" ]; then
         echo "`date` INFO: ${APP}-Monitor node ready check"
         # Note that when dealing with Monitor, only need to be concerned and readiness response.
@@ -231,7 +230,7 @@ objects:
         role_results=`/mnt/disks/solace/semp_query.sh -n admin -p ${password} -u http://localhost:8080/SEMP \
                 -q "<rpc semp-version='soltr/8_5VMR'><show><redundancy><group/></redundancy></show></rpc>" \
                 -c "/rpc-reply/rpc/show/redundancy/group-node/status[text() = \"Online\"]"`
-        if [ `echo ${role_results} | jq '.countSearchResult' -` -eq 3 ]; then
+        if [ `echo ${role_results} |  xmllint -xpath "string(returnInfo/countSearchResult)" -` -eq 3 ]; then
           echo "`date` INFO: ${APP}-Monitor node is redundancy ready"
           exit 0
         else
@@ -275,17 +274,17 @@ objects:
       online_results=`/mnt/disks/solace/semp_query.sh -n admin -p ${password} -u http://localhost:8080/SEMP \
               -q "<rpc semp-version='soltr/8_5VMR'><show><redundancy><detail/></redundancy></show></rpc>" \
               -v "/rpc-reply/rpc/show/redundancy/virtual-routers/${config_role}/status/activity[text()]"`
-      local_activity=`echo ${online_results} | jq '.valueSearchResult' -`
+      local_activity=`echo ${online_results} | xmllint -xpath "string(returnInfo/valueSearchResult)" -`
       echo "`date` INFO: ${APP}-Local activity state is: ${local_activity}"
       case "${local_activity}" in
-        "\"Local Active\"")
+        "Local Active")
           echo "`date` INFO: ${APP}-Redundancy is up locally Active"
           # Set active label to "true"
           set_label "active" "true" $state_file
           # Pass readiness check
           exit 0
           ;;
-        "\"Mate Active\"")
+        "Mate Active")
           echo "`date` INFO: ${APP}-Redundancy is up mate Active"
           # Set active label to "false"
           set_label "active" "false" $state_file
@@ -300,7 +299,6 @@ objects:
           exit 1
           ;;
       esac
-
 
     semp_query.sh: |-
         #!/bin/bash
@@ -338,7 +336,7 @@ objects:
                     ,url=${url} ,value_search=${value_search} ,Leftovers: $@" >&2
         if [[ ${url} = "" || ${name} = "" || ${password} = "" || ${query} = "" ]]; then
             echo "`date` ERROR: ${APP}-${script_name}: url, name, password and query are madatory fields" >&2
-            echo  '{"errorInfo":"missing parameter"}'
+            echo  '<returnInfo><errorInfo>missing parameter</errorInfo></returnInfo>'
             exit 1
           fi
         query_response=`curl -sS -u ${name}:${password} ${url} -d "${query}"`
@@ -351,14 +349,14 @@ objects:
 
         if [[ -z ${query_response_code} && ${query_response_code} != "ok" ]]; then
             echo "`date` ERROR: ${APP}-${script_name}: Query failed, bad return code -${query_response}-" >&2
-            echo  "{\"errorInfo\":\"query failed -${query_response_code}-\"}"
+            echo  "<returnInfo><errorInfo>query failed -${query_response_code}-</errorInfo></returnInfo>"
             exit 1
         fi
         echo "`date` INFO: ${APP}-${script_name}: Query passed ${query_response_code}" >&2
         if [[ ! -z $value_search ]]; then
             value_result=`echo $query_response | xmllint -xpath "string($value_search)" -`
             echo "`date` INFO: ${APP}-${script_name}: Value search $value_search returned ${value_result}" >&2
-            echo  "{\"errorInfo\":\"\",\"valueSearchResult\":\"${value_result}\"}"
+            echo  "<returnInfo><errorInfo></errorInfo><valueSearchResult>${value_result}</valueSearchResult></returnInfo>"
             exit 0
         fi
         if [[ ! -z $count_search ]]; then
@@ -366,7 +364,7 @@ objects:
             count_string=`echo $count_search | cut -d '"' -f 2`
             count_result=`echo ${count_line} | tr "><" "\n" | grep -c ${count_string}`
             echo -e "`date` INFO: ${APP}-${script_name}: \n\t count search: $count_search \n\t count_line: ${count_line} \n\t count_string: ${count_string} \n\t count_result: ${count_result}" >&2
-            echo  "{\"errorInfo\":\"\",\"countSearchResult\":${count_result}}"
+            echo  "<returnInfo><errorInfo></errorInfo><countSearchResult>${count_result}</countSearchResult></returnInfo>"
             exit 0
         fi
 
@@ -412,29 +410,29 @@ objects:
     type: LoadBalancer
     ports:
     - port: 22
+      targetPort: 2222
       protocol: TCP
       name: ssh
-    - port: 1883
-      protocol: TCP
-      name: mqtt
-    - port: 5672
-      protocol: TCP
-      name: amqp
-    - port: 8000
-      protocol: TCP
-      name: mqttws
     - port: 8080
+      targetPort: 8080
       protocol: TCP
       name: semp
-    - port: 9000
-      protocol: TCP
-      name: rest
-    - port: 55003
-      protocol: TCP
-      name: smfc
     - port: 55555
+      targetPort: 55555
       protocol: TCP
       name: smf
+    - port: 943
+      targetPort: 60943
+      protocol: TCP
+      name: semptls
+    - port: 80
+      targetPort: 60080
+      protocol: TCP
+      name: web
+    - port: 443
+      targetPort: 60443
+      protocol: TCP
+      name: webtls
     selector:
       app: solace
       release: "${DEPLOYMENT_NAME}"
@@ -485,11 +483,25 @@ objects:
               - /mnt/disks/solace/readiness_check.sh
               - "7"
           securityContext:
-            privileged: true
+            privileged: false
             capabilities:
               add:
                 - IPC_LOCK
                 - SYS_NICE
+                - SETPCAP
+                - MKNOD
+                - AUDIT_WRITE
+                - CHOWN
+                - NET_RAW
+                - DAC_OVERRIDE
+                - FOWNER
+                - FSETID
+                - KILL
+                - SETGID
+                - SETUID
+                - NET_BIND_SERVICE
+                - SYS_CHROOT
+                - SETFCAP
           env:
           - name: STATEFULSET_NAME
             value: "${DEPLOYMENT_NAME}-solace"
@@ -537,17 +549,17 @@ objects:
             mountPath: /usr/sw/internalSpool/softAdb
             subPath: softAdb
           ports:
-          - containerPort: 80
+          - containerPort: 2222
             protocol: TCP
           - containerPort: 8080
             protocol: TCP
-          - containerPort: 443
-            protocol: TCP
-          - containerPort: 8443
-            protocol: TCP
           - containerPort: 55555
             protocol: TCP
-          - containerPort: 22
+          - containerPort: 60943
+            protocol: TCP
+          - containerPort: 60080
+            protocol: TCP
+          - containerPort: 60443
             protocol: TCP
         volumes:
           - name: config-map

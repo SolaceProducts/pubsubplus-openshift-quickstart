@@ -1,10 +1,10 @@
-# Deploying a Solace PubSub+ Software Message Broker HA Group onto an OpenShift 3.7 platform
+# Deploying a Solace PubSub+ Software Message Broker onto an OpenShift 3.7 or 3.9 platform
 
 ## Purpose of this Repository
 
-This repository provides an example of how to deploy Solace PubSub+ software message brokers onto an OpenShift 3.7 platform. There are [multiple ways](https://docs.openshift.com/index.html ) to get to an OpenShift platform, including [MiniShift](https://github.com/minishift/minishift#welcome-to-minishift ). This guide will specifically use the Red Hat OpenShift Container Platform 3.7 but concepts are transferable to other compatible platforms.
+This repository provides an example of how to deploy Solace PubSub+ software message brokers onto an OpenShift 3.7 or 3.9 platform. There are [multiple ways](https://docs.openshift.com/index.html ) to get to an OpenShift platform, including [MiniShift](https://github.com/minishift/minishift#welcome-to-minishift ). This guide will specifically use the Red Hat OpenShift Container Platform for deploying an HA group but concepts are transferable to other compatible platforms. There will be also hints on how to set up a simple single-node MiniKube deployment using MiniShift for development, testing or proof of concept purposes.
 
-We utilize the [RedHat OpenShift on AWS QuickStart](https://aws.amazon.com/quickstart/architecture/openshift/ ) project to deploy a Red Hat OpenShift Container Platform on AWS in a highly redundant configuration, spanning 3 zones.
+For the Red Hat OpenShift Container Platform, we utilize the [RedHat OpenShift on AWS QuickStart](https://aws.amazon.com/quickstart/architecture/openshift/ ) project to deploy a Red Hat OpenShift Container Platform on AWS in a highly redundant configuration, spanning 3 zones.
 
 This repository expands on the [Solace Kubernetes Quickstart](https://github.com/SolaceProducts/solace-kubernetes-quickstart ) to provide an example of how to deploy Solace PubSub+ software message brokers in an HA configuration on the OpenShift Container Platform running in AWS.
 
@@ -19,12 +19,14 @@ The Solace PubSub+ software message broker meets the needs of big data, cloud mi
 The following steps describe how to deploy a message broker onto an OpenShift environment. Optional steps are provided about setting up a Red Hat OpenShift Container Platform on Amazon AWS infrastructure (marked as Optional / AWS) and if you use AWS Elastic Container Registry to host the Solace message broker Docker image (marked as Optional / ECR).
 
 There are also two options for deploying a message broker onto your OpenShift deployment:
-* (Deployment option 1): This option allows great flexibility using the Kubernetes `Helm` tool to automate the process of message broker deployment through a wide range of configuration options including in-service rolling upgrade of the message broker. The [Solace Kubernetes QuickStart project](https://github.com/SolaceProducts/solace-kubernetes-quickstart ) will be referred to deploy the message broker onto your OpenShift environment.
-* (Deployment option 2): This option can be used directly, without any additional tool to deploy the message broker in a limited number of configurations, using OpenShift templates included in this project.
+* (Deployment option 1, using Helm): This option allows great flexibility using the Kubernetes `Helm` tool to automate the process of message broker deployment through a wide range of configuration options including in-service rolling upgrade of the message broker. The [Solace Kubernetes QuickStart project](https://github.com/SolaceProducts/solace-kubernetes-quickstart ) will be referred to deploy the message broker onto your OpenShift environment.
+* (Deployment option 2, using OpenShift templates): This option can be used directly, without any additional tool to deploy the message broker in a limited number of configurations, using OpenShift templates included in this project.
 
-Steps to deploy the message broker:
+This is a 6 steps process with some steps being optional. Steps to deploy the message broker:
 
 **Hint:** You may skip Step 1 if you already have your own OpenShift environment deployed.
+
+> Note: If using MiniShift follow the [instructions to get to a working MiniShift deployment](https://docs.okd.io/latest/minishift/getting-started/index.html ). If using MiniShift in a Windows environment one easy way to follow the shell scripts in the subsequent steps of this guide is to use [Git BASH for Windows](https://gitforwindows.org/ ) and ensure any script files are using unix style line endings by running the `dostounix` tool if needed. 
 
 ### Step 1: (Optional / AWS) Deploy OpenShift Container Platform onto AWS using the RedHat OpenShift AWS QuickStart Project
 
@@ -35,11 +37,12 @@ Steps to deploy the message broker:
   **Important:** As described in above documentation, this deployment requires a Red Hat account with a valid Red Hat subscription to OpenShift and will consume 10 OpenShift entitlements in a maximum redundancy configuration. When no longer needed ensure to follow the steps in the [Deleting the OpenShift Container Platform deployment](#deleting-the-openshift-container-platform-deployment ) section of this guide to free up the entitlements.
 
   This deployment will create 10 EC2 instances: an *ansible-configserver* and three of each *openshift-etcd*, *openshift-master* and *openshift-nodes* servers. <br>
-  Note that only the *ansible-configserver* is exposed externally in a public subnet. To access the other servers that are in a private subnet, first [SSH into](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html ) the *ansible-configserver* instance then use that instance as a bastion host to SSH into the target server using it's private IP. For that we recommend enabling [SSH agent forwarding](https://developer.github.com/v3/guides/using-ssh-agent-forwarding/ ) on your local machine to avoid storing private keys remotely.
+  
+  **Note:** only the "*ansible-configserver*" is exposed externally in a public subnet. To access the other servers that are in a private subnet, first [SSH into](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html ) the *ansible-configserver* instance then use that instance as a bastion host to SSH into the target server using it's private IP. For that we recommend enabling [SSH agent forwarding](https://developer.github.com/v3/guides/using-ssh-agent-forwarding/ ) on your local machine to avoid the insecure option of copying and storing private keys remotely on the *ansible-configserver*.
 
 * (Part II) Once you have deployed OpenShift using the AWS QuickStart you will have to perform additional steps to re-configure OpenShift to integrate fully with AWS.  For full details, please refer to the RedHat OpenShift documentation for configuring OpenShift for AWS:
 
-  * [OpenShift > Configuring for AWS](https://docs.openshift.com/container-platform/3.7/install_config/configuring_aws.html )
+  * [OpenShift > Configuring for AWS](https://docs.openshift.com/container-platform/3.9/install_config/configuring_aws.html )
   
   To help with that this quick start provides a script to automate the execution of the required steps:
   
@@ -47,7 +50,7 @@ Steps to deploy the message broker:
    * Tag public subnets so when creating a public service suitable public subnets can be found
    * Re-configure OpenShift Masters and OpenShift Nodes to make OpenShift aware of AWS deployment specifics
    
-  SSH into the *ansible-configserver* then follow the commands. The script will end with listing the private IP of the *openshift-master* servers, one of which you will need to SSH into for the next step, as described in (Part I).
+  SSH into the *ansible-configserver* then follow the commands.
   
 ```
 ## On the ansible-configserver server
@@ -67,58 +70,75 @@ export AWS_SECRET_ACCESS_KEY=XXXXXXXXXXXXXXXXXXXXX
 ./configureAWSOpenShift.sh
 ```
 
-Verify you have access and can login to the OpenShift console. You can get the URL from the CloudFormation page of the AWS services console, see the 'Outputs' tab of the *nested* OpenShiftStack substack.
+The script will end with listing the private IP of the *openshift-master* servers, one of which you will need to SSH into for the next step. The command to access it is `ssh <master-ip>` with SSH agent forwarding enabled.
+
+Also verify you have access and can login to the OpenShift console. You can get the URL from the CloudFormation page of the AWS services console, see the 'Outputs' tab of the *nested* OpenShiftStack substack.
 
 ![alt text](/resources/GetOpenShiftURL.png "Getting to OpenShift console URL")
 
 <p align="center">OpenShift deployment example with nested OpenShiftStack, VPCStack, tabs, keys and values</p>
 
 
-### Step 2: Prepare for the deployment
+### Step 2: Prepare your workspace
 
-**Note:** This and subsequent steps shall be executed on a host having the OpenShift client tools and able to reach your OpenShift cluster nodes - conveniently, this can be one of the *openshift-master* servers.
+**Important:** This and subsequent steps shall be executed on a host having the OpenShift client tools and able to reach your OpenShift cluster nodes - conveniently, this can be one of the *openshift-master* servers.
 
-* The Solace OpenShift QuickStart project contains useful scripts to help you prepare an OpenShift project for message broker deployment. SSH into your selected host and retrieve the project:
+> If using MiniShift, continue using your terminal.
+
+* SSH into your selected host and ensure you are logged in to OpenShift. If you used Step 1 to deploy OpenShift, the requested server URL is the same as the OpenShift console URL, the username is `admin` and the password is as specified in the CloudFormation template. Otherwise use the values specific to your environment.
 
 ```
 ## On an openshift-master server
+oc whoami  
+# if not logged in yet
+oc login   
+```
+
+* The Solace OpenShift QuickStart project contains useful scripts to help you prepare an OpenShift project for message broker deployment. Retrieve the project in your selected host:
+
+```
 mkdir ~/workspace
 cd ~/workspace
 git clone https://github.com/SolaceProducts/solace-openshift-quickstart.git
 cd solace-openshift-quickstart
 ```
 
-### Step 3: (Optional: only for Deployment option 1 - use the Solace Kubernetes QuickStart to deploy the message broker) Install the Helm client and server-side tools
+### Step 3: (Optional: only execute for Deployment option 1 - use the Solace Kubernetes QuickStart to deploy the message broker) Install the Helm client and server-side tools
 
 * **(Part I)** Use the ‘deployHelm.sh’ script to deploy the Helm client and server-side components.  Begin by installing the Helm client tool:
+
+> If using MiniShift, get the [Helm executable](https://storage.googleapis.com/kubernetes-helm/helm-v2.9.1-windows-amd64.zip ) and put it in a directory on your path before running the following script.
 
 ```
 cd ~/workspace/solace-openshift-quickstart/scripts
 ./deployHelm.sh client
+# Copy and run the export statuments from the script output!
 ```
 
-  **Important:** After running the above script, note the **export** statements for the following environment variables from the output - copy and run them. It is also recommended to add them to `~/.bashrc` on your machine so they are automatically sourced at future sessions (These environment variables are required every time when running the `helm` client tool):
-  `HELM_HOME`, `TILLER_NAMESPACE`, `PATH`
+  **Important:** After running the above script, note the **export** statements for the following environment variables from the output - copy and run them. It is also recommended to add them to `~/.bashrc` on your machine so they are automatically sourced at future sessions (These environment variables are required every time when running the `helm` client tool).
 
-* **(Part II)** Install the Helm server-side ‘Tiller’ component.  Note, you will be prompted to log into OpenShift if you have not already done so. If you used Step 1 to deploy OpenShift, the requested server URL is the same as the OpenShift console URL, the username is `admin` and the password is as specified in the CloudFormation template. Otherwise use the values specific to your environment.
+  
+* **(Part II)** Install the Helm server-side ‘Tiller’ component:
 
 ```
 cd ~/workspace/solace-openshift-quickstart/scripts
 ./deployHelm.sh server
 ```
 
-### Step 4: Use scripts in the Solace OpenShift QuickStart to configure a project to host the message broker HA deployment
+### Step 4: Create and configure a project to host the message broker HA deployment
 
-* Use the ‘prepareProject.sh’ script to create and configure an OpenShift project that meets requirements of the message broker HA deployment:
+* Use the ‘prepareProject.sh’ script the Solace OpenShift QuickStart to create and configure an OpenShift project that meets requirements of the message broker HA deployment:
 
 ```
 cd ~/workspace/solace-openshift-quickstart/scripts
-sudo ./prepareProject.sh solace-pubsub-ha    # adjust your project name as needed here and in subsequent commands
+sudo ./prepareProject.sh solace-pubsub    # adjust your project name as needed here and in subsequent commands
 ```
 
-### Step 5 Load the message broker (Docker image) to your Docker Registry
+> Note: If using MiniShift on Windows it is not necessary to use `sudo` for the `prepareProject.sh` script because the default user is already system:admin.
 
-Deployment scripts will pull the Solace message broker image from a [docker registry](https://docs.docker.com/registry/ ). There are several [options which registry to use](https://docs.openshift.com/container-platform/3.7/architecture/infrastructure_components/image_registry.html#overview ) depending on the requirements of your project, see some examples in (Part II) of this step.
+### Step 5: Optional: Load the message broker (Docker image) to your Docker Registry
+
+Deployment scripts will pull the Solace message broker image from a [docker registry](https://docs.docker.com/registry/ ). There are several [options which registry to use](https://docs.openshift.com/container-platform/3.9/architecture/infrastructure_components/image_registry.html#overview ) depending on the requirements of your project, see some examples in (Part II) of this step.
 
 **Hint:** You may skip the rest of this step if using the free PubSub+ Standard Edition available from the [Solace public Docker Hub registry](https://hub.docker.com/r/solace/solace-pubsub-standard/tags/ ). The Docker Registry URL to use will be `solace/solace-pubsub-standard:<TagName>`.
 
@@ -126,18 +146,19 @@ Deployment scripts will pull the Solace message broker image from a [docker regi
 
   Go to the Solace Developer Portal and download the Solace PubSub+ software message broker as a **Docker** image or obtain your version from Solace Support.
 
-  You can use this quick start with either PubSub+ `Standard` or PubSub+ `Enterprise Evaluation Edition`.
+     * If using Solace PubSub+ Enterprise Evaluation Edition, go to the Solace Downloads page. For the image reference, copy and use the download URL in the Solace PubSub+ Enterprise Evaluation Edition Docker Images section.
 
-  | PubSub+ Standard<br/>Docker Image | PubSub+ Enterprise Evaluation Edition<br/>Docker Image
-  | :---: | :---: |
-  | Free, up to 1k simultaneous connections,<br/>up to 10k messages per second | 90-day trial version, unlimited |
-  | [Download Standard Docker Image](http://dev.solace.com/downloads/) | [Download Evaluation Docker Image](http://dev.solace.com/downloads#eval) |
+         | PubSub+ Enterprise Evaluation Edition<br/>Docker Image
+         | :---: |
+         | 90-day trial version of PubSub+ Enterprise |
+         | [Get URL of Evaluation Docker Image](http://dev.solace.com/downloads#eval ) |
+
 
 * **(Part II)** Deploy the message broker docker image to your Docker registry of choice
 
   Options include:
 
-  * You can choose to use [OpenShift's docker registry.](https://docs.openshift.com/container-platform/3.7/install_config/registry/deploy_registry_existing_clusters.html )
+  * You can choose to use [OpenShift's docker registry.](https://docs.openshift.com/container-platform/3.9/install_config/registry/deploy_registry_existing_clusters.html )
 
   * **(Optional / ECR)** You can utilize the AWS Elastic Container Registry (ECR) to host the message broker Docker image. For more information, refer to [Amazon Elastic Container Registry](https://aws.amazon.com/ecr/ ). If you are using ECR as your Docker registry then you must add the ECR login credentials (as an OpenShift secret) to your message broker HA deployment.  This project contains a helper script to execute this step:
 
@@ -145,7 +166,7 @@ Deployment scripts will pull the Solace message broker image from a [docker regi
 # Required if using ECR for docker registry
 sudo aws configure       # provide AWS config for root
 cd ~/workspace/solace-openshift-quickstart/scripts
-sudo ./addECRsecret.sh solace-pubsub-ha   # adjust your project name as needed
+sudo ./addECRsecret.sh solace-pubsub   # adjust your project name as needed
 ```
 
 ### Step 6: (Option 1) Deploy the message broker using the Solace Kubernetes QuickStart
@@ -171,25 +192,25 @@ Notes:
 HA deployment example:
 
 ```
-oc project solace-pubsub-ha   # adjust your project name as needed
+oc project solace-pubsub   # adjust your project name as needed
 cd ~/workspace/solace-kubernetes-quickstart/solace
 ../scripts/configure.sh -p <ADMIN_PASSWORD> -c aws -v values-examples/prod1k-persist-ha-provisionPvc.yaml -i <SOLACE_IMAGE_URL> 
 # Initiate the deployment
 helm install . -f values.yaml
 # Wait until all pods running and ready and the active message broker pod label is "active=true"
-watch oc get statefulset,service,pods,pvc,pv --show-labels
+watch oc get pods --show-labels
 ```
 
 non-HA deployment example:
 
 ```
-oc project solace-pubsub-ha   # adjust your project name as needed
+oc project solace-pubsub   # adjust your project name as needed
 cd ~/workspace/solace-kubernetes-quickstart/solace
 ../scripts/configure.sh -p <ADMIN_PASSWORD> -c aws -v values-examples/prod1k-persist-noha-provisionPvc.yaml -i <SOLACE_IMAGE_URL> 
 # Initiate the deployment
 helm install . -f values.yaml
 # Wait until all pods running and ready and the active message broker pod label is "active=true"
-watch oc get statefulset,service,pods,pvc,pv --show-labels
+watch oc get pods --show-labels
 ```
 
 ### Step 6: (Option 2) Deploy the message broker using the OpenShift templates included in this project
@@ -208,7 +229,7 @@ You can deploy the message broker in either a single-node or high-availability c
 * For a **Single-Node** configuration:
   * Process the Solace 'Single Node' OpenShift template to deploy the message broker in a single-node configuration.  Specify values for the DOCKER_REGISTRY_URL, MESSAGEBROKER_IMAGE_TAG, MESSAGEBROKER_STORAGE_SIZE, and MESSAGEBROKER_ADMIN_PASSWORD parameters:
 ```
-oc project solace-pubsub-ha   # adjust your project name as needed
+oc project solace-pubsub   # adjust your project name as needed
 cd  ~/workspace/solace-openshift-quickstart/templates
 oc process -f messagebroker_singlenode_template.yaml DEPLOYMENT_NAME=test-singlenode DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> MESSAGEBROKER_IMAGE_TAG=<replace with your Solace message broker docker image tag> MESSAGEBROKER_STORAGE_SIZE=30Gi MESSAGEBROKER_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
 # Wait until all pods running and ready
@@ -218,7 +239,7 @@ watch oc get statefulset,service,pods,pvc,pv
 * For a **High-Availability** configuration:
   * Process the Solace 'HA' OpenShift template to deploy the message broker in a high-availability configuration.  Specify values for the DOCKER_REGISTRY_URL, MESSAGEBROKER_IMAGE_TAG, MESSAGEBROKER_STORAGE_SIZE, and MESSAGEBROKER_ADMIN_PASSWORD parameters:
 ```
-oc project solace-pubsub-ha   # adjust your project name as needed
+oc project solace-pubsub   # adjust your project name as needed
 cd  ~/workspace/solace-openshift-quickstart/templates
 oc process -f messagebroker_ha_template.yaml DEPLOYMENT_NAME=test-ha DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> MESSAGEBROKER_IMAGE_TAG=<replace with your Solace message broker docker image tag> MESSAGEBROKER_STORAGE_SIZE=30Gi MESSAGEBROKER_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
 # Wait until all pods running and ready
@@ -252,14 +273,14 @@ NAME                                          CAPACITY   ACCESSMODES   RECLAIMPO
 pv/pvc-01e8785b-74b4-11e8-ac35-0afbbfab169a   1Gi        RWO           Delete          Bound     openshift-ansible-service-broker/etcd           gp2                                 4d        failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1b
 pv/pvc-229cf3d4-74b4-11e8-ba4e-02b74a526708   1Gi        RWO           Delete          Bound     aws-service-broker/etcd                         gp2                                 4d        failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1b
 pv/pvc-cf27bd8c-74b3-11e8-ac35-0afbbfab169a   10Gi       RWO           Delete          Bound     openshift-infra/metrics-cassandra-1             gp2                                 4d        failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1c
-pv/pvc-e2e20e0f-7880-11e8-b199-06c6ba3800d0   30Gi       RWO           Delete          Bound     solace-pubsub-ha/data-plucking-squid-solace-0   plucking-squid-standard             3m        failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1c
-pv/pvc-e2e4379c-7880-11e8-b199-06c6ba3800d0   30Gi       RWO           Delete          Bound     solace-pubsub-ha/data-plucking-squid-solace-1   plucking-squid-standard             3m        failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1a
-pv/pvc-e2e6e88d-7880-11e8-b199-06c6ba3800d0   30Gi       RWO           Delete          Bound     solace-pubsub-ha/data-plucking-squid-solace-2   plucking-squid-standard             3m        failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1b
+pv/pvc-e2e20e0f-7880-11e8-b199-06c6ba3800d0   30Gi       RWO           Delete          Bound     solace-pubsub/data-plucking-squid-solace-0   plucking-squid-standard             3m        failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1c
+pv/pvc-e2e4379c-7880-11e8-b199-06c6ba3800d0   30Gi       RWO           Delete          Bound     solace-pubsub/data-plucking-squid-solace-1   plucking-squid-standard             3m        failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1a
+pv/pvc-e2e6e88d-7880-11e8-b199-06c6ba3800d0   30Gi       RWO           Delete          Bound     solace-pubsub/data-plucking-squid-solace-2   plucking-squid-standard             3m        failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1b
 [ec2-user@ip-10-0-23-198 ~]$
 [ec2-user@ip-10-0-23-198 ~]$
 [ec2-user@ip-10-0-23-198 ~]$ oc describe svc
 Name:                   plucking-squid-solace
-Namespace:              solace-pubsub-ha
+Namespace:              solace-pubsub
 Labels:                 app=solace
                         chart=solace-0.3.0
                         heritage=Tiller
@@ -269,15 +290,30 @@ Selector:               active=true,app=solace,release=plucking-squid
 Type:                   LoadBalancer
 IP:                     172.30.15.249
 LoadBalancer Ingress:   ae2dd15e2788011e8b19906c6ba3800d-1889414054.eu-central-1.elb.amazonaws.com
-Port:                   ssh     22/TCP
-NodePort:               ssh     30811/TCP
-Endpoints:              10.129.0.11:22
-Port:                   semp    8080/TCP
-NodePort:               semp    30295/TCP
-Endpoints:              10.129.0.11:8080
-Port:                   smf     55555/TCP
-NodePort:               smf     30079/TCP
-Endpoints:              10.129.0.11:55555
+Port:                   ssh  22/TCP
+TargetPort:             2222/TCP
+NodePort:               ssh  31569/TCP
+Endpoints:              10.128.2.11:2222
+Port:                   semp  8080/TCP
+TargetPort:             8080/TCP
+NodePort:               semp  31260/TCP
+Endpoints:              10.128.2.11:8080
+Port:                   smf  55555/TCP
+TargetPort:             55555/TCP
+NodePort:               smf  32027/TCP
+Endpoints:              10.128.2.11:55555
+Port:                   semptls  943/TCP
+TargetPort:             60943/TCP
+NodePort:               semptls  31243/TCP
+Endpoints:              10.128.2.11:60943
+Port:                   web  80/TCP
+TargetPort:             60080/TCP
+NodePort:               web  32240/TCP
+Endpoints:              10.128.2.11:60080
+Port:                   webtls  443/TCP
+TargetPort:             60443/TCP
+NodePort:               webtls  30548/TCP
+Endpoints:              10.128.2.11:60443
 Session Affinity:       None
 Events:
   FirstSeen     LastSeen        Count   From                    SubObjectPath   Type            Reason                  Message
@@ -287,7 +323,7 @@ Events:
 
 
 Name:                   plucking-squid-solace-discovery
-Namespace:              solace-pubsub-ha
+Namespace:              solace-pubsub
 Labels:                 app=solace
                         chart=solace-0.3.0
                         heritage=Tiller
@@ -302,7 +338,10 @@ Session Affinity:       None
 Events:                 <none>
 ```
 
-Note, the **'LoadBalancer Ingress'** value listed in the service description above.  This is the publicly accessible Solace Connection URI for messaging clients and management. In the example it is `ae2dd15e2788011e8b19906c6ba3800d-1889414054.eu-central-1.elb.amazonaws.com`.
+Find the **'LoadBalancer Ingress'** value listed in the service description above.  This is the publicly accessible Solace Connection URI for messaging clients and management. In the example it is `ae2dd15e2788011e8b19906c6ba3800d-1889414054.eu-central-1.elb.amazonaws.com`.
+
+> Note: If using MiniShift an additional step is required to expose the service: `oc export svc plucking-squid-solace`. This will return a service definition with nodePort port numbers for each message router service. Use these port mumbers together with MiniShift's public IP address which can be obtained from the command `minishift ip`.
+
 
 ### Viewing bringup logs
 
@@ -338,7 +377,7 @@ Once you have launched the terminal emulator to the message broker pod you may a
 
 ![alt text](/resources/Solace-Primary-Pod-Terminal-CLI.png "Message Broker CLI via OpenShift UI Terminal emulator")
 
-See the [Solace Kubernetes Quickstart README](https://github.com/SolaceProducts/solace-kubernetes-quickstart/tree/master#gaining-admin-access-to-the-message-broker ) for more details including admin and ssh access to the individual message brokers.
+See the [Solace Kubernetes Quickstart README](https://github.com/SolaceProducts/solace-kubernetes-quickstart/tree/master#gaining-admin-access-to-the-message-broker ) for more details including admin and SSH access to the individual message brokers.
 
 ## Testing data access to the message broker
 
@@ -360,7 +399,7 @@ To delete the deployment or to start over from Step 6 in a clean state:
 
 ```
 helm list   # will list the releases (deployments)
-helm delete XXX-XXX  # your deployment - "plucking-squid" in the example above
+helm delete XXX-XXX  # will delete instances related to your deployment - "plucking-squid" in the example above
 ```
 
 * If used (Option 2) OpenShift templates to deploy, use:
@@ -382,7 +421,7 @@ oc delete pvc <pvc-name>
 To remove the project or to start over from Step 4 in a clean state, delete the project using the OpenShift console or the command line. For more details, refer to the [OpenShift Projects](https://docs.openshift.com/enterprise/3.0/dev_guide/projects.html ) documentation.
 
 ```
-oc delete project solace-pubsub-ha   # adjust your project name as needed
+oc delete project solace-pubsub   # adjust your project name as needed
 ```
 
 ### Deleting the OpenShift Container Platform deployment
@@ -398,6 +437,16 @@ cd ~/solace-openshift-quickstart/scripts
 ```
 
 Now the OpenShift stack delete can be initiated from the AWS CloudFormation console.
+
+## Running the message broker in unprivileged container
+
+In this QuickStart the message broker gets deployed in an unprivileged container with necessary additional fine-grained [Linux capabilities](http://man7.org/linux/man-pages/man7/capabilities.7.html ) opened up that are required by the broker operation.
+
+To deploy the message broker in unprivileged container the followings are required and are already taken care of by the scripts:
+
+* A custom [OpenShift SCC](https://docs.openshift.com/container-platform/3.9/architecture/additional_concepts/authorization.html#security-context-constraints ) defining the fine grained permissions above the "restricted" SCC needs to be created and assigned to the deployment user of the project. See the [sccForUnprivilegedCont.yaml](https://github.com/SolaceDev/solace-openshift-quickstart/blob/NoPrivTest/scripts/templates/sccForUnprivilegedCont.yaml ) file in this repo. 
+* The requested `securityContext` for the container shall be `privileged: false`
+* Additionally, any privileged ports (port numbers less than 1024) used need to be reconfigured. For example, port 22 for SSH access needs to be reconfigured to e.g.: 22222. Note that this is at the pod level and the load balancer has been configured to expose SSH at port 22 at the publicly accessible Solace Connection URI.
 
 ## Contributing
 

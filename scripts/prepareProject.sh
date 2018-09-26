@@ -46,16 +46,15 @@ fi
 # If deployed, grant the Tiller project the required access to deploy the Solace message router components
 if [[ "`oc get projects | grep tiller`" ]]; then
   echo "Tiller project detected, adding access to the ${1} project..."
-  oc policy add-role-to-user edit system:serviceaccount:$TILLER:tiller
-  oc adm policy add-cluster-role-to-user storage-admin system:serviceaccount:$TILLER:tiller
+  oc adm policy add-cluster-role-to-user cluster-admin system:serviceaccount:$TILLER:tiller
   echo
 fi
 
 # Configure the required OpenShift Policies and SCC privileges for the operation of the Solace message router software
 echo "Granting the ${1} project policies and SCC privileges for correct operation..."
 oc policy add-role-to-user edit system:serviceaccount:$PROJECT:default
-oc adm policy add-scc-to-user privileged system:serviceaccount:$PROJECT:default
-oc adm policy add-scc-to-user anyuid system:serviceaccount:$PROJECT:default
+echo "Setting up deployment in unprivileged container:"
+oc create -f templates/sccForUnprivilegedCont.yaml
+oc adm policy add-scc-to-user scc-solace-in-unprivileged-container system:serviceaccount:$PROJECT:default
 oc adm policy add-cluster-role-to-user storage-admin admin
-
 
