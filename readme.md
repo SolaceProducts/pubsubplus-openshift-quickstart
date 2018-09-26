@@ -94,7 +94,7 @@ oc whoami
 oc login   
 ```
 
-* The Solace OpenShift QuickStart project contains useful scripts to help you prepare an OpenShift project for message broker deployment. SSH into your selected host and retrieve the project:
+* The Solace OpenShift QuickStart project contains useful scripts to help you prepare an OpenShift project for message broker deployment. Retrieve the project in your selected host:
 
 ```
 mkdir ~/workspace
