@@ -125,9 +125,9 @@ cd ~/workspace/solace-openshift-quickstart/scripts
 ./deployHelm.sh server
 ```
 
-### Step 4: Create and configure a project to host the message broker HA deployment
+### Step 4: Create and configure a project to host the message broker deployment
 
-* Use the ‘prepareProject.sh’ script the Solace OpenShift QuickStart to create and configure an OpenShift project that meets requirements of the message broker HA deployment:
+* Use the ‘prepareProject.sh’ script the Solace OpenShift QuickStart to create and configure an OpenShift project that meets requirements of the message broker deployment:
 
 ```
 cd ~/workspace/solace-openshift-quickstart/scripts
