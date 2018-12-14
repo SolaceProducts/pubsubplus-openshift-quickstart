@@ -173,6 +173,7 @@ sudo ./addECRsecret.sh solace-pubsub   # adjust your project name as needed
   * Go to your target ECR repository in the AWS ECR Repositories console and get the push commands information by clicking on the "View push commands" button.
   * Follow the steps there. Instead of building your Docker image, load the message broker Docker image to the local Docker registry of your host using `Docker load -i <solace-image-Docker.tar.gz>`
   * Adjust the `Docker tag` command to tag the image you just loaded. Use `Docker images` to get a list of images.
+  * You may need to export `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` as described in Step 1.
 
 ![alt text](/resources/ECR-Registry.png "ECR Registry")
 
