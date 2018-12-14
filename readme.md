@@ -138,9 +138,9 @@ sudo ./prepareProject.sh solace-pubsub    # adjust your project name as needed h
 
 ### Step 5: Optional: Load the message broker (Docker image) to your Docker Registry
 
-Deployment scripts will pull the Solace message broker image from a [docker registry](https://docs.docker.com/registry/ ). There are several [options which registry to use](https://docs.openshift.com/container-platform/3.10/architecture/infrastructure_components/image_registry.html#overview ) depending on the requirements of your project, see some examples in (Part II) of this step.
+Deployment scripts will pull the Solace message broker image from a [Docker registry](https://docs.Docker.com/registry/ ). There are several [options which registry to use](https://docs.openshift.com/container-platform/3.10/architecture/infrastructure_components/image_registry.html#overview ) depending on the requirements of your project, see some examples in (Part II) of this step.
 
-**Hint:** You may skip the rest of this step if using the free PubSub+ Standard Edition available from the [Solace public Docker Hub registry](https://hub.docker.com/r/solace/solace-pubsub-standard/tags/ ). The Docker Registry URL to use will be `solace/solace-pubsub-standard:<TagName>`.
+**Hint:** You may skip the rest of this step if using the free PubSub+ Standard Edition available from the [Solace public Docker Hub registry](https://hub.Docker.com/r/solace/solace-pubsub-standard/tags/ ). The Docker Registry URL to use will be `solace/solace-pubsub-standard:<TagName>`.
 
 * **(Part I)** Download a copy of the message broker Docker image.
 
@@ -154,20 +154,28 @@ Deployment scripts will pull the Solace message broker image from a [docker regi
          | [Get URL of Evaluation Docker Image](http://dev.solace.com/downloads#eval ) |
 
 
-* **(Part II)** Deploy the message broker docker image to your Docker registry of choice
+* **(Part II)** Deploy the message broker Docker image to your Docker registry of choice
 
   Options include:
 
-  * You can choose to use [OpenShift's docker registry.](https://docs.openshift.com/container-platform/3.10/install_config/registry/deploy_registry_existing_clusters.html )
+  * You can choose to use [OpenShift's Docker registry.](https://docs.openshift.com/container-platform/3.10/install_config/registry/deploy_registry_existing_clusters.html )
 
   * **(Optional / ECR)** You can utilize the AWS Elastic Container Registry (ECR) to host the message broker Docker image. For more information, refer to [Amazon Elastic Container Registry](https://aws.amazon.com/ecr/ ). If you are using ECR as your Docker registry then you must add the ECR login credentials (as an OpenShift secret) to your message broker HA deployment.  This project contains a helper script to execute this step:
 
 ```
-# Required if using ECR for docker registry
+# Required if using ECR for Docker registry
 sudo aws configure       # provide AWS config for root
 cd ~/workspace/solace-openshift-quickstart/scripts
 sudo ./addECRsecret.sh solace-pubsub   # adjust your project name as needed
 ```
+  Here is an outline of the additional steps required if loading an image to ECR:
+  
+  * Go to your target ECR repository in the AWS ECR Repositories console and get the push commands information by clicking on the "View push commands" button.
+  * Follow the steps there. Instead of building your Docker image, load the message broker Docker image to the local Docker registry of your host using `Docker load -i <solace-image-Docker.tar.gz>`
+  * Adjust the `Docker tag` command to tag the image you just loaded. Use `Docker images` to get a list of images.
+
+![alt text](/resources/ECR-Registry.png "ECR Registry")
+
 
 ### Step 6: (Option 1) Deploy the message broker using the Solace Kubernetes QuickStart
 
@@ -185,7 +193,7 @@ cd solace-kubernetes-quickstart
 
 Notes:
 
-* Providing `-i SOLACE_IMAGE_URL` is optional (see [Step 5](#step-5-load-the-message-broker-docker-image-to-your-docker-registry ) if using the latest Solace PubSub+ Standard edition message broker image from the Solace public Docker Hub registry
+* Providing `-i SOLACE_IMAGE_URL` is optional (see [Step 5](#step-5-load-the-message-broker-Docker-image-to-your-Docker-registry ) if using the latest Solace PubSub+ Standard edition message broker image from the Solace public Docker Hub registry
 * Set the cloud provider option to `-c aws` when deploying a message broker in an OpenShift / AWS environment
 * Ensure `helm` runs by executing `helm version`. If not, revisit [Step 3](#step-3-optional-only-for-deployment-option-1---use-the-solace-kubernetes-quickstart-to-deploy-the-message-broker-install-the-helm-client-and-server-side-tools ), including the export statements.
 
@@ -231,7 +239,7 @@ You can deploy the message broker in either a single-node or high-availability c
 ```
 oc project solace-pubsub   # adjust your project name as needed
 cd  ~/workspace/solace-openshift-quickstart/templates
-oc process -f messagebroker_singlenode_template.yaml DEPLOYMENT_NAME=test-singlenode DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> MESSAGEBROKER_IMAGE_TAG=<replace with your Solace message broker docker image tag> MESSAGEBROKER_STORAGE_SIZE=30Gi MESSAGEBROKER_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
+oc process -f messagebroker_singlenode_template.yaml DEPLOYMENT_NAME=test-singlenode DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> MESSAGEBROKER_IMAGE_TAG=<replace with your Solace message broker Docker image tag> MESSAGEBROKER_STORAGE_SIZE=30Gi MESSAGEBROKER_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
 # Wait until all pods running and ready
 watch oc get statefulset,service,pods,pvc,pv
 ```
@@ -241,7 +249,7 @@ watch oc get statefulset,service,pods,pvc,pv
 ```
 oc project solace-pubsub   # adjust your project name as needed
 cd  ~/workspace/solace-openshift-quickstart/templates
-oc process -f messagebroker_ha_template.yaml DEPLOYMENT_NAME=test-ha DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> MESSAGEBROKER_IMAGE_TAG=<replace with your Solace message broker docker image tag> MESSAGEBROKER_STORAGE_SIZE=30Gi MESSAGEBROKER_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
+oc process -f messagebroker_ha_template.yaml DEPLOYMENT_NAME=test-ha DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> MESSAGEBROKER_IMAGE_TAG=<replace with your Solace message broker Docker image tag> MESSAGEBROKER_STORAGE_SIZE=30Gi MESSAGEBROKER_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
 # Wait until all pods running and ready
 watch oc get statefulset,service,pods,pvc,pv
 ```
