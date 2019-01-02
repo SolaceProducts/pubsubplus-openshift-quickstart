@@ -190,13 +190,13 @@ git clone https://github.com/SolaceProducts/solace-kubernetes-quickstart.git
 cd solace-kubernetes-quickstart
 ```
 
-* Update the Solace Kubernetes helm chart values.yaml configuration file for your target deployment with the help of the Kubernetes quick start `configure.sh` script. (Please refer to the [Solace Kubernetes QuickStart](https://github.com/SolaceProducts/solace-kubernetes-quickstart#step-4 ) for further details):
+* Update the Solace Kubernetes Helm chart values.yaml configuration file for your target deployment with the help of the Kubernetes quick start `configure.sh` script. (Please refer to the [Solace Kubernetes QuickStart](https://github.com/SolaceProducts/solace-kubernetes-quickstart#step-4 ) for further details):
 
 Notes:
 
 * Providing `-i SOLACE_IMAGE_URL` is optional (see [Step 5](#step-5-load-the-message-broker-Docker-image-to-your-Docker-registry ) if using the latest Solace PubSub+ Standard edition message broker image from the Solace public Docker Hub registry
 * Set the cloud provider option to `-c aws` when deploying a message broker in an OpenShift / AWS environment
-* Ensure `helm` runs by executing `helm version`. If not, revisit [Step 3](#step-3-optional-only-for-deployment-option-1---use-the-solace-kubernetes-quickstart-to-deploy-the-message-broker-install-the-helm-client-and-server-side-tools ), including the export statements.
+* Ensure Helm runs by executing `helm version`. If not, revisit [Step 3](#step-3-optional-only-for-deployment-option-1---use-the-solace-kubernetes-quickstart-to-deploy-the-message-broker-install-the-helm-client-and-server-side-tools ), including the export statements.
 
 HA deployment example:
 
@@ -404,7 +404,7 @@ Note: the Host will be the Solace Connection URI. It may be necessary to [open u
 
 To delete the deployment or to start over from Step 6 in a clean state:
 
-* If used (Option 1) `helm` to deploy, execute: 
+* If used (Option 1) Helm to deploy, execute: 
 
 ```
 helm list   # will list the releases (deployments)
@@ -447,7 +447,9 @@ cd ~/solace-openshift-quickstart/scripts
 
 Now the OpenShift stack delete can be initiated from the AWS CloudFormation console.
 
-## Running the message broker in unprivileged container
+## Special topics
+
+### Running the message broker in unprivileged container
 
 In this QuickStart the message broker gets deployed in an unprivileged container with necessary additional fine-grained [Linux capabilities](http://man7.org/linux/man-pages/man7/capabilities.7.html ) opened up that are required by the broker operation.
 
@@ -456,6 +458,27 @@ To deploy the message broker in unprivileged container the followings are requir
 * A custom [OpenShift SCC](https://docs.openshift.com/container-platform/3.10/architecture/additional_concepts/authorization.html#security-context-constraints ) defining the fine grained permissions above the "restricted" SCC needs to be created and assigned to the deployment user of the project. See the [sccForUnprivilegedCont.yaml](https://github.com/SolaceProducts/solace-openshift-quickstart/blob/master/scripts/templates/sccForUnprivilegedCont.yaml ) file in this repo. 
 * The requested `securityContext` for the container shall be `privileged: false`
 * Additionally, any privileged ports (port numbers less than 1024) used need to be reconfigured. For example, port 22 for SSH access needs to be reconfigured to e.g.: 22222. Note that this is at the pod level and the load balancer has been configured to expose SSH at port 22 at the publicly accessible Solace Connection URI.
+
+### Using NFS for persitent storage
+
+The Solace PubSub+ message broker supports NFS for persistent storage, with "root_squash" option configured on the NFS server.
+
+For an example using dynamic volume provisioning with NFS, use the Solace Kubernetes Helm chart `values-examples/prod1k-persist-ha-nfs.yaml` configuration file in [Step 6](#step-6-option-1-deploy-the-message-broker-using-the-solace-kubernetes-quickstart ). By default, this sample configuration is using the StorageClass "nfs" for volume claims, assuming this StorageClass is backed by an NFS server.
+
+The Helm (NFS Server Provisioner)[https://github.com/helm/charts/tree/master/stable/nfs-server-provisioner ] project is an example of a dynamic NFS server provisioner. Here are the steps to get going with it:
+
+```
+# Create the required SCC
+sudo oc apply -f https://raw.githubusercontent.com/kubernetes-incubator/external-storage/master/nfs/deploy/kubernetes/scc.yaml
+# Install the NFS helm chart, which will create all dependencies
+helm install stable/nfs-server-provisioner --name nfs-test --set persistence.enabled=true,persistence.size=100Gi
+# Ensure the "nfs-provisioner" service account got created
+oc get serviceaccounts
+# Bind the SCC to the "nfs-provisioner" service account
+sudo oc adm policy add-scc-to-user nfs-provisioner -z nfs-test-nfs-server-provisioner
+# Ensure the NFS server pod is up and running
+oc get pod nfs-test-nfs-server-provisioner-0
+```
 
 ## Contributing
 
