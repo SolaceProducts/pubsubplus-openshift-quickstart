@@ -71,7 +71,12 @@ do
   sudo ssh $node bash -c "'
   echo \"AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
 AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY\" >> /etc/sysconfig/atomic-openshift-node
-  systemctl restart atomic-openshift-node.service
+  # Depending on OpenShift version 10+ or lower... see https://docs.openshift.com/container-platform/v.vv/install_config/master_node_configuration.html
+  if [ `oc version | grep oc | awk -F "." '{ print $2 }'` -gt 9 ] ; then
+    systemctl restart atomic-openshift-node
+  else
+    systemctl restart atomic-openshift-node.service
+  fi
   '"
   echo Configured node $node
 done
@@ -94,7 +99,13 @@ AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}  \" >> /etc/sysconfig/atomic-open
 AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}  \" >> /etc/sysconfig/atomic-openshift-master-api
   echo \"AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
 AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}  \" >> /etc/sysconfig/atomic-openshift-master-controllers
-  systemctl restart atomic-openshift-master-api atomic-openshift-master-controllers
+  # Depending on OpenShift version 10+ or lower... see https://docs.openshift.com/container-platform/v.vv/install_config/master_node_configuration.html
+  if [ `oc version | grep oc | awk -F "." '{ print $2 }'` -gt 9 ] ; then
+    master-restart api
+    master-restart controllers
+  else
+    systemctl restart atomic-openshift-master-api atomic-openshift-master-controllers
+  fi
   '"
   echo Configured master $node
 done
