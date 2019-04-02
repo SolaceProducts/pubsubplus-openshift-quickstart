@@ -164,19 +164,21 @@ Deployment scripts will pull the Solace message broker image from a [Docker regi
 
 ```
 # Required if using ECR for Docker registry
-sudo aws configure       # provide AWS config for root
+sudo su
+aws configure       # provide AWS config for root
 cd ~/workspace/solace-openshift-quickstart/scripts
-sudo ./addECRsecret.sh solace-pubsub   # adjust your project name as needed
+./addECRsecret.sh solace-pubsub   # adjust your project name as needed
 ```
   Here is an outline of the additional steps required if loading an image to ECR:
   
-  * Go to your target ECR repository in the AWS ECR Repositories console and get the push commands information by clicking on the "View push commands" button.
-  * Follow the steps there. Instead of building your Docker image, load the message broker Docker image to the local Docker registry of your host using `Docker load -i <solace-image-Docker.tar.gz>`
-  * Adjust the `Docker tag` command to tag the image you just loaded. Use `Docker images` to get a list of images.
-  * You may need to export `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` as described in Step 1.
+  * Copy the Solace Docker image location and download the image archive locally using the `wget <url>` command.
+  * Load the downloaded image to the local docker image repo using the `docker load -i <archive>` command
+  * Go to your target ECR repository in the [AWS ECR Repositories console](https://console.aws.amazon.com/ecr ) and get the push commands information by clicking on the "View push commands" button.
+  * Start from the `docker tag` command to tag the image you just loaded. Use `docker images` to find the  Solace Docker image just loaded. You may need to use 
+  * Finally, use the `docker push` command to push the image.
+  * Exit from superuser to normal user
 
 ![alt text](/resources/ECR-Registry.png "ECR Registry")
-
 
 ### Step 6: (Option 1) Deploy the message broker using the Solace Kubernetes QuickStart
 
@@ -375,11 +377,24 @@ The external management host URI will be the Solace Connection URI associated wi
 
 If you deployed OpenShift in AWS, then the Solace OpenShift QuickStart will have created an EC2 Load Balancer to front the message broker / OpenShift service.  The Load Balancer public DNS name can be found in the AWS EC2 console under the 'Load Balancers' section.
 
-You can gain access to the Solace CLI and container shell for individual message broker instances from the OpenShift UI.  A web-based terminal emulator is available from the OpenShift UI.  Navigate to an individual message broker Pod using the OpenShift UI:
+To lauch Solace CLI or ssh into the individual message broker instances from the OpenShift CLI use:
+
+```
+# CLI access
+oc exec -it XXX-XXX-solace-X cli   # adjust pod name to your deployment
+# shell access
+oc exec -it XXX-XXX-solace-X bash  # adjust pod name to your deployment
+```
+
+> Note for MiniShift: if using Windows you may get an error message: `Unable to use a TTY`. Install and preceed above commands with `winpty` until this is fixed in the MiniShift project.
+
+
+You can also gain access to the Solace CLI and container shell for individual message broker instances from the OpenShift UI.  A web-based terminal emulator is available from the OpenShift UI.  Navigate to an individual message broker Pod using the OpenShift UI:
 
 * **OpenShift UI > (Your Project) > Applications > Stateful Sets > ((name)-solace) > Pods > ((name)-solace-(N)) > Terminal**
 
 Once you have launched the terminal emulator to the message broker pod you may access the Solace CLI by executing the following command:
+
 ```
 /usr/sw/loads/currentload/bin/cli -A
 ```
