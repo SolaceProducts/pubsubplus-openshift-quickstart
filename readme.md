@@ -164,14 +164,14 @@ Deployment scripts will pull the Solace message broker image from a [Docker regi
 
 ```
 # Required if using ECR for Docker registry
+cd ~/workspace/solace-openshift-quickstart/scripts
 sudo su
 aws configure       # provide AWS config for root
-cd ~/workspace/solace-openshift-quickstart/scripts
 ./addECRsecret.sh solace-pubsub   # adjust your project name as needed
 ```
   Here is an outline of the additional steps required if loading an image to ECR:
   
-  * Copy the Solace Docker image location and download the image archive locally using the `wget <url>` command.
+  * Copy the Solace Docker image location url and download the image archive locally using the `wget <url>` command.
   * Load the downloaded image to the local docker image repo using the `docker load -i <archive>` command
   * Go to your target ECR repository in the [AWS ECR Repositories console](https://console.aws.amazon.com/ecr ) and get the push commands information by clicking on the "View push commands" button.
   * Start from the `docker tag` command to tag the image you just loaded. Use `docker images` to find the  Solace Docker image just loaded. You may need to use 
