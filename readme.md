@@ -2,7 +2,7 @@
 
 ## Differences to the "master" branch
 
-In this QuickStart the message broker gets deployed in an unprivileged container without any additional [Linux capabilities](http://man7.org/linux/man-pages/man7/capabilities.7.html ) required. Compare with section [Running the message broker in unprivileged container](https://github.com/SolaceProducts/solace-openshift-quickstart#running-the-message-broker-in-unprivileged-container ) in the master branch.
+In this "SecurityEnhancements" branch of the OpenShift QuickStart the message broker gets deployed in an unprivileged container without any additional [Linux capabilities](http://man7.org/linux/man-pages/man7/capabilities.7.html ) required. Compare with section [Running the message broker in unprivileged container](https://github.com/SolaceProducts/solace-openshift-quickstart#running-the-message-broker-in-unprivileged-container ) in the "master" branch.
 
 The main difference to the master branch is that the `prepareProject.sh` script is not creating an SCC to open up above additional capabilities. This quickstart also requires the use of the "SecurityEnhancements" branch of the Kubernetes quickstart - see [Step 6](#step-6-option-1-deploy-the-message-broker-using-the-solace-kubernetes-quickstart). 
 
