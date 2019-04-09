@@ -192,9 +192,11 @@ If you require more flexibility in terms of message broker deployment options (c
 
 * Retrieve the Solace Kubernetes QuickStart from GitHub:
 
+Important: notice the use of the "SecurityEnhancements" branch below. The "master" branch is not compatible with the changes for OpenShift Security Enhancements.
+
 ```
 cd ~/workspace
-git clone https://github.com/SolaceProducts/solace-kubernetes-quickstart.git
+git clone https://github.com/SolaceProducts/solace-kubernetes-quickstart.git -b SecurityEnhancements
 cd solace-kubernetes-quickstart
 ```
 
