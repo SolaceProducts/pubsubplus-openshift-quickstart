@@ -1,4 +1,10 @@
-# Deploying a Solace PubSub+ Software Message Broker onto an OpenShift 3.10 or 3.11 platform
+# Deploying a Solace PubSub+ Software Message Broker with Security Enhancements onto an OpenShift 3.10 or 3.11 platform
+
+## Difference to the master branch
+
+In this QuickStart the message broker gets deployed in an unprivileged container without any additional [Linux capabilities](http://man7.org/linux/man-pages/man7/capabilities.7.html ) required. Compare with section [Running the message broker in unprivileged container](https://github.com/SolaceProducts/solace-openshift-quickstart#running-the-message-broker-in-unprivileged-container ) in the master branch.
+
+This requires a Solace PubSub+ build which supports the security enhancements. A compatible build can be obtained through Solace Support.
 
 ## Purpose of this Repository
 
@@ -464,17 +470,7 @@ Now the OpenShift stack delete can be initiated from the AWS CloudFormation cons
 
 ## Special topics
 
-### Running the message broker in unprivileged container
-
-In this QuickStart the message broker gets deployed in an unprivileged container with necessary additional fine-grained [Linux capabilities](http://man7.org/linux/man-pages/man7/capabilities.7.html ) opened up that are required by the broker operation.
-
-To deploy the message broker in unprivileged container the followings are required and are already taken care of by the scripts:
-
-* A custom [OpenShift SCC](https://docs.openshift.com/container-platform/3.10/architecture/additional_concepts/authorization.html#security-context-constraints ) defining the fine grained permissions above the "restricted" SCC needs to be created and assigned to the deployment user of the project. See the [sccForUnprivilegedCont.yaml](https://github.com/SolaceProducts/solace-openshift-quickstart/blob/master/scripts/templates/sccForUnprivilegedCont.yaml ) file in this repo. 
-* The requested `securityContext` for the container shall be `privileged: false`
-* Additionally, any privileged ports (port numbers less than 1024) used need to be reconfigured. For example, port 22 for SSH access needs to be reconfigured to e.g.: 22222. Note that this is at the pod level and the load balancer has been configured to expose SSH at port 22 at the publicly accessible Solace Connection URI.
-
-### Using NFS for persitent storage
+### Using NFS for persistent storage
 
 The Solace PubSub+ message broker supports NFS for persistent storage, with "root_squash" option configured on the NFS server.
 
