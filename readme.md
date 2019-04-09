@@ -1,10 +1,12 @@
 # Deploying a Solace PubSub+ Software Message Broker with <i>Security Enhancements</i> onto an OpenShift 3.10 or 3.11 platform
 
-## Difference to the master branch
+## Differences to the "master" branch
 
 In this QuickStart the message broker gets deployed in an unprivileged container without any additional [Linux capabilities](http://man7.org/linux/man-pages/man7/capabilities.7.html ) required. Compare with section [Running the message broker in unprivileged container](https://github.com/SolaceProducts/solace-openshift-quickstart#running-the-message-broker-in-unprivileged-container ) in the master branch.
 
-This requires a Solace PubSub+ build which supports the security enhancements. A compatible build can be obtained through Solace Support.
+The main difference to the master branch is that the `prepareProject.sh` script is not creating an SCC to open up above additional capabilities. This quickstart also requires the use of the "SecurityEnhancements" branch of the Kubernetes quickstart - see [Step 6](#step-6-option-1-deploy-the-message-broker-using-the-solace-kubernetes-quickstart). 
+
+This feature requires a Solace PubSub+ build which supports the security enhancements. A compatible build can be obtained through Solace Support.
 
 ## Purpose of this Repository
 
@@ -192,7 +194,7 @@ If you require more flexibility in terms of message broker deployment options (c
 
 * Retrieve the Solace Kubernetes QuickStart from GitHub:
 
-Important: notice the use of the "SecurityEnhancements" branch below. The "master" branch is not compatible with the changes for OpenShift Security Enhancements.
+**Important**: notice the use of the "SecurityEnhancements" branch below. The "master" branch is not compatible with the changes for OpenShift Security Enhancements.
 
 ```
 cd ~/workspace
