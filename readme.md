@@ -1,4 +1,4 @@
-# Deploying a Solace PubSub+ Software Message Broker with **Security Enhancements** onto an OpenShift 3.10 or 3.11 platform
+# Deploying a Solace PubSub+ Software Message Broker with <b>Security Enhancements</b> onto an OpenShift 3.10 or 3.11 platform
 
 ## Difference to the master branch
 
