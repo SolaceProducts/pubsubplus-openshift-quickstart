@@ -171,12 +171,12 @@ Deployment scripts will pull the Solace message broker image from a [Docker regi
   * You can choose to use [OpenShift's Docker registry.](https://docs.openshift.com/container-platform/3.10/install_config/registry/deploy_registry_existing_clusters.html )
 
   * **(Optional / ECR)** You can utilize the AWS Elastic Container Registry (ECR) to host the message broker Docker image. For more information, refer to [Amazon Elastic Container Registry](https://aws.amazon.com/ecr/ ). If you are using ECR as your Docker registry then you must add the ECR login credentials (as an OpenShift secret) to your message broker HA deployment.  This project contains a helper script to execute this step:
-```
-# Required if using ECR for Docker registry
-cd ~/workspace/solace-openshift-quickstart/scripts
-sudo su
-aws configure       # provide AWS config for root; provide your keys, leave the rest to None.
-./addECRsecret.sh solace-pubsub   # adjust your project name as needed
+```shell
+    # Required if using ECR for Docker registry
+    cd ~/workspace/solace-openshift-quickstart/scripts
+    sudo su
+    aws configure       # provide AWS config for root; provide your keys, leave the rest to None.
+    ./addECRsecret.sh solace-pubsub   # adjust your project name as needed
 ```
   Here is an outline of the additional steps required if loading an image to ECR:
   
