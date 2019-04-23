@@ -1,4 +1,12 @@
-# Deploying a Solace PubSub+ Software Message Broker onto an OpenShift 3.10 or 3.11 platform
+# Deploying a Solace PubSub+ Software Message Broker with <i>Security Enhancements</i> onto an OpenShift 3.10 or 3.11 platform
+
+## Differences to the "master" branch
+
+In this "SecurityEnhancements" branch of the OpenShift QuickStart the message broker gets deployed in an unprivileged container without any additional [Linux capabilities](http://man7.org/linux/man-pages/man7/capabilities.7.html ) required. Compare with section [Running the message broker in unprivileged container](https://github.com/SolaceProducts/solace-openshift-quickstart#running-the-message-broker-in-unprivileged-container ) in the "master" branch.
+
+The main difference to the master branch is that the `prepareProject.sh` script is not creating an SCC to open up above additional capabilities. This quickstart also requires the use of the "SecurityEnhancements" branch of the Kubernetes quickstart - see [Step 6](#step-6-option-1-deploy-the-message-broker-using-the-solace-kubernetes-quickstart). 
+
+This feature requires a Solace PubSub+ build which supports the security enhancements. A compatible build can be obtained through Solace Support.
 
 ## Purpose of this Repository
 
@@ -96,10 +104,12 @@ oc login
 
 * The Solace OpenShift QuickStart project contains useful scripts to help you prepare an OpenShift project for message broker deployment. Retrieve the project in your selected host:
 
+**Important**: notice the use of the "SecurityEnhancements" branch below. The "master" branch is not compatible with the changes for OpenShift Security Enhancements.
+
 ```
 mkdir ~/workspace
 cd ~/workspace
-git clone https://github.com/SolaceProducts/solace-openshift-quickstart.git
+git clone https://github.com/SolaceProducts/solace-openshift-quickstart.git -b SecurityEnhancements
 cd solace-openshift-quickstart
 ```
 
@@ -161,17 +171,16 @@ Deployment scripts will pull the Solace message broker image from a [Docker regi
   * You can choose to use [OpenShift's Docker registry.](https://docs.openshift.com/container-platform/3.10/install_config/registry/deploy_registry_existing_clusters.html )
 
   * **(Optional / ECR)** You can utilize the AWS Elastic Container Registry (ECR) to host the message broker Docker image. For more information, refer to [Amazon Elastic Container Registry](https://aws.amazon.com/ecr/ ). If you are using ECR as your Docker registry then you must add the ECR login credentials (as an OpenShift secret) to your message broker HA deployment.  This project contains a helper script to execute this step:
-
-```
-# Required if using ECR for Docker registry
-sudo su
-aws configure       # provide AWS config for root
-cd ~/workspace/solace-openshift-quickstart/scripts
-./addECRsecret.sh solace-pubsub   # adjust your project name as needed
+```shell
+    # Required if using ECR for Docker registry
+    cd ~/workspace/solace-openshift-quickstart/scripts
+    sudo su
+    aws configure       # provide AWS config for root; provide your key ID and key, leave the rest to None.
+    ./addECRsecret.sh solace-pubsub   # adjust your project name as needed
 ```
   Here is an outline of the additional steps required if loading an image to ECR:
   
-  * Copy the Solace Docker image location and download the image archive locally using the `wget <url>` command.
+  * Copy the Solace Docker image location url and download the image archive locally using the `wget <url>` command.
   * Load the downloaded image to the local docker image repo using the `docker load -i <archive>` command
   * Go to your target ECR repository in the [AWS ECR Repositories console](https://console.aws.amazon.com/ecr ) and get the push commands information by clicking on the "View push commands" button.
   * Start from the `docker tag` command to tag the image you just loaded. Use `docker images` to find the  Solace Docker image just loaded. You may need to use 
@@ -186,9 +195,11 @@ If you require more flexibility in terms of message broker deployment options (c
 
 * Retrieve the Solace Kubernetes QuickStart from GitHub:
 
+**Important**: notice the use of the "SecurityEnhancements" branch below. The "master" branch is not compatible with the changes for OpenShift Security Enhancements.
+
 ```
 cd ~/workspace
-git clone https://github.com/SolaceProducts/solace-kubernetes-quickstart.git
+git clone https://github.com/SolaceProducts/solace-kubernetes-quickstart.git -b SecurityEnhancements
 cd solace-kubernetes-quickstart
 ```
 
@@ -464,17 +475,7 @@ Now the OpenShift stack delete can be initiated from the AWS CloudFormation cons
 
 ## Special topics
 
-### Running the message broker in unprivileged container
-
-In this QuickStart the message broker gets deployed in an unprivileged container with necessary additional fine-grained [Linux capabilities](http://man7.org/linux/man-pages/man7/capabilities.7.html ) opened up that are required by the broker operation.
-
-To deploy the message broker in unprivileged container the followings are required and are already taken care of by the scripts:
-
-* A custom [OpenShift SCC](https://docs.openshift.com/container-platform/3.10/architecture/additional_concepts/authorization.html#security-context-constraints ) defining the fine grained permissions above the "restricted" SCC needs to be created and assigned to the deployment user of the project. See the [sccForUnprivilegedCont.yaml](https://github.com/SolaceProducts/solace-openshift-quickstart/blob/master/scripts/templates/sccForUnprivilegedCont.yaml ) file in this repo. 
-* The requested `securityContext` for the container shall be `privileged: false`
-* Additionally, any privileged ports (port numbers less than 1024) used need to be reconfigured. For example, port 22 for SSH access needs to be reconfigured to e.g.: 22222. Note that this is at the pod level and the load balancer has been configured to expose SSH at port 22 at the publicly accessible Solace Connection URI.
-
-### Using NFS for persitent storage
+### Using NFS for persistent storage
 
 The Solace PubSub+ message broker supports NFS for persistent storage, with "root_squash" option configured on the NFS server.
 
