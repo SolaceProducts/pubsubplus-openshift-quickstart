@@ -243,12 +243,19 @@ watch oc get pods --show-labels
 ```
 echo -n 'strong@dminPw!' | base64
 ```
+3. Switch to the templates directory:
+```
+oc project solace-pubsub   # adjust your project name as needed
+cd ~/workspace/solace-openshift-quickstart/templates
+```
 
 **Deploy the message broker:**
 
 You can deploy the message broker in either a single-node or high-availability configuration.
 
 Note: DOCKER_REGISTRY_URL and MESSAGEBROKER_IMAGE_TAG default to `solace/solace-pubsub-standard` and `9.4.0EA`, MESSAGEBROKER_STORAGE_SIZE defaults to 30Gi.
+
+The template by default provides for a small-footprint Solace message broker deployment deployable in MiniShift. Adjust `export system_scaling_maxconnectioncount` in the template for higher scaling but ensure adequate resources are available to the pod(s). Refer to the [System Requirements in the Solace documentation](//docs.solace.com/Configuring-and-Managing/SW-Broker-Specific-Config/Scaling-Tier-Resources.htm).
 
 * For a **Single-Node** configuration:
   * Process the Solace 'Single Node' OpenShift template to deploy the message broker in a single-node configuration.  Specify values for the DOCKER_REGISTRY_URL, MESSAGEBROKER_IMAGE_TAG, MESSAGEBROKER_STORAGE_SIZE, and MESSAGEBROKER_ADMIN_PASSWORD parameters:
