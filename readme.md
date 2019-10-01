@@ -162,13 +162,14 @@ Deployment scripts will pull the Solace message broker image from a [Docker regi
 
   * **(Optional / ECR)** You can utilize the AWS Elastic Container Registry (ECR) to host the message broker Docker image. For more information, refer to [Amazon Elastic Container Registry](https://aws.amazon.com/ecr/ ). If you are using ECR as your Docker registry then you must add the ECR login credentials (as an OpenShift secret) to your message broker HA deployment.  This project contains a helper script to execute this step:
 
+```shell
+    # Required if using ECR for Docker registry
+    cd ~/workspace/solace-openshift-quickstart/scripts
+    sudo su
+    aws configure       # provide AWS config for root; provide your key ID and key, leave the rest to None.
+    ./addECRsecret.sh solace-pubsub   # adjust your project name as needed
 ```
-# Required if using ECR for Docker registry
-sudo su
-aws configure       # provide AWS config for root
-cd ~/workspace/solace-openshift-quickstart/scripts
-./addECRsecret.sh solace-pubsub   # adjust your project name as needed
-```
+
   Here is an outline of the additional steps required if loading an image to ECR:
   
   * Copy the Solace Docker image location and download the image archive locally using the `wget <url>` command.
@@ -232,10 +233,21 @@ watch oc get pods --show-labels
 ```
 echo -n 'strong@dminPw!' | base64
 ```
+3. Switch to the templates directory:
+```
+oc project solace-pubsub   # adjust your project name as needed
+cd ~/workspace/solace-openshift-quickstart/templates
+```
 
 **Deploy the message broker:**
 
-You can deploy the message broker in either a single-node or high-availability configuration:
+You can deploy the message broker in either a single-node or high-availability configuration.
+
+Note: DOCKER_REGISTRY_URL and MESSAGEBROKER_IMAGE_TAG default to `solace/solace-pubsub-standard` and `latest`, MESSAGEBROKER_STORAGE_SIZE defaults to 30Gi.
+
+The template by default provides for a small-footprint Solace message broker deployment deployable in MiniShift. Adjust `export system_scaling_maxconnectioncount` in the template for higher scaling but ensure adequate resources are available to the pod(s). Refer to the [System Requirements in the Solace documentation](//docs.solace.com/Configuring-and-Managing/SW-Broker-Specific-Config/Scaling-Tier-Resources.htm).
+
+Also note that if a deployment failed and then deleted using `oc delete -f`, ensure to delete any remaining PVCs. Failing to do so and retrying using the same deployment name will result in an already used PV volume mounted and the pod(s) may not come up.
 
 * For a **Single-Node** configuration:
   * Process the Solace 'Single Node' OpenShift template to deploy the message broker in a single-node configuration.  Specify values for the DOCKER_REGISTRY_URL, MESSAGEBROKER_IMAGE_TAG, MESSAGEBROKER_STORAGE_SIZE, and MESSAGEBROKER_ADMIN_PASSWORD parameters:
