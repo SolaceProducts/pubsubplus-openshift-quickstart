@@ -140,11 +140,13 @@ cd ~/workspace/solace-openshift-quickstart/scripts
 * Use the ‘prepareProject.sh’ script the Solace OpenShift QuickStart to create and configure an OpenShift project that meets requirements of the message broker deployment:
 
 ```
+# Additional step in Minishift only, need to manually elevate user: oc login -u system:admin
 cd ~/workspace/solace-openshift-quickstart/scripts
 sudo ./prepareProject.sh solace-pubsub    # adjust your project name as needed here and in subsequent commands
+# In Minishift return to admin user: oc login -u admin
 ```
 
-> Note: If using MiniShift on Windows use the command without `sudo`. If necessary, as a workaround, run just this command with logging in as "system:admin" before using `oc login -u system:admin`, then login afterward to the normal "admin" user. Running as the normal "admin" user provides the closest experience of  other OpenShift deployments.
+> Note: The purpose of using `sudo` is to elevate `admin` user to `system:admin`. This is not available when using MiniShift and apply above workaround for just this step.
 
 ### Step 5: Optional: Load the message broker (Docker image) to your Docker Registry
 
@@ -168,7 +170,7 @@ Deployment scripts will pull the Solace message broker image from a [Docker regi
 
   Options include:
 
-  * You can choose to use [OpenShift's Docker registry.](https://docs.openshift.com/container-platform/3.10/install_config/registry/deploy_registry_existing_clusters.html )
+  * You can choose to use [OpenShift's Docker registry.](https://docs.openshift.com/container-platform/3.10/install_config/registry/deploy_registry_existing_clusters.html ). For MiniShift a simple option is to use the [Minishift Docker daemon](//docs.okd.io/latest/minishift/using/docker-daemon.html).
 
   * **(Optional / ECR)** You can utilize the AWS Elastic Container Registry (ECR) to host the message broker Docker image. For more information, refer to [Amazon Elastic Container Registry](https://aws.amazon.com/ecr/ ). If you are using ECR as your Docker registry then you must add the ECR login credentials (as an OpenShift secret) to your message broker HA deployment.  This project contains a helper script to execute this step:
 ```shell
