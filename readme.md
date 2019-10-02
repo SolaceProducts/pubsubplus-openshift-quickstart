@@ -140,7 +140,7 @@ cd ~/workspace/solace-openshift-quickstart/scripts
 * Use the ‘prepareProject.sh’ script the Solace OpenShift QuickStart to create and configure an OpenShift project that meets requirements of the message broker deployment:
 
 ```
-# Additional step in Minishift only, need to manually elevate user: oc login -u system:admin
+# If using Minishift start with this command: oc login -u system:admin
 cd ~/workspace/solace-openshift-quickstart/scripts
 sudo ./prepareProject.sh solace-pubsub    # adjust your project name as needed here and in subsequent commands
 # In Minishift return to admin user: oc login -u admin
