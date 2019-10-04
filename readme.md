@@ -4,9 +4,9 @@
 
 In this "SecurityEnhancements" branch of the OpenShift QuickStart the message broker gets deployed in an unprivileged container without any additional [Linux capabilities](http://man7.org/linux/man-pages/man7/capabilities.7.html ) required. Compare with section [Running the message broker in unprivileged container](https://github.com/SolaceProducts/solace-openshift-quickstart#running-the-message-broker-in-unprivileged-container ) in the "master" branch.
 
-The main difference to the master branch is that the `prepareProject.sh` script is not creating an SCC to open up above additional capabilities. This quickstart also requires the use of the "SecurityEnhancements" branch of the Kubernetes quickstart - see [Step 6](#step-6-option-1-deploy-the-message-broker-using-the-solace-kubernetes-quickstart). 
+The main difference to the master branch is that the `prepareProject.sh` script is not creating an SCC to open up above additional capabilities. This quickstart also requires the use of the "SecurityEnhancements" branch of the Kubernetes quickstart - see [Step 6](#step-6-option-1-deploy-the-message-broker-using-the-solace-kubernetes-quickstart).
 
-This feature requires a Solace PubSub+ build which supports the security enhancements. A compatible build can be obtained through Solace Support.
+This feature requires a Solace PubSub+ build which supports the security enhancements. A compatible build is available from Docker Hub repo `solace/solace-pubsub-standard` tagged `9.4.0EA` or can be obtained through Solace Support.
 
 ## Purpose of this Repository
 
@@ -140,11 +140,13 @@ cd ~/workspace/solace-openshift-quickstart/scripts
 * Use the ‘prepareProject.sh’ script the Solace OpenShift QuickStart to create and configure an OpenShift project that meets requirements of the message broker deployment:
 
 ```
+# If using Minishift start with this command: oc login -u system:admin
 cd ~/workspace/solace-openshift-quickstart/scripts
 sudo ./prepareProject.sh solace-pubsub    # adjust your project name as needed here and in subsequent commands
+# In Minishift return to admin user: oc login -u admin
 ```
 
-> Note: If using MiniShift on Windows use the command without `sudo`. If necessary, as a workaround, run just this command with logging in as "system:admin" before using `oc login -u system:admin`, then login afterward to the normal "admin" user. Running as the normal "admin" user provides the closest experience of  other OpenShift deployments.
+> Note: The purpose of using `sudo` is to elevate `admin` user to `system:admin`. This is not available when using MiniShift and apply above workaround for just this step.
 
 ### Step 5: Optional: Load the message broker (Docker image) to your Docker Registry
 
@@ -168,7 +170,7 @@ Deployment scripts will pull the Solace message broker image from a [Docker regi
 
   Options include:
 
-  * You can choose to use [OpenShift's Docker registry.](https://docs.openshift.com/container-platform/3.10/install_config/registry/deploy_registry_existing_clusters.html )
+  * You can choose to use [OpenShift's Docker registry.](https://docs.openshift.com/container-platform/3.10/install_config/registry/deploy_registry_existing_clusters.html ). For MiniShift a simple option is to use the [Minishift Docker daemon](//docs.okd.io/latest/minishift/using/docker-daemon.html).
 
   * **(Optional / ECR)** You can utilize the AWS Elastic Container Registry (ECR) to host the message broker Docker image. For more information, refer to [Amazon Elastic Container Registry](https://aws.amazon.com/ecr/ ). If you are using ECR as your Docker registry then you must add the ECR login credentials (as an OpenShift secret) to your message broker HA deployment.  This project contains a helper script to execute this step:
 ```shell
@@ -207,7 +209,7 @@ cd solace-kubernetes-quickstart
 
 Notes:
 
-* Providing `-i SOLACE_IMAGE_URL` is optional (see [Step 5](#step-5-load-the-message-broker-Docker-image-to-your-Docker-registry ) if using the latest Solace PubSub+ Standard edition message broker image from the Solace public Docker Hub registry
+* Provide `-i SOLACE_IMAGE_URL` from [Step 5](#step-5-load-the-message-broker-Docker-image-to-your-Docker-registry ) or `solace/solace-pubsub-standard:9.4.0EA` if using the Solace PubSub+ Standard edition Early Availability version message broker image from the Solace public Docker Hub registry
 * Set the cloud provider option to `-c aws` when deploying a message broker in an OpenShift / AWS environment
 * Ensure Helm runs by executing `helm version`. If not, revisit [Step 3](#step-3-optional-only-for-deployment-option-1---use-the-solace-kubernetes-quickstart-to-deploy-the-message-broker-install-the-helm-client-and-server-side-tools ), including the export statements.
 
@@ -243,10 +245,19 @@ watch oc get pods --show-labels
 ```
 echo -n 'strong@dminPw!' | base64
 ```
+3. Switch to the templates directory:
+```
+oc project solace-pubsub   # adjust your project name as needed
+cd ~/workspace/solace-openshift-quickstart/templates
+```
 
 **Deploy the message broker:**
 
-You can deploy the message broker in either a single-node or high-availability configuration:
+You can deploy the message broker in either a single-node or high-availability configuration.
+
+Note: DOCKER_REGISTRY_URL and MESSAGEBROKER_IMAGE_TAG default to `solace/solace-pubsub-standard` and `9.4.0EA`, MESSAGEBROKER_STORAGE_SIZE defaults to 30Gi.
+
+The template by default provides for a small-footprint Solace message broker deployment deployable in MiniShift. Adjust `export system_scaling_maxconnectioncount` in the template for higher scaling but ensure adequate resources are available to the pod(s). Refer to the [System Requirements in the Solace documentation](//docs.solace.com/Configuring-and-Managing/SW-Broker-Specific-Config/Scaling-Tier-Resources.htm).
 
 * For a **Single-Node** configuration:
   * Process the Solace 'Single Node' OpenShift template to deploy the message broker in a single-node configuration.  Specify values for the DOCKER_REGISTRY_URL, MESSAGEBROKER_IMAGE_TAG, MESSAGEBROKER_STORAGE_SIZE, and MESSAGEBROKER_ADMIN_PASSWORD parameters:
