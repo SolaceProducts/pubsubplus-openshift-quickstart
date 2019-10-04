@@ -13,7 +13,7 @@
 #    . ./deployHelm.sh server
 #
 TILLER_PROJECT=tiller
-HELM_VERSION=2.9.1
+HELM_VERSION=2.14.0
 
 function helmVersion() {
   which helm &> /dev/null  
