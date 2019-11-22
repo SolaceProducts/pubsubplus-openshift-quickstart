@@ -10,12 +10,10 @@ objects:
 - kind: Secret
   apiVersion: v1
   metadata:
-    name: "${DEPLOYMENT_NAME}-solace-secrets"
+    name: "${DEPLOYMENT_NAME}-pubsubplus-secrets"
     labels:
-      heritage: Tiller
-      release: "${DEPLOYMENT_NAME}"
-      chart: solace-1.0.1
-      app: solace
+      app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
+      app.kubernetes.io/name: pubsubplus
   type: Opaque
   data:
     username_admin_password: "${MESSAGEBROKER_ADMIN_PASSWORD}"
@@ -23,12 +21,10 @@ objects:
 - kind: ConfigMap
   apiVersion: v1
   metadata:
-    name: "${DEPLOYMENT_NAME}-solace"
+    name: "${DEPLOYMENT_NAME}-pubsubplus"
     labels:
-      heritage: Tiller
-      release: "${DEPLOYMENT_NAME}"
-      chart: solace-1.0.1
-      app: solace
+      app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
+      app.kubernetes.io/name: pubsubplus
   data:
     init.sh: |-
       # export username_admin_passwordfilepath=/mnt/disks/secrets/username_admin_password
@@ -50,7 +46,7 @@ objects:
         else
           namespace=default
         fi
-        service="${DEPLOYMENT_NAME}-solace"
+        service="${DEPLOYMENT_NAME}-pubsubplus"
         # Deal with the fact we cannot accept "-" in routre names
         service_name=$(echo ${service} | sed 's/-//g')
         export routername=$(echo $(hostname) | sed 's/-//g')
@@ -97,7 +93,7 @@ objects:
         role=""
         #exclude monitor node from config-sync check
         if [ "${node_ordinal}" != "2" ]; then
-          while [ ${count} -lt ${loop_guard} ]; do 
+          while [ ${count} -lt ${loop_guard} ]; do
             role_results=`/mnt/disks/solace/semp_query.sh -n admin -p ${password} -u http://localhost:8080/SEMP \
                   -q "<rpc><show><redundancy><detail/></redundancy></show></rpc>" \
                   -v "/rpc-reply/rpc/show/redundancy/active-standby-role[text()]"`
@@ -118,12 +114,12 @@ objects:
           done
           if [ ${count} -eq ${loop_guard} ]; then
             echo "`date` ERROR: ${APP}-Solace Management API never came up"  >&2
-            exit 1 
+            exit 1
           fi
 
           count=0
           echo "`date` INFO: ${APP}-Management API is up, determined that this node's active-standby role is: ${role}"
-          while [ ${count} -lt ${loop_guard} ]; do 
+          while [ ${count} -lt ${loop_guard} ]; do
             online_results=`/mnt/disks/solace/semp_query.sh -n admin -p ${password} -u http://localhost:8080/SEMP \
                 -q "<rpc><show><redundancy><detail/></redundancy></show></rpc>" \
                 -v "/rpc-reply/rpc/show/redundancy/virtual-routers/${role}/status/activity[text()]"`
@@ -151,14 +147,14 @@ objects:
           done
           if [ ${count} -eq ${loop_guard} ]; then
             echo "`date` ERROR: ${APP}-Local activity state never become Local Active or Mate Active"  >&2
-            exit 1 
+            exit 1
           fi
 
           # If we need to assert master, then we need to wait for mate to reconcile
           if [ "${resync_step}" = "assert-master" ]; then
             count=0
             echo "`date` INFO: ${APP}-Waiting for mate activity state to be 'Standby'"
-            while [ ${count} -lt ${loop_guard} ]; do 
+            while [ ${count} -lt ${loop_guard} ]; do
               online_results=`/mnt/disks/solace/semp_query.sh -n admin -p ${password} -u http://localhost:8080/SEMP \
                   -q "<rpc><show><redundancy><detail/></redundancy></show></rpc>" \
                   -v "/rpc-reply/rpc/show/redundancy/virtual-routers/${role}/status/detail/priority-reported-by-mate/summary[text()]"`
@@ -176,7 +172,7 @@ objects:
             done
             if [ ${count} -eq ${loop_guard} ]; then
               echo "`date` ERROR: ${APP}-Mate not in sync, never reached Standby" >&2
-              exit 1 
+              exit 1
             fi
           fi # if assert-master
           # Now can issue {resync_step} command and exit.
@@ -210,12 +206,16 @@ objects:
               --request PATCH --data "$(cat /tmp/patch_label.json)" \
               -H "Authorization: Bearer $KUBE_TOKEN" -H "Content-Type:application/json-patch+json" \
               $K8S/api/v1/namespaces/$NAMESPACE/pods/$HOSTNAME ; then
-            echo "`date` ERROR: ${APP}-Unable to update pod label, check access from pod to K8s API or RBAC authorization" >&2
-            exit 1
+            # Fall back to alternative method to update label
+            if ! curl -sSk --output /dev/null -H "Authorization: Bearer $KUBE_TOKEN" --request PATCH --data "$(cat /tmp/patch_label.json)" \
+              -H "Content-Type:application/json-patch+json" \
+              https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_PORT_443_TCP_PORT/api/v1/namespaces/$STATEFULSET_NAMESPACE/pods/$HOSTNAME ; then
+              echo "`date` ERROR: ${APP}-Unable to update pod label, check access from pod to K8s API or RBAC authorization" >&2
+              exit 1
+            fi
           fi
         fi
       }
-
       # note that there are no re-tries here, if check fails the return not ready.
       APP=`basename "$0"`
       state_file=/tmp/activity_state
@@ -223,7 +223,6 @@ objects:
         echo "unknown" > ${state_file}
       fi
       # HA config
-      version=${1}
       IFS='-' read -ra host_array <<< $(hostname)
       node_ordinal=${host_array[-1]}
       password=`cat /mnt/disks/secrets/username_admin_password`
@@ -290,7 +289,7 @@ objects:
         # Creating marker - important that after initial startup pod keeps being ready to serve traffic during failover while redundancy is down
         echo "true" > ${redundacycheck_file}
       fi
-      
+
       if [ "${node_ordinal}" = "2" ]; then
         # For monitor node just check for 3 online nodes in group; active label will always be "false"
         role_results=`/mnt/disks/solace/semp_query.sh -n admin -p ${password} -u http://localhost:8080/SEMP \
@@ -312,28 +311,23 @@ objects:
       fi # End Monitor Node
 
       health_result=`curl -s -o /dev/null -w "%{http_code}"  http://localhost:5550/health-check/guaranteed-active`
-      
+
       case "${health_result}" in
         "200")
-           echo "`date` INFO: ${APP}-Message Router is Active and Healthy"
+          echo "`date` INFO: ${APP}-Message Router is Active and Healthy"
           set_label "active" "true" $state_file
           exit 0
           ;;
         "503")
           set_label "active" "false" $state_file
-          if (( "$version" < 7 )); then
-           echo "`date` INFO: ${APP}-Message Router is Healthy but not Active, this is K8S 1.6 ready"
-           exit 0
-          else
-           echo "`date` INFO: ${APP}-Message Router is Healthy but not Active, further check required"
-          fi
+          echo "`date` INFO: ${APP}-Message Router is Healthy but not Active, further check required"
           ;;
         "")
           echo "`date` WARN: ${APP}-Unable to determine config role, failing readiness check"
           set_label "active" "false" $state_file
           exit 1
       esac
-       
+
       # Checking if Message Router is Standby
       case "${node_ordinal}" in
         "0")
@@ -397,7 +391,7 @@ objects:
             u)  url=$OPTARG
                 ;;
             v)  value_search=$OPTARG
-                ;;        
+                ;;
             esac
         done
         shift $((OPTIND-1))
@@ -416,7 +410,7 @@ objects:
         fi
         query_response=`curl -sS -u ${name}:${password} ${url} -d "${query}"`
         # Validate first char of response is "<", otherwise no hope of being valid xml
-        if [[ ${query_response:0:1} != "<" ]] ; then 
+        if [[ ${query_response:0:1} != "<" ]] ; then
           echo  "<returnInfo><errorInfo>no valid xml returned</errorInfo></returnInfo>"
           exit 1
         fi
@@ -454,32 +448,35 @@ objects:
 - kind: Service
   apiVersion: v1
   metadata:
-    name: "${DEPLOYMENT_NAME}-solace-discovery"
+    name: "${DEPLOYMENT_NAME}-pubsubplus-discovery"
     labels:
-      heritage: Tiller
-      release: "${DEPLOYMENT_NAME}"
-      chart: solace-1.0.1
-      app: solace
+      app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
+      app.kubernetes.io/name: pubsubplus
     annotations:
       service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
   spec:
     ports:
-      - port: 8080
-        name: semp
+    - port: 8080
+      name: semp
+    - port: 8741
+      name: ha-mate-link
+    - port: 8300
+      name: ha-conf-sync0
+    - port: 8301
+      name: ha-conf-sync1
+    - port: 8302
+      name: ha-conf-sync2
     clusterIP: None
     selector:
-      app: solace
-      release: "${DEPLOYMENT_NAME}"
-
+      app.kubernetes.io/name: pubsubplus
+      app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
 - kind: Service
   apiVersion: v1
   metadata:
-    name: "${DEPLOYMENT_NAME}-solace"
+    name: "${DEPLOYMENT_NAME}-pubsubplus"
     labels:
-      heritage: Tiller
-      release: "${DEPLOYMENT_NAME}"
-      chart: solace-1.0.1
-      app: solace #end gcp
+      app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
+      app.kubernetes.io/name: pubsubplus #end gcp
   spec:
     type: LoadBalancer
     ports:
@@ -488,25 +485,25 @@ objects:
       protocol: TCP
       name: ssh
     - port: 8080
-      targetPort: 
+      targetPort: 8080
       protocol: TCP
       name: semp
-    - port: 55555
-      targetPort: 
-      protocol: TCP
-      name: smf
-    - port: 55003
-      targetPort: 
-      protocol: TCP
-      name: smfcompr
-    - port: 55443
-      targetPort: 
-      protocol: TCP
-      name: smftls
     - port: 943
       targetPort: 60943
       protocol: TCP
       name: semptls
+    - port: 55555
+      targetPort: 55555
+      protocol: TCP
+      name: smf
+    - port: 55003
+      targetPort: 55003
+      protocol: TCP
+      name: smfcomp
+    - port: 55443
+      targetPort: 55443
+      protocol: TCP
+      name: smftls
     - port: 80
       targetPort: 60080
       protocol: TCP
@@ -515,22 +512,36 @@ objects:
       targetPort: 60443
       protocol: TCP
       name: webtls
+    - port: 5672
+      targetPort: 5672
+      protocol: TCP
+      name: amqp
+    - port: 1883
+      targetPort: 1883
+      protocol: TCP
+      name: mqtt
+    - port: 9000
+      targetPort: 9000
+      protocol: TCP
+      name: rest
     selector:
-      app: solace
-      release: "${DEPLOYMENT_NAME}"
+      app.kubernetes.io/name: pubsubplus
+      app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
       active: "true"
 
 - kind: StatefulSet
   apiVersion: apps/v1beta1
   metadata:
-    name: "${DEPLOYMENT_NAME}-solace"
+    name: "${DEPLOYMENT_NAME}-pubsubplus"
     labels:
-      app: solace
-      chart: solace-1.0.1
-      release: "${DEPLOYMENT_NAME}"
-      heritage: Tiller
+      app.kubernetes.io/name: pubsubplus
+      app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
   spec:
-    serviceName: "${DEPLOYMENT_NAME}-solace-discovery"
+    selector:
+      matchLabels:
+        app.kubernetes.io/name: pubsubplus
+        app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
+    serviceName: "${DEPLOYMENT_NAME}-pubsubplus-discovery"
     replicas: 3
     podManagementPolicy: Parallel
     updateStrategy: 
@@ -538,8 +549,8 @@ objects:
     template:
       metadata:
         labels:
-          app: solace
-          release: "${DEPLOYMENT_NAME}"
+          app.kubernetes.io/name: pubsubplus
+          app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
       spec:
         containers:
         - name: solace
@@ -563,26 +574,15 @@ objects:
             exec:
               command:
               - /mnt/disks/solace/readiness_check.sh
-              - "7"
           securityContext:
             privileged: false
-            capabilities:
-              add:
-                - IPC_LOCK
-                - SYS_NICE
           env:
           - name: STATEFULSET_NAME
-            value: "${DEPLOYMENT_NAME}-solace"
+            value: "${DEPLOYMENT_NAME}-pubsubplus"
           - name: STATEFULSET_NAMESPACE
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
-  # [TODO] not using correct method of finding ordinal until we bump min Kubernetes release above 1.8.1
-   #       - name: STATEFULSET_ORDINAL
-   #         valueFrom:
-   #           fieldRef:
-   #             fieldPath: metadata.annotations['annotationKey']
-
           command:
            - bash
            - "-ec"
@@ -619,11 +619,13 @@ objects:
           # only mount when not using nfs
           - name: data
             mountPath: /usr/sw/internalSpool/softAdb
-            subPath: softAdb #end !nfs
+            subPath: softAdb
           ports:
           - containerPort: 2222
             protocol: TCP
           - containerPort: 8080
+            protocol: TCP
+          - containerPort: 60943
             protocol: TCP
           - containerPort: 55555
             protocol: TCP
@@ -631,20 +633,24 @@ objects:
             protocol: TCP
           - containerPort: 55443
             protocol: TCP
-          - containerPort: 60943
-            protocol: TCP
           - containerPort: 60080
             protocol: TCP
           - containerPort: 60443
             protocol: TCP
+          - containerPort: 5672
+            protocol: TCP
+          - containerPort: 1883
+            protocol: TCP
+          - containerPort: 9000
+            protocol: TCP
         volumes:
           - name: config-map
             configMap:
-              name: "${DEPLOYMENT_NAME}-solace"
+              name: "${DEPLOYMENT_NAME}-pubsubplus"
               defaultMode: 0755
           - name: secrets
             secret:
-              secretName: "${DEPLOYMENT_NAME}-solace-secrets"
+              secretName: "${DEPLOYMENT_NAME}-pubsubplus-secrets"
               defaultMode: 0400
           - name: dshm
             emptyDir:

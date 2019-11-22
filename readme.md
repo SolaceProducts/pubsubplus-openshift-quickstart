@@ -8,8 +8,8 @@
     + [Step 3: (Optional: only execute for Deployment option 1 - use the Solace Kubernetes QuickStart to deploy the event broker) Install the Helm v2 client and server-side tools](#step-3-optional-only-execute-for-deployment-option-1---use-the-solace-kubernetes-quickstart-to-deploy-the-event-broker-install-the-helm-v2-client-and-server-side-tools)
     + [Step 4: Create a new OpenShift project to host the event broker deployment](#step-4-create-a-new-openshift-project-to-host-the-event-broker-deployment)
     + [Step 5: Optional: Load the event broker (Docker image) to your Docker Registry](#step-5-optional-load-the-event-broker-docker-image-to-your-docker-registry)
-    + [Step 6 - Option 1: Deploy the event broker using Helm](#step-6---option-1-deploy-the-event-broker-using-helm)
-    + [Step 6 - Option 2: Deploy the event broker using the OpenShift templates included in this project](#step-6---option-2-deploy-the-event-broker-using-the-openshift-templates-included-in-this-project)
+    + [Step 6-Option 1: Deploy the event broker using Helm](#step-6-option-1-deploy-the-event-broker-using-helm)
+    + [Step 6-Option 2: Deploy the event broker using the OpenShift templates included in this project](#step-6-option-2-deploy-the-event-broker-using-the-openshift-templates-included-in-this-project)
   * [Validating the Deployment](#validating-the-deployment)
     + [Viewing Bringup Logs](#viewing-bringup-logs)
   * [Gaining admin and ssh access to the event broker](#gaining-admin-and-ssh-access-to-the-event-broker)
@@ -204,7 +204,7 @@ Deployment scripts will pull the Solace event broker image from a [Docker regist
 
 ![alt text](/docs/images/ECR-Registry.png "ECR Registry")
 
-### Step 6 - Option 1: Deploy the event broker using Helm
+### Step 6-Option 1: Deploy the event broker using Helm
 
 Deploying using Helm provides more flexibility in terms of event broker deployment options, compared to those offered by the OpenShift templates provided by this project.
 
@@ -244,7 +244,7 @@ helm install --name my-nonha-release \\
 oc get pods --show-labels -w
 ```
 
-### Step 6 - Option 2: Deploy the event broker using the OpenShift templates included in this project
+### Step 6-Option 2: Deploy the event broker using the OpenShift templates included in this project
 
 This deployment is using OpenShift templates and don't require Helm:
 
@@ -387,16 +387,15 @@ Find the **'LoadBalancer Ingress'** value listed in the service description abov
 
 > Note: If using MiniShift an additional step is required to expose the service: `oc get --export svc my-release-pubsubplus`. This will return a service definition with nodePort port numbers for each message router service. Use these port mumbers together with MiniShift's public IP address which can be obtained from the command `minishift ip`.
 
-
-### Viewing bringup logs
+### Viewing Bringup logs
 
 To see the deployment events, navigate to:
 
-* **OpenShift UI > (Your Project) > Applications > Stateful Sets > ((name)-solace) > Events**
+* **OpenShift UI > (Your Project) > Applications > Stateful Sets > ((name)-pubsubplus) > Events**
 
 You can access the log stack for individual event broker pods from the OpenShift UI, by navigating to:
 
-* **OpenShift UI > (Your Project) > Applications > Stateful Sets > ((name)-solace) > Pods > ((name)-solace-(N)) > Logs**
+* **OpenShift UI > (Your Project) > Applications > Stateful Sets > ((name)-pubsubplus) > Pods > ((name)-solace-(N)) > Logs**
 
 ![alt text](/docs/images/Solace-Pod-Log-Stack.png "Event Broker Pod Log Stack")
 
@@ -502,7 +501,7 @@ Now the OpenShift stack delete can be initiated from the AWS CloudFormation cons
 
 The Solace PubSub+ event broker supports NFS for persistent storage, with "root_squash" option configured on the NFS server.
 
-For an example deployment, specify the storage class from your NFS deployment ("nfs" in this example) and ensure `storage.slow` is set to `true`.
+For an example deployment, specify the storage class from your NFS deployment ("nfs" in this example) in the `storage.useStorageClass` parameter and ensure `storage.slow` is set to `true`.
 
 The Helm (NFS Server Provisioner)[https://github.com/helm/charts/tree/master/stable/nfs-server-provisioner ] project is an example of a dynamic NFS server provisioner. Here are the steps to get going with it:
 
