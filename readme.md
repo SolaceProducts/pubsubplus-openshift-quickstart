@@ -8,8 +8,8 @@
     + [Step 3: (Optional: only execute for Deployment option 1 - use the Solace Kubernetes QuickStart to deploy the event broker) Install the Helm v2 client and server-side tools](#step-3--optional-only-execute-for-deployment-option-1--use-the-solace-kubernetes-quickstart-to-deploy-the-event-broker-install-the-helm-v2-client-and-server-side-tools)
     + [Step 4: Create a new OpenShift project to host the event broker deployment](#step-4-create-a-new-openshift-project-to-host-the-event-broker-deployment)
     + [Step 5: Optional: Load the event broker (Docker image) to your Docker Registry](#step-5-optional-load-the-event-broker-docker-image-to-your-docker-registry)
-    + [Step 6: (Option 1) Deploy the event broker using the Solace Kubernetes QuickStart](#step-6--option-1-deploy-the-event-broker-using-the-solace-kubernetes-quickstart)
-    + [Step 6: (Option 2) Deploy the event broker using the OpenShift templates included in this project](#step-6--option-2-deploy-the-event-broker-using-the-openshift-templates-included-in-this-project)
+    + [Step 6 - Option 1: Deploy the event broker using Helm](#step-6--option-1-deploy-the-event-broker-using-helm)
+    + [Step 6 - Option 2: Deploy the event broker using the OpenShift templates included in this project](#step-6--option-2-deploy-the-event-broker-using-the-openshift-templates-included-in-this-project)
   * [Validating the Deployment](#validating-the-deployment)
     + [Viewing bringup logs](#viewing-bringup-logs)
   * [Gaining admin and ssh access to the event broker](#gaining-admin-and-ssh-access-to-the-event-broker)
@@ -18,8 +18,7 @@
     + [Deleting the Solace event broker deployment](#deleting-the-solace-event-broker-deployment)
     + [Deleting the OpenShift Container Platform deployment](#deleting-the-openshift-container-platform-deployment)
   * [Special topics](#special-topics)
-    + [Running the event broker in unprivileged container](#running-the-event-broker-in-unprivileged-container)
-    + [Using NFS for persitent storage](#using-nfs-for-persitent-storage)
+    + [Using NFS for persistent storage](#using-nfs-for-persistent-storage)
   * [Contributing](#contributing)
   * [Authors](#authors)
   * [License](#license)
@@ -205,7 +204,7 @@ Deployment scripts will pull the Solace event broker image from a [Docker regist
 
 ![alt text](/docs/images/ECR-Registry.png "ECR Registry")
 
-### Step 6: (Option 1) Deploy the event broker using Helm
+### Step 6 - Option 1: Deploy the event broker using Helm
 
 Deploying using Helm provides more flexibility in terms of event broker deployment options, compared to those offered by the OpenShift templates provided by this project.
 
@@ -245,7 +244,7 @@ helm install --name my-nonha-release \\
 oc get pods --show-labels -w
 ```
 
-### Step 6: (Option 2) Deploy the event broker using the OpenShift templates included in this project
+### Step 6 - Option 2: Deploy the event broker using the OpenShift templates included in this project
 
 This deployment is using OpenShift templates and don't require Helm:
 
