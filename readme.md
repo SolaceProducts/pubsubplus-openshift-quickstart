@@ -1,5 +1,6 @@
 # Deploying a Solace PubSub+ Software Event Broker onto an OpenShift 3.11 platform
 
+Contents:
   * [Purpose of this Repository](#purpose-of-this-repository)
   * [Description of the Solace PubSub+ Software Event Broker](#description-of-the-solace-pubsub-software-event-broker)
   * [How to deploy a Solace PubSub+ Event Broker onto OpenShift / AWS](#how-to-deploy-a-solace-pubsub-event-broker-onto-openshift--aws)
@@ -34,20 +35,26 @@ For the Red Hat OpenShift Container Platform, we utilize the [RedHat OpenShift o
 
 This repository expands on the [Solace Kubernetes Quickstart](//github.com/SolaceDev/solace-kubernetes-quickstart/blob/HelmReorg/README.md ) to provide an example of how to deploy Solace PubSub+ software event brokers in an HA configuration on the OpenShift Container Platform running in AWS.
 
-The event broker can be deployed using the [OpenShift default "restricted" SCC](//docs.openshift.com/container-platform/3.11/admin_guide/manage_scc.html).
-
-![alt text](/docs/images/network_diagram.jpg "Network Diagram")
+The event broker deployment does not require any special OpenShift Security Context, the [default "restricted" SCC](//docs.openshift.com/container-platform/3.11/admin_guide/manage_scc.html) can be used.
 
 ## Description of the Solace PubSub+ Software Event Broker
 
 The Solace PubSub+ software event broker meets the needs of big data, cloud migration, and Internet-of-Things initiatives, and enables microservices and event-driven architecture. Capabilities include topic-based publish/subscribe, request/reply, message queues/queueing, and data streaming for IoT devices and mobile/web apps. The event broker supports open APIs and standard protocols including AMQP, JMS, MQTT, REST, and WebSocket. As well, it can be deployed in on-premise datacenters, natively within private and public clouds, and across complex hybrid cloud environments.
 
+## Production Deployment Architecture
+
+The following diagram shows an example HA deployment in AWS:
+![alt text](/docs/images/network_diagram.jpg "Network Diagram")
+
+<br/>
+Key parts are the three PubSub+ Container instances in OpenShift pods, deployed on OpenShift (worker) nodes; the cloud load balancer exposing the event router's services and management interface; the OpenShift master nodes(s); and the Ansible Config Server, which acts as a bastion host for external ssh access.
+
 ## How to deploy a Solace PubSub+ Event Broker onto OpenShift / AWS
 
 The following steps describe how to deploy an event broker onto an OpenShift environment. Optional steps are provided about setting up a Red Hat OpenShift Container Platform on Amazon AWS infrastructure (marked as Optional / AWS) and if you use AWS Elastic Container Registry to host the Solace event broker Docker image (marked as Optional / ECR).
 
-There are also two options for deploying an event broker onto your OpenShift deployment:
-* (Deployment option 1, using Helm): This option allows great flexibility using the Kubernetes `Helm` tool to automate the process of event broker deployment through a wide range of configuration options including in-service rolling upgrade of the event broker. The [Solace Kubernetes QuickStart project](https://github.com/SolaceProducts/solace-kubernetes-quickstart ) will be referred to deploy the event broker onto your OpenShift environment.
+There are also two ways described for deploying an event broker onto your OpenShift deployment:
+* (Deployment option 1, using Helm): This option allows great flexibility using the Kubernetes `Helm` tool to automate the process of event broker deployment through a wide range of configuration options including in-service rolling upgrade of the event broker. The [Solace Kubernetes QuickStart project](https://github.com/SolaceDev/solace-kubernetes-quickstart/tree/HelmReorg ) will be referred to deploy the event broker onto your OpenShift environment.
 * (Deployment option 2, using OpenShift templates): This option can be used directly, without any additional tool to deploy the event broker in a limited number of configurations, using OpenShift templates included in this project.
 
 This is a 6 steps process with some steps being optional. Steps to deploy the event broker:
@@ -133,6 +140,8 @@ cd solace-openshift-quickstart
 
 ### Step 3: (Optional: only execute for Deployment option 1 - use the Solace Kubernetes QuickStart to deploy the event broker) Install the Helm v2 client and server-side tools
 
+This will deploy Helm in a dedicated "helm" project. Do not use this project for your deployments.
+
 * **(Part I)** Use the ‘deployHelm.sh’ script to deploy the Helm client and server-side components.  Begin by installing the Helm client tool:
 
 > If using MiniShift, get the [Helm executable](https://storage.googleapis.com/kubernetes-helm/helm-v2.15.0-windows-amd64.zip ) and put it in a directory on your path before running the following script.
@@ -155,13 +164,16 @@ cd ~/workspace/solace-openshift-quickstart/scripts
 
 ### Step 4: Create a new OpenShift project to host the event broker deployment
 
+This will create a new project for deployments if needed or you can use your existing project.
 ```
 oc new-project solace-pubsub    # adjust your project name as needed here and in subsequent commands
 ```
 
 ### Step 5: Optional: Load the event broker (Docker image) to your Docker Registry
 
-Deployment scripts will pull the Solace event broker image from a [Docker registry](https://docs.Docker.com/registry/ ). There are several [options which registry to use](https://docs.openshift.com/container-platform/3.10/architecture/infrastructure_components/image_registry.html#overview ) depending on the requirements of your project, see some examples in (Part II) of this step.
+Deployment scripts will pull the Solace event broker image from a [Docker registry](https://docs.Docker.com/registry/ ). There are several [options which registry to use](https://docs.openshift.com/container-platform/3.11/architecture/infrastructure_components/image_registry.html#overview ) depending on the requirements of your project, see some examples in (Part II) of this step.
+
+Ensure to use PubSub+ release 9.4 or later.
 
 **Hint:** You may skip the rest of this step if using the free PubSub+ Standard Edition available from the [Solace public Docker Hub registry](https://hub.Docker.com/r/solace/solace-pubsub-standard/tags/ ). The Docker Registry URL to use will be `solace/solace-pubsub-standard:<TagName>`.
 
@@ -214,7 +226,9 @@ More information is provided in the following documents:
 
 The deployment is using PubSub+ Helm charts and customized by overriding [default chart parameters](//github.com/SolaceDev/solace-kubernetes-quickstart/tree/HelmReorg/pubsubplus#configuration).
 
-In particular, the `securityContext.enabled` parameter must be set to `false`, indicating that OpenShift will set the pod security context using SecurityContextConstraints (SCC). By default OpenShift will use the "restricted" SCC.
+In particular, the `securityContext.enabled` parameter must be set to `false`, indicating not to use the provided pod security context but let OpenShift set it, using SecurityContextConstraints (SCC). By default OpenShift will use the "restricted" SCC.
+
+Next an HA and a non-HA deployment examples are provided, using default parameters. For configuration options, refer to the [Solace PubSub+ Advanced Event Broker Helm Chart](https://github.com/SolaceDev/solace-kubernetes-quickstart/tree/HelmReorg/pubsubplus) documentation.
 
 HA deployment example:
 
