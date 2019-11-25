@@ -165,7 +165,7 @@ cd ~/workspace/solace-openshift-quickstart/scripts
 
 ### Step 4: Create a new OpenShift project to host the event broker deployment
 
-This will create a new project for deployments if needed or you can use your existing project.
+This will create a new project for deployments if needed or you can use your existing project except "helm" (the "helm" project has special privileges assigned which shall not be used for deployments).
 ```
 oc new-project solace-pubsub    # adjust your project name as needed here and in subsequent commands
 ```
