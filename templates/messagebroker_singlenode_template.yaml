@@ -10,7 +10,7 @@ objects:
 - kind: Secret
   apiVersion: v1
   metadata:
-    name: "${DEPLOYMENT_NAME}-pubsubplus-secrets"
+    name: "${DEPLOYMENT_NAME}-solace-secrets"
     labels:
       app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
       app.kubernetes.io/name: pubsubplus
@@ -21,7 +21,7 @@ objects:
 - kind: ConfigMap
   apiVersion: v1
   metadata:
-    name: "${DEPLOYMENT_NAME}-pubsubplus"
+    name: "${DEPLOYMENT_NAME}-solace"
     labels:
       app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
       app.kubernetes.io/name: pubsubplus
@@ -182,7 +182,7 @@ objects:
 - kind: Role
   apiVersion: rbac.authorization.k8s.io/v1
   metadata:
-    name: "${DEPLOYMENT_NAME}-pubsubplus-podtagupdater"
+    name: "${DEPLOYMENT_NAME}-solace-podtagupdater"
   rules:
   - apiGroups: [""] # "" indicates the core API group
     resources: ["pods"]
@@ -191,11 +191,11 @@ objects:
 - kind: RoleBinding
   apiVersion: rbac.authorization.k8s.io/v1
   metadata:
-    name: "${DEPLOYMENT_NAME}-pubsubplus-serviceaccounts-to-podtagupdater"
+    name: "${DEPLOYMENT_NAME}-solace-serviceaccounts-to-podtagupdater"
   roleRef:
     apiGroup: rbac.authorization.k8s.io
     kind: Role
-    name: "${DEPLOYMENT_NAME}-pubsubplus-podtagupdater"
+    name: "${DEPLOYMENT_NAME}-solace-podtagupdater"
   subjects:
   - kind: Group
     name: system:serviceaccounts
@@ -203,7 +203,7 @@ objects:
 - kind: Service
   apiVersion: v1
   metadata:
-    name: "${DEPLOYMENT_NAME}-pubsubplus"
+    name: "${DEPLOYMENT_NAME}-solace"
     labels:
       app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
       app.kubernetes.io/name: pubsubplus #end gcp
@@ -262,7 +262,7 @@ objects:
 - kind: StatefulSet
   apiVersion: apps/v1
   metadata:
-    name: "${DEPLOYMENT_NAME}-pubsubplus"
+    name: "${DEPLOYMENT_NAME}-solace"
     labels:
       app.kubernetes.io/name: pubsubplus
       app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
@@ -271,7 +271,7 @@ objects:
       matchLabels:
         app.kubernetes.io/name: pubsubplus
         app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
-    serviceName: "${DEPLOYMENT_NAME}-pubsubplus-discovery"
+    serviceName: "${DEPLOYMENT_NAME}-solace-discovery"
     replicas: 1
     podManagementPolicy: Parallel
     updateStrategy: 
@@ -308,7 +308,7 @@ objects:
             privileged: false
           env:
           - name: STATEFULSET_NAME
-            value: "${DEPLOYMENT_NAME}-pubsubplus"
+            value: "${DEPLOYMENT_NAME}-solace"
           - name: STATEFULSET_NAMESPACE
             valueFrom:
               fieldRef:
@@ -378,11 +378,11 @@ objects:
         volumes:
           - name: config-map
             configMap:
-              name: "${DEPLOYMENT_NAME}-pubsubplus"
+              name: "${DEPLOYMENT_NAME}-solace"
               defaultMode: 0755
           - name: secrets
             secret:
-              secretName: "${DEPLOYMENT_NAME}-pubsubplus-secrets"
+              secretName: "${DEPLOYMENT_NAME}-solace-secrets"
               defaultMode: 0400
           - name: dshm
             emptyDir:

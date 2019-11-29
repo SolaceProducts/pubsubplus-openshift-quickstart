@@ -237,8 +237,8 @@ HA deployment example:
 # One-time action: Add the PubSub+ charts to local Helm
 helm repo add solacecharts https://solacedev.github.io/solace-kubernetes-quickstart/helm-charts
 # Initiate the HA deployment
-helm install --name my-ha-release \\
-  --set securityContext.enabled=false,solace.redundancy=true,solace.usernameAdminPassword=<MESSAGEBROKER_ADMIN_PASSWORD> \\
+helm install --name my-ha-release \
+  --set securityContext.enabled=false,solace.redundancy=true,solace.usernameAdminPassword=<MESSAGEBROKER_ADMIN_PASSWORD> \
   solacecharts/pubsubplus
 # Check the notes printed on screen
 # Wait until all pods running and ready and the active event broker pod label is "active=true" 
@@ -251,12 +251,27 @@ Single-node, non-HA deployment example:
 # One-time action: Add the PubSub+ charts to local Helm
 helm repo add solacecharts https://solacedev.github.io/solace-kubernetes-quickstart/helm-charts
 # Initiate the non-HA deployment
-helm install --name my-nonha-release \\
-  --set securityContext.enabled=false,solace.redundancy=true,solace.usernameAdminPassword=<MESSAGEBROKER_ADMIN_PASSWORD> \\
+helm install --name my-nonha-release \
+  --set securityContext.enabled=false,solace.redundancy=true,solace.usernameAdminPassword=<MESSAGEBROKER_ADMIN_PASSWORD> \
   solacecharts/pubsubplus
 # Check the notes printed on screen
 # Wait until the event broker pod is running, ready and the pod label is "active=true" 
 oc get pods --show-labels -w
+```
+
+Note: an alternative to longer `--set` parameters is to define same parameter values in a YAML file:
+```yaml
+# Create example values file
+echo "
+securityContext
+  enabled: false
+solace
+  redundancy: true,
+  usernameAdminPassword: <MESSAGEBROKER_ADMIN_PASSWORD>" > deployment-values.yaml
+# Use values file
+helm install --name my-release \
+  -v deployment-values.yaml \
+  solacecharts/pubsubplus
 ```
 
 ### Step 6-Option 2: Deploy the event broker using the OpenShift templates included in this project
