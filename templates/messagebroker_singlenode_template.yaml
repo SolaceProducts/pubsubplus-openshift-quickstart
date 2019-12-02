@@ -346,7 +346,7 @@ objects:
           - name: data
             mountPath: /var/lib/solace/diags
             subPath: diags
-          # only mount when not using nfs
+          # only mount softAdb when not using NFS, comment it out otherwise
           - name: data
             mountPath: /usr/sw/internalSpool/softAdb
             subPath: softAdb

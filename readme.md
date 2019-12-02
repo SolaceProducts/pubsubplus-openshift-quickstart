@@ -548,6 +548,15 @@ sudo oc adm policy add-scc-to-user nfs-provisioner -z nfs-test-nfs-server-provis
 oc get pod nfs-test-nfs-server-provisioner-0
 ```
 
+If using templates top deploy locate the volume mont for `softAdb` in the template and disable it by commenting it out:
+
+```yaml
+# only mount softAdb when not using NFS, comment it out otherwise
+#- name: data
+#  mountPath: /usr/sw/internalSpool/softAdb
+#  subPath: softAdb
+```
+
 ## Contributing
 
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
