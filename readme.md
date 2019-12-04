@@ -14,7 +14,7 @@ This guide is intended mainly for development and demo purposes. The recommended
 
 Solace PubSub+ software event brokers can be deployed in either a 3-node High-Availability (HA) group, or as a single-node Standalone deployment. For simple test environments that need only to validate application functionality, a single instance will suffice. Note that in production, or any environment where message loss cannot be tolerated, an HA deployment is required.
 
-We recommend using the Helm tool for convenience. An [alternative method](/docs/PubSubPlusOpenShiftDeployment.md#step-6-option-2-deploy-the-message-broker-using-the-openshift-templates-included-in-this-project) using OpenShift templates is also provided.
+We recommend using the Helm tool for convenience. An alternative method [using OpenShift templates](/docs/PubSubPlusOpenShiftDeployment.md#step-6-option-2-deploy-the-event-broker-using-the-openshift-templates-included-in-this-project) is also available.
 
 In this quick start we go through the steps to set up an event broker using [Solace PubSub+ Helm charts](//hub.helm.sh/charts/solace).
 
@@ -27,14 +27,14 @@ For other event broker configurations or sizes, refer to the [PubSub+ Helm Chart
 
 ### 1. Get an OpenShift environment
 
-There are [multiple ways](https://docs.openshift.com/index.html ) to get to an OpenShift platform, including [MiniShift](https://github.com/minishift/minishift#welcome-to-minishift ).
+There are [multiple ways](https://docs.openshift.com/index.html ) to get to an OpenShift 3.11 platform, including [MiniShift](https://github.com/minishift/minishift#welcome-to-minishift ).
 
-It may be necessary to log in using the `oc login` command.
+It may be necessary to log in using the `oc login` command. 
 
 Check your OpenShift environment is ready:
 ```bash
-# This shall return currently available projects
-oc projects
+# This shall return current user
+oc whoami
 ```
 
 ### 2. Install and configure Helm
@@ -44,18 +44,20 @@ Note that Helm is transitioning from v2 to v3. Many deployments still use v2.
 <details open=true><summary><b>Instructions for Helm v2 setup</b></summary>
 <p>
 
-Use script to install the Helm v2 client first: 
+- Use script to install the Helm v2 client first: 
 > If using MiniShift, get the [Helm executable](https://storage.googleapis.com/kubernetes-helm/helm-v2.15.0-windows-amd64.zip ) and put it in a directory on your path before running the following script.
 ```bash
-wget https://raw.githubusercontent.com/SolaceProducts/solace-openshift-quickstart/master/scripts/deployHelm.sh; chmod +x deployHelm.sh
-./deployHelm.sh client
-# Copy and run the export statements from the script output!
+  wget https://raw.githubusercontent.com/SolaceProducts/solace-openshift-quickstart/master/scripts/deployHelm.sh; chmod +x deployHelm.sh
+  ./deployHelm.sh client
+  # Copy and run the export statements from the script output!
+  # Example:
+  #  export HELM_HOME=$HOME/.helm
+  #  export TILLER_NAMESPACE=tiller
 ```
-Ensure to run the export statements.
-
-Install the Helm server-side "Tiller" component. This will also create a `tiller` project:
+- Ensure to run the export statements.
+- Install the Helm server-side "Tiller" component. This will also create a `tiller` project:
 ```bash
-./deployHelm.sh server
+  ./deployHelm.sh server
 ```
 
 </p>
@@ -64,9 +66,9 @@ Install the Helm server-side "Tiller" component. This will also create a `tiller
 <details><summary><b>Instructions for Helm v3 setup</b></summary>
 <p>
 
-Use the [instructions from Helm] or if using Linux simply run:
+- Use the [instructions from Helm] or if using Linux simply run:
 ```bash
-curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+  curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
 ```
 </p>
 </details>
