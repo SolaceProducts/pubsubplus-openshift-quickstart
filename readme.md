@@ -54,12 +54,11 @@ Note that Helm is transitioning from v2 to v3. Many deployments still use v2. Th
 
 - Use script to install the Helm v2 client and its Tiller server-side operator. This will deploy Tiller in a dedicated project. Do not use this project for your deployments.
 ```bash
-  # Install local Helm client
+  # Setup local Helm client
   helm init --client-only
-  # Install Tiller server-side operator into this project
-  export TILLER_NAMESPACE=tiller-project
-  oc new-project ${TILLER_NAMESPACE}
-  oc process -f https://github.com/openshift/origin/raw/master/examples/helm/tiller-template.yaml -p TILLER_NAMESPACE="${TILLER_NAMESPACE}" -p HELM_VERSION=v2.16.0 | oc create -f -
+  # Install Tiller server-side operator into a new "tiller-project"
+  oc new-project tiller-project
+  oc process -f https://github.com/openshift/origin/raw/master/examples/helm/tiller-template.yaml -p TILLER_NAMESPACE="tiller-project" -p HELM_VERSION=v2.16.0 | oc create -f -
   oc rollout status deployment tiller
 ```
 
@@ -96,7 +95,7 @@ Helm is configured properly if the command `helm version` returns no error.
 <details open=true><summary><b>Instructions using Helm v2</b></summary>
 <p>
 
-- **Important**: For each project using Helm v2, grant server-side Tiller admin access.
+- **Important**: For each project using Helm v2, grant admin access to the server-side Tiller service from the "tiller-project".
 ```bash
   oc policy add-role-to-user admin "system:serviceaccount:tiller-project:tiller"
 ```
