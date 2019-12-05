@@ -31,7 +31,7 @@ For other event broker configurations or sizes, refer to the [PubSub+ Helm Chart
 
 There are [multiple ways](https://docs.openshift.com/index.html ) to get to an OpenShift 3.11 platform, including [MiniShift](https://github.com/minishift/minishift#welcome-to-minishift ).
 
-It may be necessary to log in using the `oc login` command. 
+Log in as `admin` using the `oc login -u admin` command. 
 
 Check your OpenShift environment is ready:
 ```bash
@@ -52,12 +52,12 @@ Note that Helm is transitioning from v2 to v3. Many deployments still use v2. Th
   curl -sSL https://raw.githubusercontent.com/helm/helm/master/scripts/get | bash
 ```
 
-- Use script to install the Helm v2 client and server:
+- Use script to install the Helm v2 client and its Tiller server-side operator. This will deploy Tiller in a dedicated project. Do not use this project for your deployments.
 ```bash
-  # Install local client
+  # Install local Helm client
   helm init --client-only
-  # Install server-side operator into this project
-  export TILLER_NAMESPACE=tiller
+  # Install Tiller server-side operator into this project
+  export TILLER_NAMESPACE=tiller-project
   oc new-project ${TILLER_NAMESPACE}
   oc process -f https://github.com/openshift/origin/raw/master/examples/helm/tiller-template.yaml -p TILLER_NAMESPACE="${TILLER_NAMESPACE}" -p HELM_VERSION=v2.16.0 | oc create -f -
   oc rollout status deployment tiller
@@ -96,9 +96,9 @@ Helm is configured properly if the command `helm version` returns no error.
 <details open=true><summary><b>Instructions using Helm v2</b></summary>
 <p>
 
-- **Important**: Grant server-side Tiller admin access to the current project
+- **Important**: For each project using Helm v2, grant server-side Tiller admin access.
 ```bash
-  oc policy add-role-to-user admin "system:serviceaccount:${TILLER_NAMESPACE}:tiller"
+  oc policy add-role-to-user admin "system:serviceaccount:tiller-project:tiller"
 ```
 
 - Use one of the chart variants to create a deployment. For configuration options and delete instructions, refer to the [PubSub+ Helm Chart documentation](https://github.com/SolaceDev/solace-kubernetes-quickstart/tree/HelmReorg/pubsubplus).
