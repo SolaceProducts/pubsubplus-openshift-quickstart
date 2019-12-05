@@ -10,6 +10,8 @@ Detailed documentation is provided in the [Solace PubSub+ Event Broker on OpenSh
 
 This guide is intended mainly for development and demo purposes. The recommended Solace PubSub+ Software Event Broker version is 9.4 or later.
 
+The event broker deployment does not require any special OpenShift Security Context, the default "restricted" SCC can be used.
+
 ## How to deploy the Solace PubSub+ Software Event Broker
 
 Solace PubSub+ software event brokers can be deployed in either a 3-node High-Availability (HA) group, or as a single-node Standalone deployment. For simple test environments that need only to validate application functionality, a single instance will suffice. Note that in production, or any environment where message loss cannot be tolerated, an HA deployment is required.
@@ -44,20 +46,15 @@ Note that Helm is transitioning from v2 to v3. Many deployments still use v2.
 <details open=true><summary><b>Instructions for Helm v2 setup</b></summary>
 <p>
 
-- Use script to install the Helm v2 client first: 
+- Use script to install the Helm v2 client and server first: 
 > If using MiniShift, get the [Helm executable](https://storage.googleapis.com/kubernetes-helm/helm-v2.15.0-windows-amd64.zip ) and put it in a directory on your path before running the following script.
 ```bash
-  wget https://raw.githubusercontent.com/SolaceProducts/solace-openshift-quickstart/master/scripts/deployHelm.sh; chmod +x deployHelm.sh
-  ./deployHelm.sh client
-  # Copy and run the export statements from the script output!
-  # Example:
-  #  export HELM_HOME=$HOME/.helm
-  #  export TILLER_NAMESPACE=tiller
-```
-- Ensure to run the export statements.
-- Install the Helm server-side "Tiller" component. This will also create a `tiller` project:
-```bash
-  ./deployHelm.sh server
+  export TILLER_NAMESPACE=tiller3
+  oc new-project ${TILLER_NAMESPACE}
+  curl -sSL https://raw.githubusercontent.com/helm/helm/master/scripts/get | bash
+  helm init --client-only
+  oc process -f https://github.com/openshift/origin/raw/master/examples/helm/tiller-template.yaml -p TILLER_NAMESPACE="${TILLER_NAMESPACE}" -p HELM_VERSION=v2.16.0 | oc create -f -
+  oc rollout status deployment tiller
 ```
 
 </p>
@@ -66,7 +63,7 @@ Note that Helm is transitioning from v2 to v3. Many deployments still use v2.
 <details><summary><b>Instructions for Helm v3 setup</b></summary>
 <p>
 
-- Use the [instructions from Helm] or if using Linux simply run:
+- Use the [instructions from Helm](//github.com/helm/helm#install) or if using Linux simply run:
 ```bash
   curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
 ```
@@ -80,37 +77,46 @@ Helm is configured properly if the command `helm version` returns no error.
 
 - Add the Solace Helm charts to your local Helm repo:
 ```bash
-helm repo add solacecharts https://solacedev.github.io/solace-kubernetes-quickstart/helm-charts
-```
-
-- Create or switch to your project
-```bash
-oc new-project solace-pubsub
+  helm repo add solacecharts https://solacedev.github.io/solace-kubernetes-quickstart/helm-charts
 ```
 
 - By default the publicly available latest Docker image of PubSub+ Standard Edition will be used. [Load a different image into a registry](/docs/PubSubPlusOpenShiftDeployment.md#step-5-optional-load-the-event-broker-docker-image-to-your-docker-registry) if required.
 
-- Use one of the chart variants to create a deployment. For configuration options and delete instructions, refer to the [PubSub+ Helm Chart documentation](https://github.com/SolaceDev/solace-kubernetes-quickstart/tree/HelmReorg/pubsubplus).
+- Create or switch to your project
+```bash
+  oc new-project solace-pubsub
+```
 
 <details open=true><summary><b>Instructions using Helm v2</b></summary>
 <p>
 
+- Grant the Tiller server admin access to the current project
+```bash
+  oc policy add-role-to-user admin "system:serviceaccount:${TILLER_NAMESPACE}:tiller"
+```
+
+
+- Use one of the chart variants to create a deployment. For configuration options and delete instructions, refer to the [PubSub+ Helm Chart documentation](https://github.com/SolaceDev/solace-kubernetes-quickstart/tree/HelmReorg/pubsubplus).
+
 a) Create a Solace PubSub+ minimum deployment for development purposes using `pubsubplus-dev`. It requires minimum 1 CPU and 2 GB of memory available to the PubSub+ event broker pod.
 ```bash
-# Deploy PubSub+ Standard edition, minimum footprint developer version
-oc install --name my-release solacecharts/pubsubplus-dev
+  # Deploy PubSub+ Standard edition, minimum footprint developer version
+  helm install --name my-release solacecharts/pubsubplus-dev \
+    --set securityContext.enabled=false
 ```
 
 b) Create a Solace PubSub+ Standalone deployment, supporting 100 connections scaling using `pubsubplus`. Minimum 2 CPUs and 4 GB of memory must be available to the PubSub+ event broker pod.
 ```bash
-# Deploy PubSub+ Standard edition, Standalone
-oc install --name my-release solacecharts/pubsubplus
+  # Deploy PubSub+ Standard edition, Standalone
+  helm install --name my-release solacecharts/pubsubplus \
+    --set securityContext.enabled=false
 ```
 
 c) Create a Solace PubSub+ HA deployment, supporting 100 connections scaling using `pubsubplus-ha`. The minimum resource requirements are 2 CPU and 4 GB of memory available to each of the three PubSub+ event broker pods.
 ```bash
-# Deploy PubSub+ Standard edition, HA
-oc install --name my-release solacecharts/pubsubplus-ha
+  # Deploy PubSub+ Standard edition, HA
+  helm install --name my-release solacecharts/pubsubplus-ha \
+    --set securityContext.enabled=false
 ```
 </p>
 </details>
@@ -118,22 +124,27 @@ oc install --name my-release solacecharts/pubsubplus-ha
 <details><summary><b>Instructions using Helm v3</b></summary>
 <p>
 
+- Use one of the chart variants to create a deployment. For configuration options and delete instructions, refer to the [PubSub+ Helm Chart documentation](https://github.com/SolaceDev/solace-kubernetes-quickstart/tree/HelmReorg/pubsubplus).
+
 a) Create a Solace PubSub+ minimum deployment for development purposes using `pubsubplus-dev`. It requires minimum 1 CPU and 2 GB of memory available to the PubSub+ event broker pod.
 ```bash
-# Deploy PubSub+ Standard edition, minimum footprint developer version
-oc install my-release solacecharts/pubsubplus-dev
+  # Deploy PubSub+ Standard edition, minimum footprint developer version
+  helm install my-release solacecharts/pubsubplus-dev \
+    --set securityContext.enabled=false
 ```
 
 b) Create a Solace PubSub+ Standalone deployment, supporting 100 connections scaling using `pubsubplus`. Minimum 2 CPUs and 4 GB of memory must be available to the PubSub+ event broker pod.
 ```bash
-# Deploy PubSub+ Standard edition, Standalone
-oc install my-release solacecharts/pubsubplus
+  # Deploy PubSub+ Standard edition, Standalone
+  helm install my-release solacecharts/pubsubplus \
+    --set securityContext.enabled=false
 ```
 
 c) Create a Solace PubSub+ HA deployment, supporting 100 connections scaling using `pubsubplus-ha`. The minimum resource requirements are 2 CPU and 4 GB of memory available to each of the three PubSub+ event broker pods.
 ```bash
-# Deploy PubSub+ Standard edition, HA
-oc install my-release solacecharts/pubsubplus-ha
+  # Deploy PubSub+ Standard edition, HA
+  helm install my-release solacecharts/pubsubplus-ha \
+    --set securityContext.enabled=false
 ```
 </p>
 </details>
