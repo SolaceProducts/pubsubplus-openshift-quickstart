@@ -41,18 +41,24 @@ oc whoami
 
 ### 2. Install and configure Helm
 
-Note that Helm is transitioning from v2 to v3. Many deployments still use v2.
+Note that Helm is transitioning from v2 to v3. Many deployments still use v2. The PubSub+ event broker can be installed using either version.
 
 <details open=true><summary><b>Instructions for Helm v2 setup</b></summary>
 <p>
 
-- Use script to install the Helm v2 client and server first: 
-> If using MiniShift, get the [Helm executable](https://storage.googleapis.com/kubernetes-helm/helm-v2.15.0-windows-amd64.zip ) and put it in a directory on your path before running the following script.
+- First download the Helm v2 client. If using Windows, get the [Helm executable](https://storage.googleapis.com/kubernetes-helm/helm-v2.16.0-windows-amd64.zip ) and put it in a directory on your path.
 ```bash
-  export TILLER_NAMESPACE=tiller3
-  oc new-project ${TILLER_NAMESPACE}
+  # Download Helm v2 client, latest version if needed
   curl -sSL https://raw.githubusercontent.com/helm/helm/master/scripts/get | bash
+```
+
+- Use script to install the Helm v2 client and server:
+```bash
+  # Install local client
   helm init --client-only
+  # Install server-side operator into this project
+  export TILLER_NAMESPACE=tiller
+  oc new-project ${TILLER_NAMESPACE}
   oc process -f https://github.com/openshift/origin/raw/master/examples/helm/tiller-template.yaml -p TILLER_NAMESPACE="${TILLER_NAMESPACE}" -p HELM_VERSION=v2.16.0 | oc create -f -
   oc rollout status deployment tiller
 ```
@@ -90,11 +96,10 @@ Helm is configured properly if the command `helm version` returns no error.
 <details open=true><summary><b>Instructions using Helm v2</b></summary>
 <p>
 
-- Grant the Tiller server admin access to the current project
+- **Important**: Grant server-side Tiller admin access to the current project
 ```bash
   oc policy add-role-to-user admin "system:serviceaccount:${TILLER_NAMESPACE}:tiller"
 ```
-
 
 - Use one of the chart variants to create a deployment. For configuration options and delete instructions, refer to the [PubSub+ Helm Chart documentation](https://github.com/SolaceDev/solace-kubernetes-quickstart/tree/HelmReorg/pubsubplus).
 
