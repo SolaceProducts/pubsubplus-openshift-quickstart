@@ -141,7 +141,7 @@ cd solace-openshift-quickstart
 
 ### Step 3: (Optional: only execute for Deployment option 1 - use the Solace Kubernetes QuickStart to deploy the event broker) Install the Helm v2 client and server-side tools
 
-This will deploy Helm in a dedicated "helm" project. Do not use this project for your deployments.
+This will deploy Helm in a dedicated "tiller" project. Do not use this project for your deployments.
 
 * **(Part I)** Use the ‘deployHelm.sh’ script to deploy the Helm client and server-side components.  Begin by installing the Helm client tool:
 
@@ -230,6 +230,11 @@ The deployment is using PubSub+ Helm charts and customized by overriding [defaul
 In particular, the `securityContext.enabled` parameter must be set to `false`, indicating not to use the provided pod security context but let OpenShift set it, using SecurityContextConstraints (SCC). By default OpenShift will use the "restricted" SCC.
 
 Next an HA and a non-HA deployment examples are provided, using default parameters. For configuration options, refer to the [Solace PubSub+ Advanced Event Broker Helm Chart](https://github.com/SolaceDev/solace-kubernetes-quickstart/tree/HelmReorg/pubsubplus) documentation.
+
+**Important**: For each new project using Helm v2, also grant admin access to the server-side Tiller service from the "tiller" project.
+```bash
+  oc policy add-role-to-user admin "system:serviceaccount:tiller:tiller"
+```
 
 HA deployment example:
 
