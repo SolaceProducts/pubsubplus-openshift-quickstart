@@ -157,6 +157,8 @@ This will deploy Helm in a dedicated "tiller-project" project. Do not use this p
   oc new-project tiller-project
   oc process -f https://github.com/openshift/origin/raw/master/examples/helm/tiller-template.yaml -p TILLER_NAMESPACE="tiller-project" -p HELM_VERSION=v2.16.0 | oc create -f -
   oc rollout status deployment tiller
+  # also let Helm know where Tiller was deployed
+  export TILLER_NAMESPACE=tiller-project
 ```
 
 ### Step 4: Create a new OpenShift project to host the event broker deployment
@@ -230,7 +232,7 @@ Next an HA and a non-HA deployment examples are provided, using default paramete
 **Important**: For each new project using Helm v2, also grant admin access to the server-side Tiller service from the "tiller-project" and ensure to set the `TILLER_NAMESPACE` environemnt variable.
 ```bash
   oc policy add-role-to-user admin "system:serviceaccount:tiller:tiller"
-  # also let Helm know where Tiller was deployed
+  # ensure Helm knows where Tiller was deployed
   export TILLER_NAMESPACE=tiller-project
 ```
 

@@ -60,6 +60,8 @@ Note that Helm is transitioning from v2 to v3. Many deployments still use v2. Th
   oc new-project tiller-project
   oc process -f https://github.com/openshift/origin/raw/master/examples/helm/tiller-template.yaml -p TILLER_NAMESPACE="tiller-project" -p HELM_VERSION=v2.16.0 | oc create -f -
   oc rollout status deployment tiller
+  # also let Helm know where Tiller was deployed
+  export TILLER_NAMESPACE=tiller-project
 ```
 
 </p>
@@ -98,7 +100,7 @@ Helm is configured properly if the command `helm version` returns no error.
 - **Important**: For each project using Helm v2, grant admin access to the server-side Tiller service from the "tiller-project".
 ```bash
   oc policy add-role-to-user admin "system:serviceaccount:tiller-project:tiller"
-  # also let Helm know where Tiller was deployed
+  # ensure Helm knows where Tiller was deployed
   export TILLER_NAMESPACE=tiller-project
 ```
 
