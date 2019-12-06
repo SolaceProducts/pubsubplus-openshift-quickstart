@@ -141,26 +141,22 @@ cd solace-openshift-quickstart
 
 ### Step 3: (Optional: only execute for Deployment option 1 - use the Solace Kubernetes QuickStart to deploy the event broker) Install the Helm v2 client and server-side tools
 
-This will deploy Helm in a dedicated "helm" project. Do not use this project for your deployments.
+This will deploy Helm in a dedicated "tiller-project" project. Do not use this project for your deployments.
 
-* **(Part I)** Use the ‘deployHelm.sh’ script to deploy the Helm client and server-side components.  Begin by installing the Helm client tool:
-
-> If using MiniShift, get the [Helm executable](https://storage.googleapis.com/kubernetes-helm/helm-v2.15.0-windows-amd64.zip ) and put it in a directory on your path before running the following script.
-
-```
-cd ~/workspace/solace-openshift-quickstart/scripts
-./deployHelm.sh client
-# Copy and run the export statements from the script output!
+- First download the Helm v2 client. If using Windows, get the [Helm executable](https://storage.googleapis.com/kubernetes-helm/helm-v2.16.0-windows-amd64.zip ) and put it in a directory on your path.
+```bash
+  # Download Helm v2 client, latest version if needed
+  curl -sSL https://raw.githubusercontent.com/helm/helm/master/scripts/get | bash
 ```
 
-  **Important:** After running the above script, note the **export** statements for the following environment variables from the output - copy and run them. These environment variables are required every time when running the `helm` client tool. It is recommended to add them to `~/.bashrc` on your machine so they are automatically sourced at future sessions.
-
-  
-* **(Part II)** Install the Helm server-side ‘Tiller’ component:
-
-```
-cd ~/workspace/solace-openshift-quickstart/scripts
-./deployHelm.sh server
+- Use script to install the Helm v2 client and its Tiller server-side operator.
+```bash
+  # Setup local Helm client
+  helm init --client-only
+  # Install Tiller server-side operator into a new "tiller-project"
+  oc new-project tiller-project
+  oc process -f https://github.com/openshift/origin/raw/master/examples/helm/tiller-template.yaml -p TILLER_NAMESPACE="tiller-project" -p HELM_VERSION=v2.16.0 | oc create -f -
+  oc rollout status deployment tiller
 ```
 
 ### Step 4: Create a new OpenShift project to host the event broker deployment
@@ -230,6 +226,14 @@ The deployment is using PubSub+ Helm charts and customized by overriding [defaul
 In particular, the `securityContext.enabled` parameter must be set to `false`, indicating not to use the provided pod security context but let OpenShift set it, using SecurityContextConstraints (SCC). By default OpenShift will use the "restricted" SCC.
 
 Next an HA and a non-HA deployment examples are provided, using default parameters. For configuration options, refer to the [Solace PubSub+ Advanced Event Broker Helm Chart](https://github.com/SolaceDev/solace-kubernetes-quickstart/tree/HelmReorg/pubsubplus) documentation.
+
+**Important**: For each new project using Helm v2, also grant admin access to the server-side Tiller service from the "tiller-project" and ensure to set the `TILLER_NAMESPACE` environemnt variable.
+```bash
+  oc policy add-role-to-user admin "system:serviceaccount:tiller:tiller"
+  # also let Helm know where Tiller was deployed
+  export TILLER_NAMESPACE=tiller-project
+```
+
 
 HA deployment example:
 
