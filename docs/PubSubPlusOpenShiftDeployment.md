@@ -231,7 +231,7 @@ Next an HA and a non-HA deployment examples are provided, using default paramete
 
 **Important**: For each new project using Helm v2, also grant admin access to the server-side Tiller service from the "tiller-project" and ensure to set the `TILLER_NAMESPACE` environemnt variable.
 ```bash
-  oc policy add-role-to-user admin "system:serviceaccount:tiller:tiller"
+  oc policy add-role-to-user admin "system:serviceaccount:tiller-project:tiller"
   # ensure Helm knows where Tiller was deployed
   export TILLER_NAMESPACE=tiller-project
 ```
