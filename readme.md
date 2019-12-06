@@ -98,6 +98,8 @@ Helm is configured properly if the command `helm version` returns no error.
 - **Important**: For each project using Helm v2, grant admin access to the server-side Tiller service from the "tiller-project".
 ```bash
   oc policy add-role-to-user admin "system:serviceaccount:tiller-project:tiller"
+  # also let Helm know where Tiller was deployed
+  export TILLER_NAMESPACE=tiller-project
 ```
 
 - Use one of the chart variants to create a deployment. For configuration options and delete instructions, refer to the [PubSub+ Helm Chart documentation](https://github.com/SolaceDev/solace-kubernetes-quickstart/tree/HelmReorg/pubsubplus).
