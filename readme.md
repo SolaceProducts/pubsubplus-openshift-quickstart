@@ -12,11 +12,11 @@ This guide is intended mainly for development and demo purposes. The recommended
 
 The event broker deployment does not require any special OpenShift Security Context, the default "restricted" SCC can be used.
 
+We recommend using the Helm tool for convenience. An alternative method [using OpenShift templates](/docs/PubSubPlusOpenShiftDeployment.md#step-6-option-2-deploy-the-event-broker-using-the-openshift-templates-included-in-this-project) is also available.
+
 ## How to deploy the Solace PubSub+ Software Event Broker
 
 Solace PubSub+ software event brokers can be deployed in either a 3-node High-Availability (HA) group, or as a single-node Standalone deployment. For simple test environments that need only to validate application functionality, a single instance will suffice. Note that in production, or any environment where message loss cannot be tolerated, an HA deployment is required.
-
-We recommend using the Helm tool for convenience. An alternative method [using OpenShift templates](/docs/PubSubPlusOpenShiftDeployment.md#step-6-option-2-deploy-the-event-broker-using-the-openshift-templates-included-in-this-project) is also available.
 
 In this quick start we go through the steps to set up an event broker using [Solace PubSub+ Helm charts](//hub.helm.sh/charts/solace).
 

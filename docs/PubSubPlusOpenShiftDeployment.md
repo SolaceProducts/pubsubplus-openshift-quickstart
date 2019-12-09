@@ -1,5 +1,12 @@
 # Deploying a Solace PubSub+ Software Event Broker onto an OpenShift 3.11 platform
 
+This is detailed documentation of deploying Solace PubSub+ Event Broker onto an OpenShift 3.11 platform including steps to set up a Red Hat OpenShift Container Platform platform on AWS.
+* For a hands-on quick start using an existing OpenShift platform, refer to the [Quick Start guide](/README.md).
+* For considerations about deploying in a general Kubernetes environment, refer to the [Solace PubSub+ Event Broker on Kubernetes Guide](https://github.com/SolaceDev/solace-kubernetes-quickstart/blob/HelmReorg/docs/PubSubPlusK8SDeployment.md)
+* For the pubsubplus Helm chart configuration reference, refer to the [PubSub+ Helm Chart](//github.com/SolaceDev/solace-kubernetes-quickstart/blob/HelmReorg/pubsubplus/README.md).
+
+
+
 Contents:
   * [Purpose of this Repository](#purpose-of-this-repository)
   * [Description of the Solace PubSub+ Software Event Broker](#description-of-the-solace-pubsub-software-event-broker)
@@ -25,6 +32,7 @@ Contents:
   * [Authors](#authors)
   * [License](#license)
   * [Resources](#resources)
+
 
 ## Purpose of this Repository
 
