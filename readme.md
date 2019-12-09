@@ -29,7 +29,7 @@ For other event broker configurations or sizes, refer to the [PubSub+ Helm Chart
 
 ### 1. Get an OpenShift environment
 
-There are [multiple ways](https://docs.openshift.com/index.html ) to get to an OpenShift 3.11 platform, including [MiniShift](https://github.com/minishift/minishift#welcome-to-minishift ).
+There are [multiple ways](https://docs.openshift.com/index.html ) to get to an OpenShift 3.11 platform, including [MiniShift](https://github.com/minishift/minishift#welcome-to-minishift ). The [detailed Event Broker on OpenShift Guide](/docs/PubSubPlusOpenShiftDeployment.md#step-1-optional--aws-deploy-openshift-container-platform-onto-aws-using-the-redhat-openshift-aws-quickstart-project) describes how to set up a production-ready Red Hat OpenShift Container Platform platform on AWS.
 
 Log in as `admin` using the `oc login -u admin` command. 
 
@@ -87,7 +87,7 @@ Helm is configured properly if the command `helm version` returns no error.
   helm repo add solacecharts https://solacedev.github.io/solace-kubernetes-quickstart/helm-charts
 ```
 
-- By default the publicly available [latest Docker image of PubSub+ Standard Edition](https://hub.Docker.com/r/solace/solace-pubsub-standard/tags/) will be used. [Load a different image into a registry](/docs/PubSubPlusOpenShiftDeployment.md#step-5-optional-load-the-event-broker-docker-image-to-your-docker-registry) if required.
+- By default the publicly available [latest Docker image of PubSub+ Standard Edition](https://hub.Docker.com/r/solace/solace-pubsub-standard/tags/) will be used. [Load a different image into a registry](/docs/PubSubPlusOpenShiftDeployment.md#step-5-optional-load-the-event-broker-docker-image-to-your-docker-registry) if required. If using a different image, add the `image.repository=<your-image-location>,image.tag=<your-image-tag>` values to the `--set` commands below, comma-separated.
 
 - Create or switch to your project
 ```bash
@@ -100,7 +100,7 @@ Helm is configured properly if the command `helm version` returns no error.
 - **Important**: For each project using Helm v2, grant admin access to the server-side Tiller service from the "tiller-project".
 ```bash
   oc policy add-role-to-user admin "system:serviceaccount:tiller-project:tiller"
-  # ensure Helm knows where Tiller was deployed
+  # if not already exported, ensure Helm knows where Tiller was deployed
   export TILLER_NAMESPACE=tiller-project
 ```
 
@@ -158,7 +158,9 @@ c) Create a Solace PubSub+ HA deployment, supporting 100 connections scaling usi
 </details>
 Above options will start the deployment and write related information and notes to the screen.
 
-Wait for the deployment to complete following the instructions, then you can [try out the management and messaging services](docs/PubSubPlusK8SDeployment.md#validating-the-deployment). Refer to the [Troubleshooting guide](docs/PubSubPlusK8SDeployment.md#troubleshooting) if any issues.
+Wait for the deployment to complete following the instructions, then you can [try the management and messaging services](docs/PubSubPlusK8SDeployment.md#validating-the-deployment).
+
+If any issues, refer to the [Kubernetes Troubleshooting Guide](https://github.com/SolaceDev/solace-kubernetes-quickstart/blob/HelmReorg/docs/PubSubPlusK8SDeployment.md#troubleshooting). Before retrying ensure to delete PVCs from the unsuccessful deployment - use `oc get pvc` to determine which ones.
 
 > Note: If using MiniShift an additional step is required to expose the service: `oc get --export svc my-release-pubsubplus`. This will return a service definition with nodePort port numbers for each message router service. Use these port numbers together with MiniShift's public IP address which can be obtained from the command `minishift ip`.
 

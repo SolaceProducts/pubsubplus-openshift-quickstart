@@ -235,7 +235,10 @@ The deployment is using PubSub+ Helm charts and customized by overriding [defaul
 
 In particular, the `securityContext.enabled` parameter must be set to `false`, indicating not to use the provided pod security context but let OpenShift set it, using SecurityContextConstraints (SCC). By default OpenShift will use the "restricted" SCC.
 
+By default the publicly available [latest Docker image of PubSub+ Standard Edition](https://hub.Docker.com/r/solace/solace-pubsub-standard/tags/) will be used. [Load a different image into a registry](#step-5-optional-load-the-event-broker-docker-image-to-your-docker-registry) if required. If using a different image, add the `image.repository=<your-image-location>,image.tag=<your-image-tag>` values to the `--set` commands below, comma-separated.
+
 Next an HA and a non-HA deployment examples are provided, using default parameters. For configuration options, refer to the [Solace PubSub+ Advanced Event Broker Helm Chart](https://github.com/SolaceDev/solace-kubernetes-quickstart/tree/HelmReorg/pubsubplus) documentation.
+After initiating a deployment with one of the commands below skip to the [Validating the Deployment](#validating-the-deployment) section.
 
 **Important**: For each new project using Helm v2, also grant admin access to the server-side Tiller service from the "tiller-project" and ensure to set the `TILLER_NAMESPACE` environemnt variable.
 ```bash
@@ -243,7 +246,6 @@ Next an HA and a non-HA deployment examples are provided, using default paramete
   # ensure Helm knows where Tiller was deployed
   export TILLER_NAMESPACE=tiller-project
 ```
-
 
 HA deployment example:
 
@@ -337,6 +339,8 @@ watch oc get statefulset,service,pods,pvc,pv
 ```
   
 ## Validating the Deployment
+
+If there are any issues with the deployment, refer to the [Kubernetes Troubleshooting Guide](https://github.com/SolaceDev/solace-kubernetes-quickstart/blob/HelmReorg/docs/PubSubPlusK8SDeployment.md#troubleshooting) - substitute any `kubectl` commands with `oc` commands. Before retrying a deployment, ensure to delete PVCs remaining from the unsuccessful deployment - use `oc get pvc` to determine which ones.
 
 Now you can validate your deployment from the OpenShift client shell:
 
