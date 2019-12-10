@@ -24,7 +24,7 @@ Contents:
   * [Gaining Admin and SSH access to the event broker](#gaining-admin-and-ssh-access-to-the-event-broker)
   * [Testing data access to the event broker](#testing-data-access-to-the-event-broker)
   * [Deleting a deployment](#deleting-a-deployment)
-    + [Deleting the Solace event broker deployment](#deleting-the-solace-event-broker-deployment)
+    + [Deleting the PubSub+ event broker deployment](#deleting-the-pubsub+-event-broker-deployment)
     + [Deleting the OpenShift Container Platform deployment](#deleting-the-openshift-container-platform-deployment)
   * [Special topics](#special-topics)
     + [Using NFS for persistent storage](#using-nfs-for-persistent-storage)
@@ -496,7 +496,7 @@ Note: the Host will be the Solace Connection URI. It may be necessary to [open u
 
 ## Deleting a deployment
 
-### Deleting the Solace event broker deployment
+### Deleting the PubSub+ event broker deployment
 
 To delete the deployment or to start over from Step 6 in a clean state:
 
@@ -514,7 +514,7 @@ cd ~/workspace/solace-openshift-quickstart/templates
 oc process -f <template-used> DEPLOYMENT_NAME=<deploymentname> | oc delete -f -
 ```
 
-**Note:** Above will not delete dynamic Persistent Volumes (PVs) and related Persistent Volume Claims (PVCs). If recreating the deployment with same name, the original volumes get mounted with existing configuration. Deleting the PVCs will also delete the PVs:
+**Note:** Above will not delete dynamic Persistent Volumes (PVs) and related Persistent Volume Claims (PVCs). If recreating the deployment with same name and keeping the original PVCs, the original volumes get mounted with existing configuration. Deleting the PVCs will also delete the PVs:
 
 ```
 # List PVCs
