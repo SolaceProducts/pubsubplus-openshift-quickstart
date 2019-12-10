@@ -240,13 +240,14 @@ By default the publicly available [latest Docker image of PubSub+ Standard Editi
 Next an HA and a non-HA deployment examples are provided, using default parameters. For configuration options, refer to the [Solace PubSub+ Advanced Event Broker Helm Chart](https://github.com/SolaceDev/solace-kubernetes-quickstart/tree/HelmReorg/pubsubplus) documentation.
 After initiating a deployment with one of the commands below skip to the [Validating the Deployment](#validating-the-deployment) section.
 
-- **Important**: For each new project using Helm v2, grant admin access to the server-side Tiller service from the "tiller-project" and set the TILLER_NAMESPACE environment.
+- **Important**: For each new project using Helm v2, grant admin access to the server-side Tiller service from the "tiller-project" and set the TILLER_NAMESPACE environment, which is used by the Helm client to locate where Tiller has been deployed.
 ```bash
   oc policy add-role-to-user admin "system:serviceaccount:tiller-project:tiller"
   # if not already exported, ensure Helm knows where Tiller was deployed
   export TILLER_NAMESPACE=tiller-project
 ```
-Ensure each command-line session has the TILLER_NAMESPACE environment variable properly set!
+
+> Ensure each command-line session has the TILLER_NAMESPACE environment variable properly set!
 
 HA deployment example:
 
