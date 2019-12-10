@@ -41,7 +41,7 @@ oc whoami
 
 ### 2. Install and configure Helm
 
-Note that Helm is transitioning from v2 to v3. Many deployments still use v2. The PubSub+ event broker can be installed using either version.
+Note that Helm is transitioning from v2 to v3. Many deployments still use v2. The PubSub+ event broker can be deployed using either version, however concurrent use of v2 and v3 from the same command-line environment is not supported.
 
 <details open=true><summary><b>Instructions for Helm v2 setup</b></summary>
 <p>

@@ -208,7 +208,7 @@ Ensure to use PubSub+ release 9.4 or later.
     # Required if using ECR for Docker registry
     cd ~/workspace/solace-openshift-quickstart/scripts
     sudo su
-    aws configure       # provide AWS config for root; provide your key ID and key, leave the rest to None.
+    aws configure       # provide AWS config for root; provide your key ID, key and region.
     ./addECRsecret.sh solace-pubsub   # adjust your project name as needed
 ```
 
