@@ -103,7 +103,7 @@ Helm is configured properly if the command `helm version` returns no error.
   # if not already exported, ensure Helm knows where Tiller was deployed
   export TILLER_NAMESPACE=tiller-project
 ```
-Ensure each command-line session has the TILLER_NAMESPACE environment variable properly set!
+> Ensure each command-line session has the TILLER_NAMESPACE environment variable properly set!
 
 - Use one of the chart variants to create a deployment. For configuration options and delete instructions, refer to the [PubSub+ Helm Chart documentation](https://github.com/SolaceDev/solace-kubernetes-quickstart/tree/HelmReorg/pubsubplus).
 
