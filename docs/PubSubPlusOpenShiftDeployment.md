@@ -223,6 +223,10 @@ Ensure to use PubSub+ release 9.4 or later.
 
 ![alt text](/docs/images/ECR-Registry.png "ECR Registry")
 
+<br>
+
+For general additional information, refer to the [Using private registries](https://github.com/SolaceDev/solace-kubernetes-quickstart/blob/HelmReorg/docs/PubSubPlusK8SDeployment.md#using-private-registries) section in the Kubernetes Guide.
+
 ### Step 6-Option 1: Deploy the event broker using Helm
 
 Deploying using Helm provides more flexibility in terms of event broker deployment options, compared to those offered by the OpenShift templates provided by this project.
