@@ -24,8 +24,8 @@ Contents:
   * [Gaining Admin and SSH access to the event broker](#gaining-admin-and-ssh-access-to-the-event-broker)
   * [Testing data access to the event broker](#testing-data-access-to-the-event-broker)
   * [Deleting a deployment](#deleting-a-deployment)
-    + [Deleting the PubSub+ event broker deployment](#deleting-the-pubsub+-event-broker-deployment)
-    + [Deleting the OpenShift Container Platform deployment](#deleting-the-openshift-container-platform-deployment)
+    + [Deleting the PubSub+ event broker deployment](#deleting-the-pubsub-event-broker-deployment)
+    + [Deleting the AWS OpenShift Container Platform deployment](#deleting-the-aws-openshift-container-platform-deployment)
   * [Special topics](#special-topics)
     + [Using NFS for persistent storage](#using-nfs-for-persistent-storage)
   * [Contributing](#contributing)
@@ -529,7 +529,7 @@ To remove the project or to start over from Step 4 in a clean state, delete the 
 oc delete project solace-pubsub   # adjust your project name as needed
 ```
 
-### Deleting the OpenShift Container Platform deployment
+### Deleting the AWS OpenShift Container Platform deployment
 
 To delete your OpenShift Container Platform deployment that was set up at Step 1, first you need to detach the IAM policies from the ‘Setup Role’ (IAM) that were attached in (Part II) of Step 1. Then you also need to ensure to free up the allocated OpenShift entitlements from your subscription otherwise they will no longer be available for a subsequent deployment.
 

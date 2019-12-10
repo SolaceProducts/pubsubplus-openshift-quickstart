@@ -165,7 +165,7 @@ Wait for the deployment to complete following the instructions, then you can [tr
 
 If any issues, refer to the [Kubernetes Troubleshooting Guide](https://github.com/SolaceDev/solace-kubernetes-quickstart/blob/HelmReorg/docs/PubSubPlusK8SDeployment.md#troubleshooting) - substitute any `kubectl` commands with `oc` commands.
 
-If you need to start over, follow the [steps to delete the current deployment](/docs/PubSubPlusOpenShiftDeployment.md#deleting-the-solace-event-broker-deployment).
+If you need to start over, follow the [steps to delete the current deployment](/docs/PubSubPlusOpenShiftDeployment.md#deleting-the-pubsub-event-broker-deployment).
 
 
 ## Contributing
