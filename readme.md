@@ -6,7 +6,7 @@ The [Solace PubSub+ Platform](https://solace.com/products/platform/)'s [PubSub+ 
 
 This document provides a quick getting started guide to install a Solace PubSub+ Software Event Broker in various configurations onto an OpenShift 3.11 platform.
 
-Detailed documentation is provided in the [Solace PubSub+ Event Broker on OpenShift Guide](/docs/PubSubPlusOpenShiftDeployment.md).
+Detailed OpenShift-specific documentation is provided in the [Solace PubSub+ Event Broker on OpenShift Documentation](/docs/PubSubPlusOpenShiftDeployment.md). There is also a general [Solace PubSub+ Event Broker on Kubernetes Documentation](//github.com/SolaceDev/solace-kubernetes-quickstart/blob/HelmReorg/docs/PubSubPlusK8SDeployment.md) available, which OpenShift builds upon.
 
 This guide is intended mainly for development and demo purposes. The recommended Solace PubSub+ Software Event Broker version is 9.4 or later.
 
@@ -29,7 +29,7 @@ For other event broker configurations or sizes, refer to the [PubSub+ Helm Chart
 
 ### 1. Get an OpenShift environment
 
-There are [multiple ways](https://docs.openshift.com/index.html ) to get to an OpenShift 3.11 platform, including [MiniShift](https://github.com/minishift/minishift#welcome-to-minishift ). The [detailed Event Broker on OpenShift Guide](/docs/PubSubPlusOpenShiftDeployment.md#step-1-optional--aws-deploy-openshift-container-platform-onto-aws-using-the-redhat-openshift-aws-quickstart-project) describes how to set up a production-ready Red Hat OpenShift Container Platform platform on AWS.
+There are [multiple ways](https://docs.openshift.com/index.html ) to get to an OpenShift 3.11 platform, including [MiniShift](https://github.com/minishift/minishift#welcome-to-minishift ). The [detailed Event Broker on OpenShift Documentation](/docs/PubSubPlusOpenShiftDeployment.md#step-1-optional--aws-deploy-openshift-container-platform-onto-aws-using-the-redhat-openshift-aws-quickstart-project) describes how to set up a production-ready Red Hat OpenShift Container Platform platform on AWS.
 
 Log in as `admin` using the `oc login -u admin` command. 
 
@@ -164,7 +164,7 @@ Above options will start the deployment and write related information and notes 
 
 Wait for the deployment to complete following the instructions, then you can [try the management and messaging services](docs/PubSubPlusK8SDeployment.md#validating-the-deployment).
 
-If any issues, refer to the [Kubernetes Troubleshooting Guide](https://github.com/SolaceDev/solace-kubernetes-quickstart/blob/HelmReorg/docs/PubSubPlusK8SDeployment.md#troubleshooting) - substitute any `kubectl` commands with `oc` commands.
+If any issues, refer to the [Troubleshooting](https://github.com/SolaceDev/solace-kubernetes-quickstart/blob/HelmReorg/docs/PubSubPlusK8SDeployment.md#troubleshooting) section of the general PubSub+ Kubernetes Documentation - substitute any `kubectl` commands with `oc` commands.
 
 If you need to start over, follow the [steps to delete the current deployment](/docs/PubSubPlusOpenShiftDeployment.md#deleting-the-pubsub-event-broker-deployment).
 
