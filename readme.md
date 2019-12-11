@@ -162,7 +162,7 @@ Above options will start the deployment and write related information and notes 
 
 > Note: If using MiniShift an additional step is required to expose the service: `oc get --export svc my-release-pubsubplus`. This will return a service definition with nodePort port numbers for each message router service. Use these port numbers together with MiniShift's public IP address which can be obtained from the command `minishift ip`.
 
-Wait for the deployment to complete following the instructions, then you can [validate the deplyment and try the management and messaging services](/docs/PubSubPlusOpenShiftDeployment.md#validating-the-deployment).
+Wait for the deployment to complete following the instructions, then you can [validate the deployment and try the management and messaging services](/docs/PubSubPlusOpenShiftDeployment.md#validating-the-deployment).
 
 If any issues, refer to the [Troubleshooting](https://github.com/SolaceDev/solace-kubernetes-quickstart/blob/HelmReorg/docs/PubSubPlusK8SDeployment.md#troubleshooting) section of the general PubSub+ Kubernetes Documentation - substitute any `kubectl` commands with `oc` commands.
 
