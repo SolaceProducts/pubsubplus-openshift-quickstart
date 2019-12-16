@@ -1,22 +1,22 @@
-# Deploying a Solace PubSub+ Software Event Broker onto an OpenShift 3.11 platform
+# Deploying a Solace PubSub+ Event Broker: Software onto an OpenShift 3.11 platform
 
-The [Solace PubSub+ Platform](https://solace.com/products/platform/)'s [PubSub+ Software Event Broker](https://solace.com/products/event-broker/software/) efficiently streams event-driven information between applications, IoT devices and user interfaces running in cloud, on-premise, and hybrid environments using open APIs and protocols like AMQP, JMS, MQTT, REST and WebSocket. It can be installed into a variety of public and private clouds, PaaS, and on-premise environments, and brokers in multiple locations can be linked together in an [Event Mesh](https://solace.com/what-is-an-event-mesh/) to dynamically share events across the distributed enterprise.
+The [Solace PubSub+ Platform](https://solace.com/products/platform/)'s [PubSub+ Event Broker: Software](https://solace.com/products/event-broker/software/) efficiently streams event-driven information between applications, IoT devices and user interfaces running in cloud, on-premises, and hybrid environments using open APIs and protocols like AMQP, JMS, MQTT, REST and WebSocket. It can be installed into a variety of public and private clouds, PaaS, and on-premises environments, and brokers in multiple locations can be linked together in an [event mesh](https://solace.com/what-is-an-event-mesh/) to dynamically share events across the distributed enterprise.
 
 ## Overview
 
-This document provides a quick getting started guide to install a Solace PubSub+ Software Event Broker in various configurations onto an OpenShift 3.11 platform.
+This document provides a quick getting started guide to install a Solace PubSub+ Event Broker: Software (PubSub+ EBS) in various configurations onto an OpenShift 3.11 platform.
 
-Detailed OpenShift-specific documentation is provided in the [Solace PubSub+ Event Broker on OpenShift Documentation](/docs/PubSubPlusOpenShiftDeployment.md). There is also a general [Solace PubSub+ Event Broker on Kubernetes Documentation](//github.com/SolaceDev/solace-kubernetes-quickstart/blob/HelmReorg/docs/PubSubPlusK8SDeployment.md) available, which the OpenShift deployment  builds upon.
+Detailed OpenShift-specific documentation is provided in the [Solace PubSub+ EBS on OpenShift Documentation](/docs/PubSubPlusOpenShiftDeployment.md). There is also a general [Solace PubSub+ EBS on Kubernetes Documentation](//github.com/SolaceDev/solace-kubernetes-quickstart/blob/HelmReorg/docs/PubSubPlusK8SDeployment.md) available, which the OpenShift deployment  builds upon.
 
-This guide is intended mainly for development and demo purposes. The recommended Solace PubSub+ Software Event Broker version is 9.4 or later.
+This guide is intended mainly for development and demo purposes. The recommended Solace PubSub+ EBS version is 9.4 or later.
 
-The event broker deployment does not require any special OpenShift Security Context, the default "restricted" SCC can be used.
+The PubSub+ EBS deployment does not require any special OpenShift Security Context, the default "restricted" SCC can be used.
 
 We recommend using the Helm tool for convenience. An alternative method [using OpenShift templates](/docs/PubSubPlusOpenShiftDeployment.md#step-6-option-2-deploy-the-event-broker-using-the-openshift-templates-included-in-this-project) is also available.
 
-## How to deploy the Solace PubSub+ Software Event Broker
+## How to deploy the Solace PubSub+ EBS
 
-Solace PubSub+ software event brokers can be deployed in either a 3-node High-Availability (HA) group, or as a single-node Standalone deployment. For simple test environments that need only to validate application functionality, a single instance will suffice. Note that in production, or any environment where message loss cannot be tolerated, an HA deployment is required.
+Solace PubSub+ EBS can be deployed in either a 3-node High-Availability (HA) group, or as a single-node Standalone deployment. For simple test environments that need only to validate application functionality, a single instance will suffice. Note that in production, or any environment where message loss cannot be tolerated, an HA deployment is required.
 
 In this quick start we go through the steps to set up an event broker using [Solace PubSub+ Helm charts](//hub.helm.sh/charts/solace).
 
@@ -33,7 +33,7 @@ There are [multiple ways](https://docs.openshift.com/index.html ) to get to an O
 
 Log in as `admin` using the `oc login -u admin` command. 
 
-Check your OpenShift environment is ready:
+Check to ensure your OpenShift environment is ready:
 ```bash
 # This shall return current user
 oc whoami
@@ -41,7 +41,7 @@ oc whoami
 
 ### 2. Install and configure Helm
 
-Note that Helm is transitioning from v2 to v3. Many deployments still use v2. The PubSub+ event broker can be deployed using either version, however concurrent use of v2 and v3 from the same command-line environment is not supported.
+Note that Helm is transitioning from v2 to v3. Many deployments still use v2. The PubSub+ EBS can be deployed using either version, however concurrent use of v2 and v3 from the same command-line environment is not supported.
 
 <details open=true><summary><b>Instructions for Helm v2 setup</b></summary>
 <p>
@@ -80,14 +80,14 @@ Note that Helm is transitioning from v2 to v3. Many deployments still use v2. Th
 Helm is configured properly if the command `helm version` returns no error.
 
 
-### 3. Install the Solace PubSub+ event broker with default configuration
+### 3. Install the Solace PubSub+ EBS with default configuration
 
 - Add the Solace Helm charts to your local Helm repo:
 ```bash
   helm repo add solacecharts https://solacedev.github.io/solace-kubernetes-quickstart/helm-charts
 ```
 
-- By default the publicly available [latest Docker image of PubSub+ Standard Edition](https://hub.Docker.com/r/solace/solace-pubsub-standard/tags/) will be used. [Load a different image into a registry](/docs/PubSubPlusOpenShiftDeployment.md#step-5-optional-load-the-event-broker-docker-image-to-your-docker-registry) if required. If using a different image, add the `image.repository=<your-image-location>,image.tag=<your-image-tag>` values to the `--set` commands below, comma-separated.
+- By default the publicly available [latest Docker image of PubSub+ EBS Standard Edition](https://hub.Docker.com/r/solace/solace-pubsub-standard/tags/) will be used. [Load a different image into a registry](/docs/PubSubPlusOpenShiftDeployment.md#step-5-optional-load-the-event-broker-docker-image-to-your-docker-registry) if required. If using a different image, add the `image.repository=<your-image-location>,image.tag=<your-image-tag>` values to the `--set` commands below, comma-separated.
 
 - Create or switch to your project
 ```bash
@@ -107,23 +107,23 @@ Helm is configured properly if the command `helm version` returns no error.
 
 - Use one of the chart variants to create a deployment. For configuration options and delete instructions, refer to the [PubSub+ Helm Chart documentation](https://github.com/SolaceDev/solace-kubernetes-quickstart/tree/HelmReorg/pubsubplus).
 
-a) Create a Solace PubSub+ minimum deployment for development purposes using `pubsubplus-dev`. It requires minimum 1 CPU and 2 GB of memory available to the PubSub+ event broker pod.
+a) Create a Solace PubSub+ EBS minimum deployment for development purposes using `pubsubplus-dev`. It requires a minimum of 1 CPU and 2 GB of memory be available to the PubSub+ EBS pod.
 ```bash
-  # Deploy PubSub+ Standard edition, minimum footprint developer version
+  # Deploy PubSub+ EBS Standard edition, minimum footprint developer version
   helm install --name my-release solacecharts/pubsubplus-dev \
     --set securityContext.enabled=false
 ```
 
-b) Create a Solace PubSub+ Standalone deployment, supporting 100 connections scaling using `pubsubplus`. Minimum 2 CPUs and 4 GB of memory must be available to the PubSub+ event broker pod.
+b) Create a Solace PubSub+ Standalone deployment, supporting 100 connections scaling using `pubsubplus`. A minimum of 2 CPUs and 4 GB of memory must be available to the PubSub+ EBS pod.
 ```bash
-  # Deploy PubSub+ Standard edition, Standalone
+  # Deploy PubSub+ EBS Standard edition, Standalone
   helm install --name my-release solacecharts/pubsubplus \
     --set securityContext.enabled=false
 ```
 
-c) Create a Solace PubSub+ HA deployment, supporting 100 connections scaling using `pubsubplus-ha`. The minimum resource requirements are 2 CPU and 4 GB of memory available to each of the three PubSub+ event broker pods.
+c) Create a Solace PubSub+ HA deployment, supporting 100 connections scaling using `pubsubplus-ha`. The minimum resource requirements are 2 CPU and 4 GB of memory available to each of the three PubSub+ EBS pods.
 ```bash
-  # Deploy PubSub+ Standard edition, HA
+  # Deploy PubSub+ EBS Standard edition, HA
   helm install --name my-release solacecharts/pubsubplus-ha \
     --set securityContext.enabled=false
 ```
@@ -135,30 +135,30 @@ c) Create a Solace PubSub+ HA deployment, supporting 100 connections scaling usi
 
 - Use one of the chart variants to create a deployment. For configuration options and delete instructions, refer to the [PubSub+ Helm Chart documentation](https://github.com/SolaceDev/solace-kubernetes-quickstart/tree/HelmReorg/pubsubplus).
 
-a) Create a Solace PubSub+ minimum deployment for development purposes using `pubsubplus-dev`. It requires minimum 1 CPU and 2 GB of memory available to the PubSub+ event broker pod.
+a) Create a Solace PubSub+ EBS minimum deployment for development purposes using `pubsubplus-dev`. It requires minimum 1 CPU and 2 GB of memory available to the PubSub+ event broker pod.
 ```bash
-  # Deploy PubSub+ Standard edition, minimum footprint developer version
+  # Deploy PubSub+ EBS Standard edition, minimum footprint developer version
   helm install my-release solacecharts/pubsubplus-dev \
     --set securityContext.enabled=false
 ```
 
-b) Create a Solace PubSub+ Standalone deployment, supporting 100 connections scaling using `pubsubplus`. Minimum 2 CPUs and 4 GB of memory must be available to the PubSub+ event broker pod.
+b) Create a Solace PubSub+ Standalone deployment, supporting 100 connections scaling using `pubsubplus`. A minimum of 2 CPUs and 4 GB of memory must be available to the PubSub+ EBS pod.
 ```bash
-  # Deploy PubSub+ Standard edition, Standalone
+  # Deploy PubSub+ EBS Standard edition, Standalone
   helm install my-release solacecharts/pubsubplus \
     --set securityContext.enabled=false
 ```
 
-c) Create a Solace PubSub+ HA deployment, supporting 100 connections scaling using `pubsubplus-ha`. The minimum resource requirements are 2 CPU and 4 GB of memory available to each of the three PubSub+ event broker pods.
+c) Create a Solace PubSub+ HA deployment, supporting 100 connections scaling using `pubsubplus-ha`. The minimum resource requirements are 2 CPU and 4 GB of memory available to each of the three event broker pods.
 ```bash
-  # Deploy PubSub+ Standard edition, HA
+  # Deploy PubSub+ EBS Standard edition, HA
   helm install my-release solacecharts/pubsubplus-ha \
     --set securityContext.enabled=false
 ```
 </p>
 </details>
 
-Above options will start the deployment and write related information and notes to the screen.
+The above options will start the deployment and write related information and notes to the screen.
 
 > Note: If using MiniShift an additional step is required to expose the service: `oc get --export svc my-release-pubsubplus`. This will return a service definition with nodePort port numbers for each message router service. Use these port numbers together with MiniShift's public IP address which can be obtained from the command `minishift ip`.
 
@@ -185,6 +185,6 @@ This project is licensed under the Apache License, Version 2.0. - See the [LICEN
 
 For more information about Solace technology in general please visit these resources:
 
-- The Solace Developer Portal website at: //dev.solace.com
-- Understanding [Solace technology.](//dev.solace.com/tech/)
+- The Solace Developer Portal website at: [solace.dev](//solace.dev/)
+- Understanding [Solace technology](//solace.com/products/platform/)
 - Ask the [Solace community](//dev.solace.com/community/).
