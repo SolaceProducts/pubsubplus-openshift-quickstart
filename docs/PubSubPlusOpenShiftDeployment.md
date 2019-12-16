@@ -17,7 +17,7 @@ Contents:
   * [How to deploy a Solace PubSub+ EBS onto OpenShift / AWS](#how-to-deploy-a-solace-pubsub-ebs-onto-openshift-aws)
     + [Step 1: (Optional / AWS) Deploy OpenShift Container Platform onto AWS using the RedHat OpenShift AWS QuickStart Project](#step-1-optional--aws-deploy-openshift-container-platform-onto-aws-using-the-redhat-openshift-aws-quickstart-project)
     + [Step 2: Prepare your workspace](#step-2-prepare-your-workspace)
-    + [Step 3: (Optional: only execute for Deployment option 1 - use the Solace Kubernetes QuickStart to deploy the event broker) Install the Helm v2 client and server-side tools](#step-3-optional-only-execute-for-deployment-option-1-use-the-solace-kubernetes-quickstart-to-deploy-the-event-broker-install-the-helm-v2-client-and-server-side-tools)
+    + [Step 3: (Optional: only execute for Deployment option 1) Install the Helm v2 client and server-side tools](#step-3-optional-only-execute-for-deployment-option-1-use-the-solace-kubernetes-quickstart-to-deploy-the-event-broker-install-the-helm-v2-client-and-server-side-tools)
     + [Step 4: Create a new OpenShift project to host the event broker deployment](#step-4-create-a-new-openshift-project-to-host-the-event-broker-deployment)
     + [Step 5: Optional: Load the event broker (Docker image) to your Docker Registry](#step-5-optional-load-the-event-broker-docker-image-to-your-docker-registry)
     + [Step 6-Option 1: Deploy the event broker using Helm](#step-6-option-1-deploy-the-event-broker-using-helm)
@@ -155,7 +155,7 @@ git clone https://github.com/SolaceProducts/solace-openshift-quickstart.git
 cd solace-openshift-quickstart
 ```
 
-### Step 3: (Optional: only execute for Deployment option 1 - use the Solace Kubernetes QuickStart to deploy the event broker) Install the Helm v2 client and server-side tools
+### Step 3: (Optional: only execute for Deployment option 1) Install the Helm v2 client and server-side tools
 
 This will deploy Helm in a dedicated "tiller-project" project. Do not use this project for your deployments.
 
