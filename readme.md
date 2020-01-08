@@ -1,31 +1,31 @@
-# Deploying a Solace PubSub+ Event Broker: Software onto an OpenShift 3.11 platform
+# Deploying a Solace PubSub+ Software Event Broker onto an OpenShift 3.11 platform
 
-The [Solace PubSub+ Platform](https://solace.com/products/platform/)'s [PubSub+ Event Broker: Software](https://solace.com/products/event-broker/software/) efficiently streams event-driven information between applications, IoT devices and user interfaces running in cloud, on-premises, and hybrid environments using open APIs and protocols like AMQP, JMS, MQTT, REST and WebSocket. It can be installed into a variety of public and private clouds, PaaS, and on-premises environments, and brokers in multiple locations can be linked together in an [event mesh](https://solace.com/what-is-an-event-mesh/) to dynamically share events across the distributed enterprise.
+The [Solace PubSub+ Platform](https://solace.com/products/platform/)'s [software event broker](https://solace.com/products/event-broker/software/) efficiently streams event-driven information between applications, IoT devices and user interfaces running in the cloud, on-premises, and hybrid environments using open APIs and protocols like AMQP, JMS, MQTT, REST and WebSocket. It can be installed into a variety of public and private clouds, PaaS, and on-premises environments, and brokers in multiple locations can be linked together in an [event mesh](https://solace.com/what-is-an-event-mesh/) to dynamically share events across the distributed enterprise.
 
 ## Overview
 
-This document provides a quick getting started guide to install a Solace PubSub+ Event Broker: Software (PubSub+ EBS) in various configurations onto an OpenShift 3.11 platform.
+This document provides a quick getting started guide to install a Solace PubSub+ Software Event Broker in various configurations onto an OpenShift 3.11 platform.
 
-Detailed OpenShift-specific documentation is provided in the [Solace PubSub+ EBS on OpenShift Documentation](/docs/PubSubPlusOpenShiftDeployment.md). There is also a general [Solace PubSub+ EBS on Kubernetes Documentation](//github.com/SolaceDev/solace-kubernetes-quickstart/blob/HelmReorg/docs/PubSubPlusK8SDeployment.md) available, which the OpenShift deployment  builds upon.
+Detailed OpenShift-specific documentation is provided in the [Solace PubSub+ on OpenShift Documentation](/docs/PubSubPlusOpenShiftDeployment.md). There is also a general [Solace PubSub+ on Kubernetes Documentation](//github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md) available, which the OpenShift deployment  builds upon.
 
-This guide is intended mainly for development and demo purposes. The recommended Solace PubSub+ EBS version is 9.4 or later.
+This guide is intended mainly for development and demo purposes. The recommended Solace PubSub+ Software Event Broker version is 9.4 or later.
 
-The PubSub+ EBS deployment does not require any special OpenShift Security Context, the default "restricted" SCC can be used.
+The PubSub+ deployment does not require any special OpenShift Security Context, the default "restricted" SCC can be used.
 
 We recommend using the Helm tool for convenience. An alternative method [using OpenShift templates](/docs/PubSubPlusOpenShiftDeployment.md#step-6-option-2-deploy-the-event-broker-using-the-openshift-templates-included-in-this-project) is also available.
 
-## How to deploy the Solace PubSub+ EBS
+## How to deploy Solace PubSub+ Software Event Broker
 
-Solace PubSub+ EBS can be deployed in either a 3-node High-Availability (HA) group, or as a single-node Standalone deployment. For simple test environments that need only to validate application functionality, a single instance will suffice. Note that in production, or any environment where message loss cannot be tolerated, an HA deployment is required.
+The event broker can be deployed in either a 3-node High-Availability (HA) group, or as a single-node standalone deployment. For simple test environments that need only to validate application functionality, a single instance will suffice. Note that in production, or any environment where message loss cannot be tolerated, an HA deployment is required.
 
 In this quick start we go through the steps to set up an event broker using [Solace PubSub+ Helm charts](//hub.helm.sh/charts/solace).
 
 There are three Helm chart variants available with default small-size configurations:
-1.	`pubsubplus-dev` - minimum footprint PubSub+ for Developers (Standalone)
-2.	`pubsubplus` - PubSub+ Standalone, supporting 100 connections
+1.	`pubsubplus-dev` - minimum footprint PubSub+ for Developers (standalone)
+2.	`pubsubplus` - PubSub+ standalone, supporting 100 connections
 3.	`pubsubplus-ha` - PubSub+ HA, supporting 100 connections
 
-For other event broker configurations or sizes, refer to the [PubSub+ Helm Chart documentation](/pubsubplus/README.md).
+For other event broker configurations or sizes, refer to the [PubSub+ Software Event Broker Helm Chart documentation](/pubsubplus/README.md).
 
 ### 1. Get an OpenShift environment
 
@@ -41,7 +41,7 @@ oc whoami
 
 ### 2. Install and configure Helm
 
-Note that Helm is transitioning from v2 to v3. Many deployments still use v2. The PubSub+ EBS can be deployed using either version, however concurrent use of v2 and v3 from the same command-line environment is not supported.
+Note that Helm is transitioning from v2 to v3. Many deployments still use v2. PubSub+ can be deployed using either version, however concurrent use of v2 and v3 from the same command-line environment is not supported.
 
 <details open=true><summary><b>Instructions for Helm v2 setup</b></summary>
 <p>
@@ -80,14 +80,14 @@ Note that Helm is transitioning from v2 to v3. Many deployments still use v2. Th
 Helm is configured properly if the command `helm version` returns no error.
 
 
-### 3. Install the Solace PubSub+ EBS with default configuration
+### 3. Install Solace PubSub+ Software Event Broker with default configuration
 
 - Add the Solace Helm charts to your local Helm repo:
 ```bash
-  helm repo add solacecharts https://solacedev.github.io/solace-kubernetes-quickstart/helm-charts
+  helm repo add solacecharts https://solaceproducts.github.io/pubsubplus-kubernetes-quickstart/helm-charts
 ```
 
-- By default the publicly available [latest Docker image of PubSub+ EBS Standard Edition](https://hub.Docker.com/r/solace/solace-pubsub-standard/tags/) will be used. [Load a different image into a registry](/docs/PubSubPlusOpenShiftDeployment.md#step-5-optional-load-the-event-broker-docker-image-to-your-docker-registry) if required. If using a different image, add the `image.repository=<your-image-location>,image.tag=<your-image-tag>` values to the `--set` commands below, comma-separated.
+- By default the publicly available [latest Docker image of PubSub+ Standard Edition](https://hub.Docker.com/r/solace/solace-pubsub-standard/tags/) will be used. [Load a different image into a registry](/docs/PubSubPlusOpenShiftDeployment.md#step-5-optional-load-the-event-broker-docker-image-to-your-docker-registry) if required. If using a different image, add the `image.repository=<your-image-location>,image.tag=<your-image-tag>` values to the `--set` commands below, comma-separated.
 
 - Create or switch to your project
 ```bash
@@ -105,25 +105,25 @@ Helm is configured properly if the command `helm version` returns no error.
 ```
 > Ensure each command-line session has the TILLER_NAMESPACE environment variable properly set!
 
-- Use one of the chart variants to create a deployment. For configuration options and delete instructions, refer to the [PubSub+ Helm Chart documentation](https://github.com/SolaceDev/solace-kubernetes-quickstart/tree/HelmReorg/pubsubplus).
+- Use one of the chart variants to create a deployment. For configuration options and delete instructions, refer to the [PubSub+ Software Event Broker Helm Chart documentation](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/tree/HelmReorg/pubsubplus).
 
-a) Create a Solace PubSub+ EBS minimum deployment for development purposes using `pubsubplus-dev`. It requires a minimum of 1 CPU and 2 GB of memory be available to the PubSub+ EBS pod.
+a) Create a Solace PubSub+ minimum deployment for development purposes using `pubsubplus-dev`. It requires a minimum of 1 CPU and 2 GB of memory be available to the PubSub+ pod.
 ```bash
-  # Deploy PubSub+ EBS Standard edition, minimum footprint developer version
+  # Deploy PubSub+ Standard edition, minimum footprint developer version
   helm install --name my-release solacecharts/pubsubplus-dev \
     --set securityContext.enabled=false
 ```
 
-b) Create a Solace PubSub+ Standalone deployment, supporting 100 connections scaling using `pubsubplus`. A minimum of 2 CPUs and 4 GB of memory must be available to the PubSub+ EBS pod.
+b) Create a Solace PubSub+ standalone deployment, supporting 100 connections scaling using `pubsubplus`. A minimum of 2 CPUs and 4 GB of memory must be available to the PubSub+ pod.
 ```bash
-  # Deploy PubSub+ EBS Standard edition, Standalone
+  # Deploy PubSub+ Standard edition, standalone
   helm install --name my-release solacecharts/pubsubplus \
     --set securityContext.enabled=false
 ```
 
-c) Create a Solace PubSub+ HA deployment, supporting 100 connections scaling using `pubsubplus-ha`. The minimum resource requirements are 2 CPU and 4 GB of memory available to each of the three PubSub+ EBS pods.
+c) Create a Solace PubSub+ HA deployment, supporting 100 connections scaling using `pubsubplus-ha`. The minimum resource requirements are 2 CPU and 4 GB of memory available to each of the three PubSub+ pods.
 ```bash
-  # Deploy PubSub+ EBS Standard edition, HA
+  # Deploy PubSub+ Standard edition, HA
   helm install --name my-release solacecharts/pubsubplus-ha \
     --set securityContext.enabled=false
 ```
@@ -133,25 +133,25 @@ c) Create a Solace PubSub+ HA deployment, supporting 100 connections scaling usi
 <details><summary><b>Instructions using Helm v3</b></summary>
 <p>
 
-- Use one of the chart variants to create a deployment. For configuration options and delete instructions, refer to the [PubSub+ Helm Chart documentation](https://github.com/SolaceDev/solace-kubernetes-quickstart/tree/HelmReorg/pubsubplus).
+- Use one of the chart variants to create a deployment. For configuration options and delete instructions, refer to the [PubSub+ Software Event Broker Helm Chart documentation](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/tree/HelmReorg/pubsubplus).
 
-a) Create a Solace PubSub+ EBS minimum deployment for development purposes using `pubsubplus-dev`. It requires minimum 1 CPU and 2 GB of memory available to the PubSub+ event broker pod.
+a) Create a Solace PubSub+ minimum deployment for development purposes using `pubsubplus-dev`. It requires minimum 1 CPU and 2 GB of memory available to the PubSub+ event broker pod.
 ```bash
-  # Deploy PubSub+ EBS Standard edition, minimum footprint developer version
+  # Deploy PubSub+ Standard edition, minimum footprint developer version
   helm install my-release solacecharts/pubsubplus-dev \
     --set securityContext.enabled=false
 ```
 
-b) Create a Solace PubSub+ Standalone deployment, supporting 100 connections scaling using `pubsubplus`. A minimum of 2 CPUs and 4 GB of memory must be available to the PubSub+ EBS pod.
+b) Create a Solace PubSub+ standalone deployment, supporting 100 connections scaling using `pubsubplus`. A minimum of 2 CPUs and 4 GB of memory must be available to the PubSub+ pod.
 ```bash
-  # Deploy PubSub+ EBS Standard edition, Standalone
+  # Deploy PubSub+ Standard edition, standalone
   helm install my-release solacecharts/pubsubplus \
     --set securityContext.enabled=false
 ```
 
 c) Create a Solace PubSub+ HA deployment, supporting 100 connections scaling using `pubsubplus-ha`. The minimum resource requirements are 2 CPU and 4 GB of memory available to each of the three event broker pods.
 ```bash
-  # Deploy PubSub+ EBS Standard edition, HA
+  # Deploy PubSub+ Standard edition, HA
   helm install my-release solacecharts/pubsubplus-ha \
     --set securityContext.enabled=false
 ```
@@ -164,7 +164,7 @@ The above options will start the deployment and write related information and no
 
 Wait for the deployment to complete following the instructions, then you can [validate the deployment and try the management and messaging services](/docs/PubSubPlusOpenShiftDeployment.md#validating-the-deployment).
 
-If any issues, refer to the [Troubleshooting](https://github.com/SolaceDev/solace-kubernetes-quickstart/blob/HelmReorg/docs/PubSubPlusK8SDeployment.md#troubleshooting) section of the general PubSub+ Kubernetes Documentation - substitute any `kubectl` commands with `oc` commands.
+If any issues, refer to the [Troubleshooting](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#troubleshooting) section of the general PubSub+ Kubernetes Documentation - substitute any `kubectl` commands with `oc` commands.
 
 If you need to start over, follow the [steps to delete the current deployment](/docs/PubSubPlusOpenShiftDeployment.md#deleting-the-pubsub-event-broker-deployment).
 
