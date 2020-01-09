@@ -9,15 +9,15 @@ This is detailed documentation of deploying Solace PubSub+ Software Event Broker
 
 Contents:
   * [Purpose of this Repository](#purpose-of-this-repository)
-  * [Description of the Solace PubSub+](#description-of-the-solace-pubsub-ebs)
+  * [Description of the Solace PubSub+ Software Event Broker](#description-of-solace-pubsub-software-event-broker)
   * [Production Deployment Architecture](#production-deployment-architecture)
   * [Deployment Options](#deployment-options)
       - [Option 1, using Helm](#option-1-using-helm)
       - [Option 2, using OpenShift templates](#option-2-using-openshift-templates)
-  * [How to deploy Solace PubSub+ onto OpenShift / AWS](#how-to-deploy-a-solace-pubsub-ebs-onto-openshift-aws)
+  * [How to deploy Solace PubSub+ onto OpenShift / AWS](#how-to-deploy-solace-pubsub-onto-openshift--aws)
     + [Step 1: (Optional / AWS) Deploy OpenShift Container Platform onto AWS using the RedHat OpenShift AWS QuickStart Project](#step-1-optional--aws-deploy-openshift-container-platform-onto-aws-using-the-redhat-openshift-aws-quickstart-project)
     + [Step 2: Prepare your workspace](#step-2-prepare-your-workspace)
-    + [Step 3: (Optional: only execute for Deployment option 1) Install the Helm v2 client and server-side tools](#step-3-optional-only-execute-for-deployment-option-1-use-the-solace-kubernetes-quickstart-to-deploy-the-event-broker-install-the-helm-v2-client-and-server-side-tools)
+    + [Step 3: (Optional: only execute for Deployment option 1) Install the Helm v2 client and server-side tools](#step-3-optional-only-execute-for-deployment-option-1-install-the-helm-v2-client-and-server-side-tools)
     + [Step 4: Create a new OpenShift project to host the event broker deployment](#step-4-create-a-new-openshift-project-to-host-the-event-broker-deployment)
     + [Step 5: Optional: Load the event broker (Docker image) to your Docker Registry](#step-5-optional-load-the-event-broker-docker-image-to-your-docker-registry)
     + [Step 6-Option 1: Deploy the event broker using Helm](#step-6-option-1-deploy-the-event-broker-using-helm)
@@ -27,19 +27,16 @@ Contents:
   * [Gaining Admin and SSH access to the event broker](#gaining-admin-and-ssh-access-to-the-event-broker)
   * [Testing data access to the event broker](#testing-data-access-to-the-event-broker)
   * [Deleting a deployment](#deleting-a-deployment)
-    + [Deleting the PubSub+ deployment](#deleting-the-pubsub-ebs-deployment)
+    + [Deleting the PubSub+ deployment](#deleting-the-pubsub-deployment)
     + [Deleting the AWS OpenShift Container Platform deployment](#deleting-the-aws-openshift-container-platform-deployment)
   * [Special topics](#special-topics)
     + [Using NFS for persistent storage](#using-nfs-for-persistent-storage)
-  * [Contributing](#contributing)
-  * [Authors](#authors)
-  * [License](#license)
   * [Resources](#resources)
 
 
 ## Purpose of this Repository
 
-This repository provides an example of how to deploy Solace PubSub+ Software Event Broker onto an OpenShift 3.11 platform. There are [multiple ways](https://docs.openshift.com/index.html ) to get to an OpenShift platform, including [MiniShift](https://github.com/minishift/minishift#welcome-to-minishift ). This guide will specifically use the Red Hat OpenShift Container Platform for deploying an HA group but concepts are transferable to other compatible platforms. There will be also hints on how to set up a simple single-node MiniKube deployment using MiniShift for development, testing or proof of concept purposes.
+This repository provides an example of how to deploy the Solace PubSub+ Software Event Broker onto an OpenShift 3.11 platform. There are [multiple ways](https://docs.openshift.com/index.html ) to get to an OpenShift platform, including [MiniShift](https://github.com/minishift/minishift#welcome-to-minishift ). This guide will specifically use the Red Hat OpenShift Container Platform for deploying an HA group but concepts are transferable to other compatible platforms. There will be also hints on how to set up a simple single-node MiniKube deployment using MiniShift for development, testing or proof of concept purposes.
 
 The supported Solace PubSub+ Software Event Broker version is 9.4 or later.
 
@@ -588,18 +585,6 @@ If using templates top deploy locate the volume mont for `softAdb` in the templa
 #  mountPath: /usr/sw/internalSpool/softAdb
 #  subPath: softAdb
 ```
-
-## Contributing
-
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
-
-## Authors
-
-See the list of [contributors](https://github.com/SolaceProducts/solace-openshift-quickstart/graphs/contributors ) who participated in this project.
-
-## License
-
-This project is licensed under the Apache License, Version 2.0. - See the [LICENSE](LICENSE) file for details.
 
 ## Resources
 
