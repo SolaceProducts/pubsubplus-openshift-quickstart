@@ -267,7 +267,7 @@ HA deployment example:
 helm repo add solacecharts https://solaceproducts.github.io/pubsubplus-kubernetes-quickstart/helm-charts
 # Initiate the HA deployment
 helm install --name my-ha-release \
-  --set securityContext.enabled=false,solace.redundancy=true,solace.usernameAdminPassword=<MESSAGEBROKER_ADMIN_PASSWORD> \
+  --set securityContext.enabled=false,solace.redundancy=true,solace.usernameAdminPassword=<EVENTBROKER_ADMIN_PASSWORD> \
   solacecharts/pubsubplus
 # Check the notes printed on screen
 # Wait until all pods running and ready and the active event broker pod label is "active=true" 
@@ -281,7 +281,7 @@ Single-node, non-HA deployment example:
 helm repo add solacecharts https://solaceproducts.github.io/pubsubplus-kubernetes-quickstart/helm-charts
 # Initiate the non-HA deployment
 helm install --name my-nonha-release \
-  --set securityContext.enabled=false,solace.redundancy=true,solace.usernameAdminPassword=<MESSAGEBROKER_ADMIN_PASSWORD> \
+  --set securityContext.enabled=false,solace.redundancy=true,solace.usernameAdminPassword=<EVENTBROKER_ADMIN_PASSWORD> \
   solacecharts/pubsubplus
 # Check the notes printed on screen
 # Wait until the event broker pod is running, ready and the pod label is "active=true" 
@@ -296,7 +296,7 @@ securityContext
   enabled: false
 solace
   redundancy: true,
-  usernameAdminPassword: <MESSAGEBROKER_ADMIN_PASSWORD>" > deployment-values.yaml
+  usernameAdminPassword: <EVENTBROKER_ADMIN_PASSWORD>" > deployment-values.yaml
 # Use values file
 helm install --name my-release \
   -v deployment-values.yaml \
@@ -323,28 +323,28 @@ cd ~/workspace/solace-openshift-quickstart/templates
 
 You can deploy the event broker in either a single-node or high-availability configuration.
 
-Note: DOCKER_REGISTRY_URL and MESSAGEBROKER_IMAGE_TAG default to `solace/solace-pubsub-standard` and `latest`, MESSAGEBROKER_STORAGE_SIZE defaults to 30Gi.
+Note: DOCKER_REGISTRY_URL and EVENTBROKER_IMAGE_TAG default to `solace/solace-pubsub-standard` and `latest`, EVENTBROKER_STORAGE_SIZE defaults to 30Gi.
 
 The template by default provides for a small-footprint Solace PubSub+ deployment deployable in MiniShift. Adjust `export system_scaling_maxconnectioncount` in the template for higher scaling but ensure adequate resources are available to the pod(s). Refer to the [System Requirements in the Solace documentation](//docs.solace.com/Configuring-and-Managing/SW-Broker-Specific-Config/Scaling-Tier-Resources.htm).
 
 Also note that if a deployment failed and then deleted using `oc delete -f`, ensure to delete any remaining PVCs. Failing to do so and retrying using the same deployment name will result in an already used PV volume mounted and the pod(s) may not come up.
 
 * For a **Single-Node** configuration:
-  * Process the Solace 'Single Node' OpenShift template to deploy the event broker in a single-node configuration.  Specify values for the DOCKER_REGISTRY_URL, MESSAGEBROKER_IMAGE_TAG, MESSAGEBROKER_STORAGE_SIZE, and MESSAGEBROKER_ADMIN_PASSWORD parameters:
+  * Process the Solace 'Single Node' OpenShift template to deploy the event broker in a single-node configuration.  Specify values for the DOCKER_REGISTRY_URL, EVENTBROKER_IMAGE_TAG, EVENTBROKER_STORAGE_SIZE, and EVENTBROKER_ADMIN_PASSWORD parameters:
 ```
 oc project solace-pubsub   # adjust your project name as needed
 cd  ~/workspace/solace-openshift-quickstart/templates
-oc process -f messagebroker_singlenode_template.yaml DEPLOYMENT_NAME=test-singlenode DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> MESSAGEBROKER_IMAGE_TAG=<replace with your Solace PubSub+ Docker image tag> MESSAGEBROKER_STORAGE_SIZE=30Gi MESSAGEBROKER_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
+oc process -f eventbroker_singlenode_template.yaml DEPLOYMENT_NAME=test-singlenode DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> EVENTBROKER_IMAGE_TAG=<replace with your Solace PubSub+ Docker image tag> EVENTBROKER_STORAGE_SIZE=30Gi EVENTBROKER_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
 # Wait until all pods running and ready
 watch oc get statefulset,service,pods,pvc,pv
 ```
 
 * For a **High-Availability** configuration:
-  * Process the Solace 'HA' OpenShift template to deploy the event broker in a high-availability configuration.  Specify values for the DOCKER_REGISTRY_URL, MESSAGEBROKER_IMAGE_TAG, MESSAGEBROKER_STORAGE_SIZE, and MESSAGEBROKER_ADMIN_PASSWORD parameters:
+  * Process the Solace 'HA' OpenShift template to deploy the event broker in a high-availability configuration.  Specify values for the DOCKER_REGISTRY_URL, EVENTBROKER_IMAGE_TAG, EVENTBROKER_STORAGE_SIZE, and EVENTBROKER_ADMIN_PASSWORD parameters:
 ```
 oc project solace-pubsub   # adjust your project name as needed
 cd  ~/workspace/solace-openshift-quickstart/templates
-oc process -f messagebroker_ha_template.yaml DEPLOYMENT_NAME=test-ha DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> MESSAGEBROKER_IMAGE_TAG=<replace with your Solace PubSub+ Docker image tag> MESSAGEBROKER_STORAGE_SIZE=30Gi MESSAGEBROKER_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
+oc process -f eventbroker_ha_template.yaml DEPLOYMENT_NAME=test-ha DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> EVENTBROKER_IMAGE_TAG=<replace with your Solace PubSub+ Docker image tag> EVENTBROKER_STORAGE_SIZE=30Gi EVENTBROKER_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
 # Wait until all pods running and ready
 watch oc get statefulset,service,pods,pvc,pv
 ```
@@ -493,13 +493,13 @@ Once you have launched the terminal emulator to the event broker pod you may acc
 
 ![alt text](/docs/images/Solace-Primary-Pod-Terminal-CLI.png "Event Broker CLI via OpenShift UI Terminal emulator")
 
-See the [Solace Kubernetes Quickstart README](https://github.com/SolaceProducts/solace-kubernetes-quickstart/tree/master#gaining-admin-access-to-the-message-broker ) for more details including admin and SSH access to the individual event brokers.
+See the [Solace Kubernetes Quickstart README](//github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#gaining-admin-access-to-the-event-broker ) for more details including admin and SSH access to the individual event brokers.
 
 ## Testing data access to the event broker
 
 To test data traffic though the newly created event broker instance, visit the Solace Developer Portal and select your preferred programming language to [send and receive messages](http://dev.solace.com/get-started/send-receive-messages/ ). Under each language there is a Publish/Subscribe tutorial that will help you get started.
 
-Note: the Host will be the Solace Connection URI. It may be necessary to [open up external access to a port](https://github.com/SolaceProducts/solace-kubernetes-quickstart/tree/master#upgradingmodifying-the-message-broker-cluster ) used by the particular messaging API if it is not already exposed.
+Note: the Host will be the Solace Connection URI. It may be necessary to [open up external access to a port](//github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#modifying-or-upgrading-a-deployment ) used by the particular messaging API if it is not already exposed.
 
 ![alt text](/docs/images/solace_tutorial.png "getting started publish/subscribe")
 

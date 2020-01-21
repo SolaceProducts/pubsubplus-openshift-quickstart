@@ -2,26 +2,26 @@
 apiVersion: v1
 kind: Template
 metadata:
-  name: solace-messagebroker-singlenode-template
+  name: pubsubplus-eventbroker-singlenode-template
   annotations:
-    description: Deploys Solace Message Broker in a Single Node configuration
+    description: Deploys PubSub+ Event Broker in a Single Node configuration
 objects:
 
 - kind: Secret
   apiVersion: v1
   metadata:
-    name: "${DEPLOYMENT_NAME}-solace-secrets"
+    name: "${DEPLOYMENT_NAME}-pubsubplus-secrets"
     labels:
       app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
       app.kubernetes.io/name: pubsubplus
   type: Opaque
   data:
-    username_admin_password: "${MESSAGEBROKER_ADMIN_PASSWORD}"
+    username_admin_password: "${EVENTBROKER_ADMIN_PASSWORD}"
 
 - kind: ConfigMap
   apiVersion: v1
   metadata:
-    name: "${DEPLOYMENT_NAME}-solace"
+    name: "${DEPLOYMENT_NAME}-pubsubplus"
     labels:
       app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
       app.kubernetes.io/name: pubsubplus
@@ -179,10 +179,18 @@ objects:
 #  parameters:
 #    type: gp2
 
+-  kind: ServiceAccount
+   apiVersion: v1
+   metadata:
+    name: "${DEPLOYMENT_NAME}-pubsubplus-sa"
+    labels:
+      app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
+      app.kubernetes.io/name: pubsubplus #end gcp
+ 
 - kind: Role
   apiVersion: rbac.authorization.k8s.io/v1
   metadata:
-    name: "${DEPLOYMENT_NAME}-solace-podtagupdater"
+    name: "${DEPLOYMENT_NAME}-pubsubplus-podtagupdater"
   rules:
   - apiGroups: [""] # "" indicates the core API group
     resources: ["pods"]
@@ -191,19 +199,18 @@ objects:
 - kind: RoleBinding
   apiVersion: rbac.authorization.k8s.io/v1
   metadata:
-    name: "${DEPLOYMENT_NAME}-solace-serviceaccounts-to-podtagupdater"
+    name: "${DEPLOYMENT_NAME}-pubsubplus-serviceaccounts-to-podtagupdater"
   roleRef:
     apiGroup: rbac.authorization.k8s.io
     kind: Role
-    name: "${DEPLOYMENT_NAME}-solace-podtagupdater"
+    name: "${DEPLOYMENT_NAME}-pubsubplus-podtagupdater"
   subjects:
-  - kind: Group
-    name: system:serviceaccounts
-    apiGroup: rbac.authorization.k8s.io
+  - kind: ServiceAccount
+    name: "${DEPLOYMENT_NAME}-pubsubplus-sa"
 - kind: Service
   apiVersion: v1
   metadata:
-    name: "${DEPLOYMENT_NAME}-solace"
+    name: "${DEPLOYMENT_NAME}-pubsubplus"
     labels:
       app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
       app.kubernetes.io/name: pubsubplus #end gcp
@@ -262,7 +269,7 @@ objects:
 - kind: StatefulSet
   apiVersion: apps/v1
   metadata:
-    name: "${DEPLOYMENT_NAME}-solace"
+    name: "${DEPLOYMENT_NAME}-pubsubplus"
     labels:
       app.kubernetes.io/name: pubsubplus
       app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
@@ -271,7 +278,7 @@ objects:
       matchLabels:
         app.kubernetes.io/name: pubsubplus
         app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
-    serviceName: "${DEPLOYMENT_NAME}-solace-discovery"
+    serviceName: "${DEPLOYMENT_NAME}-pubsubplus-discovery"
     replicas: 1
     podManagementPolicy: Parallel
     updateStrategy: 
@@ -282,9 +289,11 @@ objects:
           app.kubernetes.io/name: pubsubplus
           app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
       spec:
+        serviceAccountName: {{ template "solace.serviceAccountName" . }}
+        terminationGracePeriodSeconds: 1200
         containers:
-        - name: solace
-          image: "${DOCKER_REGISTRY_URL}:${MESSAGEBROKER_IMAGE_TAG}"
+        - name: pubsubplus
+          image: "${DOCKER_REGISTRY_URL}:${EVENTBROKER_IMAGE_TAG}"
           imagePullPolicy: IfNotPresent
           resources:
             requests:
@@ -308,7 +317,7 @@ objects:
             privileged: false
           env:
           - name: STATEFULSET_NAME
-            value: "${DEPLOYMENT_NAME}-solace"
+            value: "${DEPLOYMENT_NAME}-pubsubplus"
           - name: STATEFULSET_NAMESPACE
             valueFrom:
               fieldRef:
@@ -319,10 +328,20 @@ objects:
            - |
              source /mnt/disks/solace/init.sh
              # not using postinstall hooks because of order dependencies
-             # launch config check then Solace so VCMR can provide return code
+             # launch config check then PubSub+ so VCMR can provide return code
              nohup /mnt/disks/solace/config-sync-check.sh &
              /usr/sbin/boot.sh
 
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                 - bash
+                 - "-ec"
+                 - |
+                   while ! pgrep solacedaemon ; do sleep 1; done
+                   killall solacedaemon; 
+                   while [ ! -d /usr/sw/var/db.upgrade ]; do sleep 1; done;
           volumeMounts:
           - name: config-map
             mountPath: /mnt/disks/solace
@@ -363,8 +382,6 @@ objects:
             protocol: TCP
           - containerPort: 55443
             protocol: TCP
-                                
-                         
           - containerPort: 60080
             protocol: TCP
           - containerPort: 60443
@@ -378,11 +395,11 @@ objects:
         volumes:
           - name: config-map
             configMap:
-              name: "${DEPLOYMENT_NAME}-solace"
+              name: "${DEPLOYMENT_NAME}-pubsubplus"
               defaultMode: 0755
           - name: secrets
             secret:
-              secretName: "${DEPLOYMENT_NAME}-solace-secrets"
+              secretName: "${DEPLOYMENT_NAME}-pubsubplus-secrets"
               defaultMode: 0400
           - name: dshm
             emptyDir:
@@ -397,11 +414,11 @@ objects:
         accessModes: [ "ReadWriteOnce" ]
         resources:
           requests:
-            storage: "${MESSAGEBROKER_STORAGE_SIZE}"
+            storage: "${EVENTBROKER_STORAGE_SIZE}"
 
 parameters:
   - name: DEPLOYMENT_NAME
-    displayName: Solace Message Broker Deployment Name
+    displayName: PubSub+ Event Broker Deployment Name
     description: The prefix to use for object names
     generate: expression
     from: '[A-Z0-9]{8}'
@@ -409,21 +426,21 @@ parameters:
     required: true
   - name: DOCKER_REGISTRY_URL
     displayName: Docker Registry URL
-    description: The Docker registry URL for the registry containing the Solace Message Broker docker image
+    description: The Docker registry URL for the registry containing the PubSub+ Event Broker docker image
     value: solace/solace-pubsub-standard
     required: true
-  - name: MESSAGEBROKER_IMAGE_TAG
-    displayName: Solace Message Broker Docker Image Tag
-    description: The Docker image tag for the Solace Message Broker docker image from your Docker registry
+  - name: EVENTBROKER_IMAGE_TAG
+    displayName: PubSub+ Event Broker Docker Image Tag
+    description: The Docker image tag for the PubSub+ Event Broker docker image from your Docker registry
     value: latest
     required: true
-  - name: MESSAGEBROKER_ADMIN_PASSWORD
-    displayName: Base64 encoded password for Solace username 'admin'
-    description: The Message Broker 'admin' user's password (base64 encoded).  This Solace OpenShift template will create an administrative user with username 'admin' with specified password.
+  - name: EVENTBROKER_ADMIN_PASSWORD
+    displayName: Base64 encoded password for PubSub+ username 'admin'
+    description: The Event Broker 'admin' user's password (base64 encoded).  This PubSub+ OpenShift template will create an administrative user with username 'admin' with specified password.
     value: "cEBzc3cwcmQ=" # password 'p@ssw0rd'
     required: true
-  - name: MESSAGEBROKER_STORAGE_SIZE
-    displayName: Solace Message Broker Persistent Storage Disk Size
-    description: The size in gigabytes for a Message Broker Pod's persistent volume (with suffix 'Gi'), example 30Gi for 30 gigabytes
+  - name: EVENTBROKER_STORAGE_SIZE
+    displayName: PubSub+ Event Broker Persistent Storage Disk Size
+    description: The size in gigabytes for a Event Broker Pod's persistent volume (with suffix 'Gi'), example 30Gi for 30 gigabytes
     value: 30Gi
     required: true
