@@ -41,9 +41,9 @@ oc whoami
 
 ### 2. Install and configure Helm
 
-Note that Helm is transitioning from v2 to v3. Many deployments still use v2. PubSub+ can be deployed using either version, however concurrent use of v2 and v3 from the same command-line environment is not supported.
+Note that Helm is transitioning from v2 to v3. Many deployments still use v2. PubSub+ can be deployed using either version, however concurrent use of v2 and v3 from the same command-line environment is not supported. Helm v3 is recommended if starting new.
 
-<details open=true><summary><b>Instructions for Helm v2 setup</b></summary>
+<details><summary><b>Instructions for Helm v2 setup</b></summary>
 <p>
 
 - First download the Helm v2 client. If using Windows, get the [Helm executable](https://storage.googleapis.com/kubernetes-helm/helm-v2.16.0-windows-amd64.zip ) and put it in a directory on your path.
@@ -67,7 +67,7 @@ Note that Helm is transitioning from v2 to v3. Many deployments still use v2. Pu
 </p>
 </details>
 
-<details><summary><b>Instructions for Helm v3 setup</b></summary>
+<details open=true><summary><b>Instructions for Helm v3 setup</b></summary>
 <p>
 
 - Use the [instructions from Helm](//github.com/helm/helm#install) or if using Linux simply run:
@@ -94,7 +94,7 @@ Helm is configured properly if the command `helm version` returns no error.
   oc new-project solace-pubsub
 ```
 
-<details open=true><summary><b>Instructions using Helm v2</b></summary>
+<details><summary><b>Instructions using Helm v2</b></summary>
 <p>
 
 - **Important**: For each new project using Helm v2, grant admin access to the server-side Tiller service from the "tiller-project" and set the TILLER_NAMESPACE environment.
@@ -130,7 +130,7 @@ c) Create a Solace PubSub+ HA deployment, supporting 100 connections scaling usi
 </p>
 </details>
 
-<details><summary><b>Instructions using Helm v3</b></summary>
+<details open=true><summary><b>Instructions using Helm v3</b></summary>
 <p>
 
 - Use one of the chart variants to create a deployment. For configuration options and delete instructions, refer to the [PubSub+ Software Event Broker Helm Chart documentation](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/tree/HelmReorg/pubsubplus).
