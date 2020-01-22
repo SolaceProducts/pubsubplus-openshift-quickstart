@@ -31,9 +31,9 @@ objects:
         export username_admin_password=`cat /mnt/disks/secrets/username_admin_password`
         export username_admin_globalaccesslevel=admin
         export service_ssh_port='2222'
-        export service_webtransport_port='60080'
-        export service_webtransport_tlsport='60443'
-        export service_semp_tlsport='60943'
+        export service_webtransport_port='8008'
+        export service_webtransport_tlsport='1443'
+        export service_semp_tlsport='1943'
         export logging_debug_output=all
         export system_scaling_maxconnectioncount="100"
         # [TODO] KBARR not using correct method of finding ordinal until we bump min Kubernetes release above 1.8.1
@@ -445,9 +445,9 @@ objects:
 #  parameters:
 #    type: gp2
 
--  kind: ServiceAccount
-   apiVersion: v1
-   metadata:
+- kind: ServiceAccount
+  apiVersion: v1
+  metadata:
     name: "${DEPLOYMENT_NAME}-pubsubplus-sa"
     labels:
       app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
@@ -510,7 +510,7 @@ objects:
   spec:
     type: LoadBalancer
     ports:
-    - port: 22
+    - port: 2222
       targetPort: 2222
       protocol: TCP
       name: ssh
@@ -518,8 +518,8 @@ objects:
       targetPort: 8080
       protocol: TCP
       name: semp
-    - port: 943
-      targetPort: 60943
+    - port: 1943
+      targetPort: 1943
       protocol: TCP
       name: semptls
     - port: 55555
@@ -534,12 +534,12 @@ objects:
       targetPort: 55443
       protocol: TCP
       name: smftls
-    - port: 80
-      targetPort: 60080
+    - port: 8008
+      targetPort: 8008
       protocol: TCP
       name: web
-    - port: 443
-      targetPort: 60443
+    - port: 1443
+      targetPort: 1443
       protocol: TCP
       name: webtls
     - port: 5672
@@ -582,7 +582,7 @@ objects:
           app.kubernetes.io/name: pubsubplus
           app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
       spec:
-        serviceAccountName: {{ template "solace.serviceAccountName" . }}
+        serviceAccountName: "${DEPLOYMENT_NAME}-pubsubplus-sa"
         terminationGracePeriodSeconds: 1200
         containers:
         - name: pubsubplus
@@ -667,7 +667,7 @@ objects:
             protocol: TCP
           - containerPort: 8080
             protocol: TCP
-          - containerPort: 60943
+          - containerPort: 1943
             protocol: TCP
           - containerPort: 55555
             protocol: TCP
@@ -675,9 +675,9 @@ objects:
             protocol: TCP
           - containerPort: 55443
             protocol: TCP
-          - containerPort: 60080
+          - containerPort: 8008
             protocol: TCP
-          - containerPort: 60443
+          - containerPort: 1443
             protocol: TCP
           - containerPort: 5672
             protocol: TCP
