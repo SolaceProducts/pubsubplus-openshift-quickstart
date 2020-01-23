@@ -41,7 +41,7 @@ oc whoami
 
 ### 2. Install and configure Helm
 
-Note that Helm is transitioning from v2 to v3. Many deployments still use v2. PubSub+ can be deployed using either version, however concurrent use of v2 and v3 from the same command-line environment is not supported. Also note the there is currently an [issue with using Helm v3 with OpenShift objects](https://bugzilla.redhat.com/show_bug.cgi?id=1773682) and until resolved Helm v2 is recommended.
+Note that Helm is transitioning from v2 to v3. Many deployments still use v2. PubSub+ can be deployed using either version, however concurrent use of v2 and v3 from the same command-line environment is not supported. Also note that there is a known [issue with using Helm v3 with OpenShift objects](https://bugzilla.redhat.com/show_bug.cgi?id=1773682) and until resolved Helm v2 is recommended.
 
 <details open=true><summary><b>Instructions for Helm v2 setup</b></summary>
 <p>
