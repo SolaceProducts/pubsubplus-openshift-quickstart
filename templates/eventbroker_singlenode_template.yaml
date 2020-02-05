@@ -2,42 +2,38 @@
 apiVersion: v1
 kind: Template
 metadata:
-  name: solace-messagebroker-singlenode-template
+  name: pubsubplus-eventbroker-singlenode-template
   annotations:
-    description: Deploys Solace Message Broker in a Single Node configuration
+    description: Deploys PubSub+ Event Broker in a Single Node configuration
 objects:
 
 - kind: Secret
   apiVersion: v1
   metadata:
-    name: "${DEPLOYMENT_NAME}-solace-secrets"
+    name: "${DEPLOYMENT_NAME}-pubsubplus-secrets"
     labels:
-      heritage: Tiller
-      release: "${DEPLOYMENT_NAME}"
-      chart: solace-1.0.1
-      app: solace
+      app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
+      app.kubernetes.io/name: pubsubplus
   type: Opaque
   data:
-    username_admin_password: "${MESSAGEBROKER_ADMIN_PASSWORD}"
+    username_admin_password: "${EVENTBROKER_ADMIN_PASSWORD}"
 
 - kind: ConfigMap
   apiVersion: v1
   metadata:
-    name: "${DEPLOYMENT_NAME}-solace"
+    name: "${DEPLOYMENT_NAME}-pubsubplus"
     labels:
-      heritage: Tiller
-      release: "${DEPLOYMENT_NAME}"
-      chart: solace-1.0.1
-      app: solace
+      app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
+      app.kubernetes.io/name: pubsubplus
   data:
     init.sh: |-
       # export username_admin_passwordfilepath=/mnt/disks/secrets/username_admin_password
         export username_admin_password=`cat /mnt/disks/secrets/username_admin_password`
         export username_admin_globalaccesslevel=admin
         export service_ssh_port='2222'
-        export service_webtransport_port='60080'
-        export service_webtransport_tlsport='60443'
-        export service_semp_tlsport='60943'
+        export service_webtransport_port='8008'
+        export service_webtransport_tlsport='1443'
+        export service_semp_tlsport='1943'
         export logging_debug_output=all
         export system_scaling_maxconnectioncount="100"
 
@@ -67,12 +63,16 @@ objects:
               --request PATCH --data "$(cat /tmp/patch_label.json)" \
               -H "Authorization: Bearer $KUBE_TOKEN" -H "Content-Type:application/json-patch+json" \
               $K8S/api/v1/namespaces/$NAMESPACE/pods/$HOSTNAME ; then
-            echo "`date` ERROR: ${APP}-Unable to update pod label, check access from pod to K8s API or RBAC authorization" >&2
-            exit 1
+            # Fall back to alternative method to update label
+            if ! curl -sSk --output /dev/null -H "Authorization: Bearer $KUBE_TOKEN" --request PATCH --data "$(cat /tmp/patch_label.json)" \
+              -H "Content-Type:application/json-patch+json" \
+              https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_PORT_443_TCP_PORT/api/v1/namespaces/$STATEFULSET_NAMESPACE/pods/$HOSTNAME ; then
+              echo "`date` ERROR: ${APP}-Unable to update pod label, check access from pod to K8s API or RBAC authorization" >&2
+              exit 1
+            fi
           fi
         fi
       }
-
       # note that there are no re-tries here, if check fails the return not ready.
       APP=`basename "$0"`
       state_file=/tmp/activity_state
@@ -125,7 +125,7 @@ objects:
             u)  url=$OPTARG
                 ;;
             v)  value_search=$OPTARG
-                ;;        
+                ;;
             esac
         done
         shift $((OPTIND-1))
@@ -144,7 +144,7 @@ objects:
         fi
         query_response=`curl -sS -u ${name}:${password} ${url} -d "${query}"`
         # Validate first char of response is "<", otherwise no hope of being valid xml
-        if [[ ${query_response:0:1} != "<" ]] ; then 
+        if [[ ${query_response:0:1} != "<" ]] ; then
           echo  "<returnInfo><errorInfo>no valid xml returned</errorInfo></returnInfo>"
           exit 1
         fi
@@ -179,86 +179,106 @@ objects:
 #  parameters:
 #    type: gp2
 
-- kind: Service
+- kind: ServiceAccount
   apiVersion: v1
   metadata:
-    name: "${DEPLOYMENT_NAME}-solace-discovery"
+    name: "${DEPLOYMENT_NAME}-pubsubplus-sa"
     labels:
-      heritage: Tiller
-      release: "${DEPLOYMENT_NAME}"
-      chart: solace-1.0.1
-      app: solace
-    annotations:
-      service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
-  spec:
-    ports:
-      - port: 8080
-        name: semp
-    clusterIP: None
-    selector:
-      app: solace
-      release: "${DEPLOYMENT_NAME}"
+      app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
+      app.kubernetes.io/name: pubsubplus #end gcp
+ 
+- kind: Role
+  apiVersion: rbac.authorization.k8s.io/v1
+  metadata:
+    name: "${DEPLOYMENT_NAME}-pubsubplus-podtagupdater"
+  rules:
+  - apiGroups: [""] # "" indicates the core API group
+    resources: ["pods"]
+    verbs: ["patch"]
 
+- kind: RoleBinding
+  apiVersion: rbac.authorization.k8s.io/v1
+  metadata:
+    name: "${DEPLOYMENT_NAME}-pubsubplus-serviceaccounts-to-podtagupdater"
+  roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: Role
+    name: "${DEPLOYMENT_NAME}-pubsubplus-podtagupdater"
+  subjects:
+  - kind: ServiceAccount
+    name: "${DEPLOYMENT_NAME}-pubsubplus-sa"
 - kind: Service
   apiVersion: v1
   metadata:
-    name: "${DEPLOYMENT_NAME}-solace"
+    name: "${DEPLOYMENT_NAME}-pubsubplus"
     labels:
-      heritage: Tiller
-      release: "${DEPLOYMENT_NAME}"
-      chart: solace-1.0.1
-      app: solace #end gcp
+      app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
+      app.kubernetes.io/name: pubsubplus #end gcp
   spec:
     type: LoadBalancer
     ports:
-    - port: 22
+    - port: 2222
       targetPort: 2222
       protocol: TCP
       name: ssh
     - port: 8080
-      targetPort: 
+      targetPort: 8080
       protocol: TCP
       name: semp
+    - port: 1943
+      targetPort: 1943
+      protocol: TCP
+      name: semptls
     - port: 55555
-      targetPort: 
+      targetPort: 55555
       protocol: TCP
       name: smf
     - port: 55003
-      targetPort: 
+      targetPort: 55003
       protocol: TCP
-      name: smfcompr
+      name: smfcomp
     - port: 55443
-      targetPort: 
+      targetPort: 55443
       protocol: TCP
       name: smftls
-    - port: 943
-      targetPort: 60943
-      protocol: TCP
-      name: semptls
-    - port: 80
-      targetPort: 60080
+    - port: 8008
+      targetPort: 8008
       protocol: TCP
       name: web
-    - port: 443
-      targetPort: 60443
+    - port: 1443
+      targetPort: 1443
       protocol: TCP
       name: webtls
+    - port: 5672
+      targetPort: 5672
+      protocol: TCP
+      name: amqp
+    - port: 1883
+      targetPort: 1883
+      protocol: TCP
+      name: mqtt
+    - port: 9000
+      targetPort: 9000
+      protocol: TCP
+      name: rest
     selector:
-      app: solace
-      release: "${DEPLOYMENT_NAME}"
+      app.kubernetes.io/name: pubsubplus
+      app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
       active: "true"
 
 - kind: StatefulSet
-  apiVersion: apps/v1beta1
+  apiVersion: apps/v1
   metadata:
-    name: "${DEPLOYMENT_NAME}-solace"
+    name: "${DEPLOYMENT_NAME}-pubsubplus"
     labels:
-      app: solace
-      chart: solace-1.0.1
-      release: "${DEPLOYMENT_NAME}"
-      heritage: Tiller
+      app.kubernetes.io/name: pubsubplus
+      app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
   spec:
-    serviceName: "${DEPLOYMENT_NAME}-solace-discovery"
+    selector:
+      matchLabels:
+        app.kubernetes.io/name: pubsubplus
+        app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
+    serviceName: "${DEPLOYMENT_NAME}-pubsubplus-discovery"
     replicas: 1
     podManagementPolicy: Parallel
     updateStrategy: 
@@ -266,12 +286,14 @@ objects:
     template:
       metadata:
         labels:
-          app: solace
-          release: "${DEPLOYMENT_NAME}"
+          app.kubernetes.io/name: pubsubplus
+          app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
       spec:
+        serviceAccountName: "${DEPLOYMENT_NAME}-pubsubplus-sa"
+        terminationGracePeriodSeconds: 1200
         containers:
-        - name: solace
-          image: "${DOCKER_REGISTRY_URL}:${MESSAGEBROKER_IMAGE_TAG}"
+        - name: pubsubplus
+          image: "${DOCKER_REGISTRY_URL}:${EVENTBROKER_IMAGE_TAG}"
           imagePullPolicy: IfNotPresent
           resources:
             requests:
@@ -291,36 +313,35 @@ objects:
             exec:
               command:
               - /mnt/disks/solace/readiness_check.sh
-              - "7"
           securityContext:
             privileged: false
-            capabilities:
-              add:
-                - IPC_LOCK
-                - SYS_NICE
           env:
           - name: STATEFULSET_NAME
-            value: "${DEPLOYMENT_NAME}-solace"
+            value: "${DEPLOYMENT_NAME}-pubsubplus"
           - name: STATEFULSET_NAMESPACE
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
-  # [TODO] not using correct method of finding ordinal until we bump min Kubernetes release above 1.8.1
-   #       - name: STATEFULSET_ORDINAL
-   #         valueFrom:
-   #           fieldRef:
-   #             fieldPath: metadata.annotations['annotationKey']
-
           command:
            - bash
            - "-ec"
            - |
              source /mnt/disks/solace/init.sh
              # not using postinstall hooks because of order dependencies
-             # launch config check then Solace so VCMR can provide return code
+             # launch config check then PubSub+ so VCMR can provide return code
              nohup /mnt/disks/solace/config-sync-check.sh &
              /usr/sbin/boot.sh
 
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                 - bash
+                 - "-ec"
+                 - |
+                   while ! pgrep solacedaemon ; do sleep 1; done
+                   killall solacedaemon; 
+                   while [ ! -d /usr/sw/var/db.upgrade ]; do sleep 1; done;
           volumeMounts:
           - name: config-map
             mountPath: /mnt/disks/solace
@@ -344,14 +365,16 @@ objects:
           - name: data
             mountPath: /var/lib/solace/diags
             subPath: diags
-          # only mount when not using nfs
+          # only mount softAdb when not using NFS, comment it out otherwise
           - name: data
             mountPath: /usr/sw/internalSpool/softAdb
-            subPath: softAdb #end !nfs
+            subPath: softAdb
           ports:
           - containerPort: 2222
             protocol: TCP
           - containerPort: 8080
+            protocol: TCP
+          - containerPort: 1943
             protocol: TCP
           - containerPort: 55555
             protocol: TCP
@@ -359,20 +382,24 @@ objects:
             protocol: TCP
           - containerPort: 55443
             protocol: TCP
-          - containerPort: 60943
+          - containerPort: 8008
             protocol: TCP
-          - containerPort: 60080
+          - containerPort: 1443
             protocol: TCP
-          - containerPort: 60443
+          - containerPort: 5672
+            protocol: TCP
+          - containerPort: 1883
+            protocol: TCP
+          - containerPort: 9000
             protocol: TCP
         volumes:
           - name: config-map
             configMap:
-              name: "${DEPLOYMENT_NAME}-solace"
+              name: "${DEPLOYMENT_NAME}-pubsubplus"
               defaultMode: 0755
           - name: secrets
             secret:
-              secretName: "${DEPLOYMENT_NAME}-solace-secrets"
+              secretName: "${DEPLOYMENT_NAME}-pubsubplus-secrets"
               defaultMode: 0400
           - name: dshm
             emptyDir:
@@ -387,11 +414,11 @@ objects:
         accessModes: [ "ReadWriteOnce" ]
         resources:
           requests:
-            storage: "${MESSAGEBROKER_STORAGE_SIZE}"
+            storage: "${EVENTBROKER_STORAGE_SIZE}"
 
 parameters:
   - name: DEPLOYMENT_NAME
-    displayName: Solace Message Broker Deployment Name
+    displayName: PubSub+ Event Broker Deployment Name
     description: The prefix to use for object names
     generate: expression
     from: '[A-Z0-9]{8}'
@@ -399,21 +426,21 @@ parameters:
     required: true
   - name: DOCKER_REGISTRY_URL
     displayName: Docker Registry URL
-    description: The Docker registry URL for the registry containing the Solace Message Broker docker image
+    description: The Docker registry URL for the registry containing the PubSub+ Event Broker docker image
     value: solace/solace-pubsub-standard
     required: true
-  - name: MESSAGEBROKER_IMAGE_TAG
-    displayName: Solace Message Broker Docker Image Tag
-    description: The Docker image tag for the Solace Message Broker docker image from your Docker registry
+  - name: EVENTBROKER_IMAGE_TAG
+    displayName: PubSub+ Event Broker Docker Image Tag
+    description: The Docker image tag for the PubSub+ Event Broker docker image from your Docker registry
     value: latest
     required: true
-  - name: MESSAGEBROKER_ADMIN_PASSWORD
-    displayName: Base64 encoded password for Solace username 'admin'
-    description: The Message Broker 'admin' user's password (base64 encoded).  This Solace OpenShift template will create an administrative user with username 'admin' with specified password.
+  - name: EVENTBROKER_ADMIN_PASSWORD
+    displayName: Base64 encoded password for PubSub+ username 'admin'
+    description: The Event Broker 'admin' user's password (base64 encoded).  This PubSub+ OpenShift template will create an administrative user with username 'admin' with specified password.
     value: "cEBzc3cwcmQ=" # password 'p@ssw0rd'
     required: true
-  - name: MESSAGEBROKER_STORAGE_SIZE
-    displayName: Solace Message Broker Persistent Storage Disk Size
-    description: The size in gigabytes for a Message Broker Pod's persistent volume (with suffix 'Gi'), example 30Gi for 30 gigabytes
+  - name: EVENTBROKER_STORAGE_SIZE
+    displayName: PubSub+ Event Broker Persistent Storage Disk Size
+    description: The size in gigabytes for a Event Broker Pod's persistent volume (with suffix 'Gi'), example 30Gi for 30 gigabytes
     value: 30Gi
     required: true
