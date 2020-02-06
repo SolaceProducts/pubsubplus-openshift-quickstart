@@ -66,7 +66,7 @@ This option allows great flexibility using the Kubernetes `Helm` tool to automat
 
 #### Option 2, using OpenShift templates
 
-This option can be used directly, without any additional tool to deploy the event broker in a limited number of configurations, using OpenShift templates included in this project.
+This option can be used directly, without any additional tool to deploy the event broker in a limited number of configurations, using OpenShift templates included in this project. Follow the [steps provided](#step-6-option-2-deploy-the-event-broker-using-the-openshift-templates-included-in-this-project).
 
 
 ## How to deploy Solace PubSub+ onto OpenShift / AWS
@@ -305,7 +305,7 @@ helm install --name my-release \
 
 ### Step 6-Option 2: Deploy the event broker using the OpenShift templates included in this project
 
-This deployment is using OpenShift templates and don't require Helm:
+This deployment is using OpenShift templates and don't require Helm. It assumes [Step 2](#step-2-prepare-your-workspace) and [optional step 5](#step-5-optional-load-the-event-broker-docker-image-to-your-docker-registry) have been completed.
 
 **Prerequisites:**
 1. Determine your event broker disk space requirements.  We recommend a minimum of 30 gigabytes of disk space.
