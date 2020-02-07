@@ -105,7 +105,7 @@ Helm is configured properly if the command `helm version` returns no error.
 ```
 > Ensure each command-line session has the TILLER_NAMESPACE environment variable properly set!
 
-- Use one of the chart variants to create a deployment. For configuration options and delete instructions, refer to the [PubSub+ Software Event Broker Helm Chart documentation](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/tree/HelmReorg/pubsubplus).
+- Use one of the chart variants to create a deployment. For configuration options and delete instructions, refer to the [PubSub+ Software Event Broker Helm Chart documentation](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/tree/master/pubsubplus#configuration).
 
 a) Create a Solace PubSub+ minimum deployment for development purposes using `pubsubplus-dev`. It requires a minimum of 1 CPU and 2 GB of memory be available to the PubSub+ pod.
 ```bash
@@ -133,7 +133,7 @@ c) Create a Solace PubSub+ HA deployment, supporting 100 connections scaling usi
 <details><summary><b>Instructions using Helm v3</b></summary>
 <p>
 
-- Use one of the chart variants to create a deployment. For configuration options and delete instructions, refer to the [PubSub+ Software Event Broker Helm Chart documentation](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/tree/HelmReorg/pubsubplus).
+- Use one of the chart variants to create a deployment. For configuration options and delete instructions, refer to the [PubSub+ Software Event Broker Helm Chart documentation](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/tree/master/pubsubplus#configuration).
 
 a) Create a Solace PubSub+ minimum deployment for development purposes using `pubsubplus-dev`. It requires minimum 1 CPU and 2 GB of memory available to the PubSub+ event broker pod.
 ```bash
