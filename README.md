@@ -41,7 +41,7 @@ oc whoami
 
 ### 2. Install and configure Helm
 
-Note that Helm is transitioning from v2 to v3. Many deployments still use v2. PubSub+ can be deployed using either version, however concurrent use of v2 and v3 from the same command-line environment is not supported. Also note that there is a known [issue with using Helm v3 with OpenShift objects](https://bugzilla.redhat.com/show_bug.cgi?id=1773682) and until resolved Helm v2 is recommended.
+Note that Helm is transitioning from v2 to v3. Many deployments still use v2. PubSub+ can be deployed using either version, however concurrent use of v2 and v3 from the same command-line environment is not supported. Also note that there is a known [issue with using Helm v3 with OpenShift 3 objects](https://bugzilla.redhat.com/show_bug.cgi?id=1773682) and until resolved Helm v2 is recommended.
 
 <details open=true><summary><b>Instructions for Helm v2 setup</b></summary>
 <p>
@@ -105,7 +105,7 @@ Helm is configured properly if the command `helm version` returns no error.
 ```
 > Ensure each command-line session has the TILLER_NAMESPACE environment variable properly set!
 
-- Use one of the chart variants to create a deployment. For configuration options and delete instructions, refer to the [PubSub+ Software Event Broker Helm Chart documentation](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/tree/HelmReorg/pubsubplus).
+- Use one of the chart variants to create a deployment. For configuration options and delete instructions, refer to the [PubSub+ Software Event Broker Helm Chart documentation](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/tree/master/pubsubplus#configuration).
 
 a) Create a Solace PubSub+ minimum deployment for development purposes using `pubsubplus-dev`. It requires a minimum of 1 CPU and 2 GB of memory be available to the PubSub+ pod.
 ```bash
@@ -133,7 +133,7 @@ c) Create a Solace PubSub+ HA deployment, supporting 100 connections scaling usi
 <details><summary><b>Instructions using Helm v3</b></summary>
 <p>
 
-- Use one of the chart variants to create a deployment. For configuration options and delete instructions, refer to the [PubSub+ Software Event Broker Helm Chart documentation](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/tree/HelmReorg/pubsubplus).
+- Use one of the chart variants to create a deployment. For configuration options and delete instructions, refer to the [PubSub+ Software Event Broker Helm Chart documentation](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/tree/master/pubsubplus#configuration).
 
 a) Create a Solace PubSub+ minimum deployment for development purposes using `pubsubplus-dev`. It requires minimum 1 CPU and 2 GB of memory available to the PubSub+ event broker pod.
 ```bash
