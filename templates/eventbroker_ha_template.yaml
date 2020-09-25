@@ -594,10 +594,10 @@ objects:
           resources:
             requests:
               cpu: "2"
-              memory: 2.8Gi
+              memory: 3.4Gi
             limits:
               cpu: "2"
-              memory: 3Gi
+              memory: 3.4Gi
           livenessProbe:
             tcpSocket:
               port: 8080

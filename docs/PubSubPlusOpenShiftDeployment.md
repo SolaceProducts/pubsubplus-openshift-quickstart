@@ -105,8 +105,8 @@ The following steps describe how to deploy an event broker onto an OpenShift env
 ## On the ansible-configserver server
 # get the scripts
 cd ~
-git clone https://github.com/SolaceProducts/solace-openshift-quickstart.git
-cd solace-openshift-quickstart/scripts
+git clone https://github.com/SolaceProducts/pubsubplus-openshift-quickstart.git
+cd pubsubplus-openshift-quickstart/scripts
 # substitute your own parameters for the following exports
 # You can get the stack names e.g.: from the CloudFormation page of the AWS services console,
 # see the 'Overview' tab of the *nested* OpenShiftStack and VPC substacks.
@@ -148,8 +148,8 @@ oc login
 ```
 mkdir ~/workspace
 cd ~/workspace
-git clone https://github.com/SolaceProducts/solace-openshift-quickstart.git
-cd solace-openshift-quickstart
+git clone https://github.com/SolaceProducts/pubsubplus-openshift-quickstart.git
+cd pubsubplus-openshift-quickstart
 ```
 
 ### Step 3: (Optional: only execute for Deployment option 1) Install the Helm v2 client and server-side tools
@@ -209,7 +209,7 @@ Deployment scripts will pull the Solace PubSub+ image from a [Docker registry](h
 
 ```shell
     # Required if using ECR for Docker registry
-    cd ~/workspace/solace-openshift-quickstart/scripts
+    cd ~/workspace/pubsubplus-openshift-quickstart/scripts
     sudo su
     aws configure       # provide AWS config for root; provide your key ID, key and region.
     ./addECRsecret.sh solace-pubsub   # adjust your project name as needed
@@ -316,7 +316,7 @@ echo -n 'strong@dminPw!' | base64
 3. Switch to the templates directory:
 ```
 oc project solace-pubsub   # adjust your project name as needed
-cd ~/workspace/solace-openshift-quickstart/templates
+cd ~/workspace/pubsubplus-openshift-quickstart/templates
 ```
 
 **Deploy the event broker:**
@@ -333,7 +333,7 @@ Also note that if a deployment failed and then deleted using `oc delete -f`, ens
   * Process the Solace 'Single Node' OpenShift template to deploy the event broker in a single-node configuration.  Specify values for the DOCKER_REGISTRY_URL, EVENTBROKER_IMAGE_TAG, EVENTBROKER_STORAGE_SIZE, and EVENTBROKER_ADMIN_PASSWORD parameters:
 ```
 oc project solace-pubsub   # adjust your project name as needed
-cd  ~/workspace/solace-openshift-quickstart/templates
+cd  ~/workspace/pubsubplus-openshift-quickstart/templates
 oc process -f eventbroker_singlenode_template.yaml DEPLOYMENT_NAME=test-singlenode DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> EVENTBROKER_IMAGE_TAG=<replace with your Solace PubSub+ Docker image tag> EVENTBROKER_STORAGE_SIZE=30Gi EVENTBROKER_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
 # Wait until all pods running and ready
 watch oc get statefulset,service,pods,pvc,pv
@@ -343,7 +343,7 @@ watch oc get statefulset,service,pods,pvc,pv
   * Process the Solace 'HA' OpenShift template to deploy the event broker in a high-availability configuration.  Specify values for the DOCKER_REGISTRY_URL, EVENTBROKER_IMAGE_TAG, EVENTBROKER_STORAGE_SIZE, and EVENTBROKER_ADMIN_PASSWORD parameters:
 ```
 oc project solace-pubsub   # adjust your project name as needed
-cd  ~/workspace/solace-openshift-quickstart/templates
+cd  ~/workspace/pubsubplus-openshift-quickstart/templates
 oc process -f eventbroker_ha_template.yaml DEPLOYMENT_NAME=test-ha DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> EVENTBROKER_IMAGE_TAG=<replace with your Solace PubSub+ Docker image tag> EVENTBROKER_STORAGE_SIZE=30Gi EVENTBROKER_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
 # Wait until all pods running and ready
 watch oc get statefulset,service,pods,pvc,pv
@@ -521,7 +521,7 @@ helm delete XXX-XXX  # will delete instances related to your deployment - "my-re
 * If used (Option 2) OpenShift templates to deploy, use:
 
 ```
-cd ~/workspace/solace-openshift-quickstart/templates
+cd ~/workspace/pubsubplus-openshift-quickstart/templates
 oc process -f <template-used> DEPLOYMENT_NAME=<deploymentname> | oc delete -f -
 ```
 
@@ -547,8 +547,8 @@ To delete your OpenShift Container Platform deployment that was set up at Step 1
 Use this quick start's script to automate the execution of the required steps. SSH into the *ansible-configserver* then follow the commands:
 
 ```
-# assuming solace-openshift-quickstart/scripts are still available from Step 1
-cd ~/solace-openshift-quickstart/scripts
+# assuming pubsubplus-openshift-quickstart/scripts are still available from Step 1
+cd ~/pubsubplus-openshift-quickstart/scripts
 ./prepareDeleteAWSOpenShift.sh
 ```
 
