@@ -1,7 +1,8 @@
+# Params: $1=Existing OpenShift project $2=Broker service name
 eval $(crc oc-env)
 oc login -u kubeadmin -p `cat /opt/passw` https://api.crc.testing:6443
-oc project testtest2
-export IP=`oc get svc my-release-pubsubplus-dev -o yaml | grep clusterIP | awk -F': ' '{print $NF}'`
+oc project $1
+export IP=`oc get svc $2 -o yaml | grep clusterIP | awk -F': ' '{print $NF}'`
 oc run nginx --image nginx
 while ! oc get po | grep nginx | grep Running ; do sleep 1; done
 oc exec -it nginx -- curl $IP:8080 | grep aurelia
