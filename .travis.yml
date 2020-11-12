@@ -19,18 +19,23 @@ before_install:
 - rm ./keyfile
 install: true
 script:
+- TESTUSER=vagrant
+- TESTGCPMACHINE=openshift4x-test
 - pwd
+- #if gcloud compute instances describe {$TESTGCPMACHINE} --project "capable-stream-180018" --zone "us-east4-a" | grep status | grep RUNNING ; then echo "Test machine is already running, likely in use. Unable to continue this test run, exiting"; exit; fi
+- gcloud compute instances start {$TESTGCPMACHINE} --project "capable-stream-180018" --zone "us-east4-a"
 - rm ~/.ssh/google_compute_* || echo "GCP certs were clean"
-- gcloud compute --project "capable-stream-180018" ssh --zone "us-east4-a" "vagrant@openshift4x-test" --force-key-file-overwrite --quiet --command "/opt/shutdownCrc"
-- gcloud compute --project "capable-stream-180018" ssh --zone "us-east4-a" "vagrant@openshift4x-test" --quiet --command "/opt/startCrc"
-- gcloud compute --project "capable-stream-180018" ssh --zone "us-east4-a" "vagrant@openshift4x-test" --quiet --command "/opt/installBroker"
-- gcloud compute --project "capable-stream-180018" ssh --zone "us-east4-a" "vagrant@openshift4x-test" --quiet --command "/opt/testBroker" | tee out.txt
+- gcloud compute --project "capable-stream-180018" scp --zone "us-east4-a" --force-key-file-overwrite --quiet ci/* "{$TESTUSER}@{$TESTGCPMACHINE}:/opt/" # Copy scripts
+- gcloud compute --project "capable-stream-180018" ssh --zone "us-east4-a" "{$TESTUSER}@{$TESTGCPMACHINE}" --quiet --command "/opt/shutdownCrc" || echo "crc was already stopped"
+- gcloud compute --project "capable-stream-180018" ssh --zone "us-east4-a" "{$TESTUSER}@{$TESTGCPMACHINE}" --quiet --command "/opt/startCrc"
+- gcloud compute --project "capable-stream-180018" ssh --zone "us-east4-a" "{$TESTUSER}@{$TESTGCPMACHINE}" --quiet --command "/opt/installBroker"
+- gcloud compute --project "capable-stream-180018" ssh --zone "us-east4-a" "{$TESTUSER}@{$TESTGCPMACHINE}" --quiet --command "/opt/testBroker" | tee out.txt
 - grep "aurelia" out.txt
 - grep "<redundancy-status>Up</redundancy-status>" out.txt
 - grep "<oper-status>Up</oper-status>" out.txt
 - grep 100000 out.txt
-- gcloud compute --project "capable-stream-180018" ssh --zone "us-east4-a" "vagrant@openshift4x-test" --quiet --command "/opt/deleteBroker"
-- gcloud compute --project "capable-stream-180018" ssh --zone "us-east4-a" "vagrant@openshift4x-test" --quiet --command "/opt/shutdownCrc"
+- gcloud compute --project "capable-stream-180018" ssh --zone "us-east4-a" "{$TESTUSER}@{$TESTGCPMACHINE}" --quiet --command "/opt/deleteBroker"
+- gcloud compute --project "capable-stream-180018" ssh --zone "us-east4-a" "{$TESTUSER}@{$TESTGCPMACHINE}" --quiet --command "/opt/shutdownCrc"
 
 after_success:
 - echo "Test Success - Branch($TRAVIS_BRANCH) Pull Request($TRAVIS_PULL_REQUEST) Tag($TRAVIS_TAG)"

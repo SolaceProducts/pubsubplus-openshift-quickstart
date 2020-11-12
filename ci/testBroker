@@ -1,0 +1,14 @@
+eval $(crc oc-env)
+oc login -u kubeadmin -p `cat /opt/passw` https://api.crc.testing:6443
+oc project testtest2
+export IP=`oc get svc my-release-pubsubplus-dev -o yaml | grep clusterIP | awk -F': ' '{print $NF}'`
+oc run nginx --image nginx
+while ! oc get po | grep nginx | grep Running ; do sleep 1; done
+oc exec -it nginx -- curl $IP:8080 | grep aurelia
+oc exec -it nginx -- curl -O https://sftp.solace.com/download/SDKPERF_C_LINUX64
+oc exec -it nginx -- tar -xvf SDKPERF_C_LINUX64
+oc exec -it nginx -- pubSubTools/sdkperf_c -cip=$IP -mn=100000 -mr=0 -ptl=t1 -stl=t1 | grep "Total Messages"
+oc exec -it nginx -- curl -sS -u admin:admin http://$IP:8080/SEMP -d "<rpc><show><redundancy></redundancy></show></rpc>"
+oc exec -it nginx -- curl -sS -u admin:admin http://$IP:8080/SEMP -d "<rpc><show><config-sync></config-sync></show></rpc>"
+oc delete pod nginx
+

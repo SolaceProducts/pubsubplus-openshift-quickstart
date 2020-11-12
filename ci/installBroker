@@ -1,0 +1,8 @@
+eval $(crc oc-env)
+oc login -u kubeadmin -p `cat /opt/passw` https://api.crc.testing:6443
+oc new-project testtest2
+curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+helm repo add solacecharts https://solaceproducts.github.io/pubsubplus-kubernetes-quickstart/helm-charts
+helm install my-release solacecharts/pubsubplus-dev --set solace.redundancy=true,securityContext.enabled=false,solace.usernameAdminPassword=admin
+while ! oc get pods --show-labels | grep my-release-pubsubplus-dev | grep "active=true" ; do sleep 1; done
+

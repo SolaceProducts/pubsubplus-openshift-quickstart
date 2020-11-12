@@ -1,0 +1,4 @@
+cd /opt
+crc start -p /opt/pullsecret -c 7 -m 26700
+eval $(crc oc-env)
+while ! oc login -u kubeadmin -p `cat /opt/passw` https://api.crc.testing:6443 ; do sleep 1 ; done
