@@ -20,7 +20,7 @@ before_install:
 install: true
 script:
 - pwd
-- rm ~/.ssh/google_compute_*
+- rm ~/.ssh/google_compute_* || echo "GCP certs were clean"
 - gcloud compute --project "capable-stream-180018" ssh --zone "us-east4-a" "vagrant@openshift4x-test" --force-key-file-overwrite --quiet --command "/opt/shutdownCrc"
 - gcloud compute --project "capable-stream-180018" ssh --zone "us-east4-a" "vagrant@openshift4x-test" --quiet --command "/opt/startCrc"
 - gcloud compute --project "capable-stream-180018" ssh --zone "us-east4-a" "vagrant@openshift4x-test" --quiet --command "/opt/installBroker"
