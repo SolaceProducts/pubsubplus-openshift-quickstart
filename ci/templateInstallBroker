@@ -1,0 +1,9 @@
+# Params: $1=OpenShift project to create $2=template with full path
+eval $(crc oc-env)
+while ! oc login -u kubeadmin -p `cat /opt/passw` https://api.crc.testing:6443 ; do sleep 1 ; done
+oc new-project $1
+sed -i 's@cpu: "2"@cpu: "1"@g' $2 # reduce CPU requirements for the test deployment
+oc process -f $2 DEPLOYMENT_NAME=my-release DOCKER_REGISTRY_URL=solace/solace-pubsub-standard EVENTBROKER_IMAGE_TAG=latest EVENTBROKER_STORAGE_SIZE=10Gi EVENTBROKER_ADMIN_PASSWORD=YWRtaW4= | oc create -f - # admin password is admin
+while ! oc get pods --show-labels | grep my-release | grep "active=true" ; do sleep 1; done
+oc get pods --show-labels
+oc get svc

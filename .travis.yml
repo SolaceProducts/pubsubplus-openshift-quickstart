@@ -22,20 +22,43 @@ script:
 - pwd
 - TESTUSER=vagrant # must exist
 - TESTGCPMACHINE=openshift4x-test # must exist
+- alias remote_command='gcloud compute --project "capable-stream-180018" ssh --zone "us-east4-a" "${TESTUSER}@${TESTGCPMACHINE}" --quiet --command'
 - #if gcloud compute instances describe ${TESTGCPMACHINE} --project "capable-stream-180018" --zone "us-east4-a" | grep status | grep RUNNING ; then echo "Test machine is already running, likely in use. Unable to continue this test run, exiting"; exit; fi
 - #gcloud compute instances start ${TESTGCPMACHINE} --project "capable-stream-180018" --zone "us-east4-a"
 - rm ~/.ssh/google_compute_* || echo "GCP certs were clean"
-- gcloud compute --project "capable-stream-180018" scp --zone "us-east4-a" --force-key-file-overwrite --quiet ci/* "${TESTUSER}@${TESTGCPMACHINE}:/opt/" # Copy scripts
-- gcloud compute --project "capable-stream-180018" ssh --zone "us-east4-a" "${TESTUSER}@${TESTGCPMACHINE}" --quiet --command "/opt/shutdownCrc" || echo "crc was already stopped"
-- gcloud compute --project "capable-stream-180018" ssh --zone "us-east4-a" "${TESTUSER}@${TESTGCPMACHINE}" --quiet --command "/opt/startCrc"
-- gcloud compute --project "capable-stream-180018" ssh --zone "us-east4-a" "${TESTUSER}@${TESTGCPMACHINE}" --quiet --command "/opt/installBroker testtest2"
-- gcloud compute --project "capable-stream-180018" ssh --zone "us-east4-a" "${TESTUSER}@${TESTGCPMACHINE}" --quiet --command "/opt/testBroker testtest2 my-release-pubsubplus-dev" | tee out.txt
-- grep "aurelia" out.txt
+- gcloud compute --project "capable-stream-180018" ssh --zone "us-east4-a" --force-key-file-overwrite --quiet "${TESTUSER}@${TESTGCPMACHINE}" --quiet --command "rm -f /opt/scripts/*; rm -f /opt/templates/*" # cleanup remote directories
+- gcloud compute --project "capable-stream-180018" scp --zone "us-east4-a" --quiet ci/* "${TESTUSER}@${TESTGCPMACHINE}:/opt/scripts" # Copy scripts to remote
+- gcloud compute --project "capable-stream-180018" scp --zone "us-east4-a" --quiet templates/* "${TESTUSER}@${TESTGCPMACHINE}:/opt/templates" # Copy templates to remote
+- remote_command "/opt/shutdownCrc" || echo "crc was already stopped" # ensure crc known start state
+- remote_command "/opt/startCrc" # start crc
+- # First test helm install
+- remote_command "/opt/scripts/helmInstallBroker helmtest "
+- remote_command "/opt/scripts/testBroker helmtest my-release-pubsubplus-dev" | tee out.txt
+- grep "aurelia" out.txt # web portal access
 - grep "<redundancy-status>Up</redundancy-status>" out.txt
 - grep "<oper-status>Up</oper-status>" out.txt
-- grep 100000 out.txt
-- gcloud compute --project "capable-stream-180018" ssh --zone "us-east4-a" "${TESTUSER}@${TESTGCPMACHINE}" --quiet --command "/opt/deleteBroker testtest2"
-- gcloud compute --project "capable-stream-180018" ssh --zone "us-east4-a" "${TESTUSER}@${TESTGCPMACHINE}" --quiet --command "/opt/shutdownCrc"
+- grep 100000 out.txt # smf messaging
+- remote_command "/opt/scripts/helmDeleteBroker helmtest"
+- rm -f out.txt
+- # Next test template non-HA install
+- remote_command "/opt/scripts/templateInstallBroker templatenonha /opt/templates/eventbroker_singlenode_template.yaml"
+- remote_command "/opt/scripts/testBroker templatenonha my-release-pubsubplus" | tee out.txt
+- grep "aurelia" out.txt # web portal access
+- grep "<redundancy-status>Up</redundancy-status>" out.txt
+- grep "<oper-status>Up</oper-status>" out.txt
+- grep 100000 out.txt # smf messaging
+- remote_command "/opt/scripts/templateDeleteBroker templatenonha /opt/templates/eventbroker_singlenode_template.yaml"
+- rm -f out.txt
+- # Next test template HA install
+- remote_command "/opt/scripts/templateInstallBroker templateha /opt/templates/eventbroker_ha_template.yaml"
+- remote_command "/opt/scripts/testBroker templateha my-release-pubsubplus" | tee out.txt
+- grep "aurelia" out.txt # web portal access
+- grep "<redundancy-status>Up</redundancy-status>" out.txt
+- grep "<oper-status>Up</oper-status>" out.txt
+- grep 100000 out.txt # smf messaging
+- remote_command "/opt/scripts/templateDeleteBroker templateha /opt/templates/eventbroker_ha_template.yaml"
+- # Cleanup after tests
+- remote_command "/opt/shutdownCrc"
 - #gcloud compute instances stop ${TESTGCPMACHINE} --project "capable-stream-180018" --zone "us-east4-a" # cleanup
 
 
