@@ -229,7 +229,7 @@ Deployment scripts will pull the Solace PubSub+ image from a [Docker registry](h
 
 <br>
 
-> Note: If using MiniShift a workaround is required: running the `addECRsecret.sh` will not be enough and requires manually loading the broker image to MiniShift's Docker. (1) Follow the steps to [configure your console to reuse the Minishift Docker daemon](//docs.okd.io/3.11/minishift/using/docker-daemon.html), then (2) use the `docker pull` command to pull the target image from ECR. Finally (3) use `eval $(minishift oc-env)` to ensure the [oc binary is added to your PATH](//docs.okd.io/3.11/minishift/openshift/openshift-client-binary.html#openshift-client-binary-overview).
+> Note: If using MiniShift a workaround is required: running the `addECRsecret.sh` will not be enough and requires manually loading the broker image to MiniShift's Docker. (1) Follow the steps to [configure your console to reuse the Minishift Docker daemon](//docs.okd.io/3.11/minishift/using/docker-daemon.html), then (2) use the `docker pull` command to pull the target image from ECR. Ensure to use the exact same image URI as will be passed to the broker deployment in next Step 6. Finally (3) use `eval $(minishift oc-env)` to ensure the [oc binary is added to your PATH](//docs.okd.io/3.11/minishift/openshift/openshift-client-binary.html#openshift-client-binary-overview).
 
 
 For general additional information, refer to the [Using private registries](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#using-private-registries) section in the general Event Broker in Kubernetes Documentation.
