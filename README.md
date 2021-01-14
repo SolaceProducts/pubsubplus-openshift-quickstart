@@ -29,7 +29,7 @@ For other event broker configurations or sizes, refer to the [PubSub+ Software E
 
 ### 1. Get an OpenShift environment
 
-There are [multiple ways](https://www.openshift.com/try ) to get to an OpenShift 4 platform. The [detailed Event Broker on OpenShift Documentation](/docs/PubSubPlusOpenShiftDeployment.md#step-1-optional--aws-deploy-openshift-container-platform-onto-aws-using-the-redhat-openshift-aws-quickstart-project) describes how to set up a self-managed 60-day trial Red Hat OpenShift Container Platform on AWS. Another option for developers is to use [CodeReady Containers](https://developers.redhat.com/products/codeready-containers/overview).
+There are [multiple ways](https://www.openshift.com/try ) to get to an OpenShift 4 platform. The [detailed Event Broker on OpenShift Documentation](/docs/PubSubPlusOpenShiftDeployment.md#step-1-optional--aws-deploy-openshift-container-platform-onto-aws-using-the-redhat-openshift-aws-quickstart-project) describes how to set up a self-managed 60-day trial Red Hat OpenShift Container Platform on AWS. Another recommended option for developers is to use [CodeReady Containers](https://developers.redhat.com/products/codeready-containers/overview).
 
 Assuming you have access to an OpenShift 4 platform, login as `kubeadmin` using the `oc login -u kubeadmin` command.
 

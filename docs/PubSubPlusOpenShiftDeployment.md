@@ -1,6 +1,6 @@
-# Deploying a Solace PubSub+ Software Event Broker onto an OpenShift 3.11 platform
+# Deploying a Solace PubSub+ Software Event Broker onto an OpenShift 4 platform
 
-This is detailed documentation of deploying Solace PubSub+ Software Event Broker onto an OpenShift 3.11 platform including steps to set up a Red Hat OpenShift Container Platform platform on AWS.
+This is detailed documentation of deploying Solace PubSub+ Software Event Broker onto an OpenShift 4 platform including steps to set up a Red Hat OpenShift Container Platform platform on AWS.
 * For a hands-on quick start using an existing OpenShift platform, refer to the [Quick Start guide](/README.md).
 * For considerations about deploying in a general Kubernetes environment, refer to the [Solace PubSub+ on Kubernetes Documentation](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md)
 * For the `pubsubplus` Helm chart configuration options, refer to the [PubSub+ Software Event Broker Helm Chart Reference](/pubsubplus/README.md).
@@ -36,15 +36,15 @@ Contents:
 
 ## Purpose of this Repository
 
-This repository provides an example of how to deploy the Solace PubSub+ Software Event Broker onto an OpenShift 3.11 platform. There are [multiple ways](https://docs.openshift.com/index.html ) to get to an OpenShift platform, including [MiniShift](https://github.com/minishift/minishift#welcome-to-minishift ). This guide will specifically use the Red Hat OpenShift Container Platform for deploying an HA group but concepts are transferable to other compatible platforms. There will be also hints on how to set up a simple single-node MiniKube deployment using MiniShift for development, testing or proof of concept purposes.
+This repository provides an example of how to deploy the Solace PubSub+ Software Event Broker onto an OpenShift 4 platform. There are [multiple ways](https://www.openshift.com/try ) to get to an OpenShift platform. This guide will specifically use the Red Hat OpenShift Container Platform for deploying an HA group with concepts transferable to other compatible platforms. There will be also hints on how to set up a simple single-node deployment using [CodeReady Containers](https://developers.redhat.com/products/codeready-containers/overview ) for development, testing or proof of concept purposes.
 
-The supported Solace PubSub+ Software Event Broker version is 9.4 or later.
+The supported Solace PubSub+ Software Event Broker version is 9.7 or later.
 
-For the Red Hat OpenShift Container Platform, we utilize the [RedHat OpenShift on AWS QuickStart](https://aws.amazon.com/quickstart/architecture/openshift/ ) project to deploy a Red Hat OpenShift Container Platform on AWS in a highly redundant configuration, spanning 3 zones.
+For the Red Hat OpenShift Container Platform, we utilize a self-managed 60 day evaluation subscription of [RedHat OpenShift cluster in AWS](https://cloud.redhat.com/openshift/install#public-cloud ) in a highly redundant configuration, spanning 3 zones.
 
 This repository expands on the [Solace Kubernetes Quickstart](//github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/README.md ) to provide an example of how to deploy Solace PubSub+ in an HA configuration on the OpenShift Container Platform running in AWS.
 
-The event broker deployment does not require any special OpenShift Security Context, the [default "restricted" SCC](//docs.openshift.com/container-platform/3.11/admin_guide/manage_scc.html) can be used.
+The event broker deployment does not require any special OpenShift Security Context, the [default "restricted" SCC](https://docs.openshift.com/container-platform/4.6/authentication/managing-security-context-constraints.html ) can be used.
 
 ## Description of Solace PubSub+ Software Event Broker 
 
@@ -56,7 +56,7 @@ The following diagram shows an example HA deployment in AWS:
 ![alt text](/docs/images/network_diagram.jpg "Network Diagram")
 
 <br/>
-Key parts are the three PubSub+ Container instances in OpenShift pods, deployed on OpenShift (worker) nodes; the cloud load balancer exposing the event router's services and management interface; the OpenShift master nodes(s); and the Ansible Config Server, which acts as a bastion host for external ssh access.
+Key parts are the three PubSub+ Container instances in OpenShift pods, deployed on OpenShift (worker) nodes; the cloud load balancer exposing the event router's services and management interface; the OpenShift master nodes(s); and the CLI console that hosts the `oc` OpenShift CLI utility client.
 
 ## Deployment Options
 
@@ -71,61 +71,63 @@ This option can be used directly, without any additional tool to deploy the even
 
 ## How to deploy Solace PubSub+ onto OpenShift / AWS
 
-The following steps describe how to deploy an event broker onto an OpenShift environment. Optional steps are provided about setting up a Red Hat OpenShift Container Platform on Amazon AWS infrastructure (marked as Optional / AWS) and if you use AWS Elastic Container Registry to host the Solace PubSub+ Docker image (marked as Optional / ECR).
+The following steps describe how to deploy an event broker onto an OpenShift environment. Optional steps are provided about setting up a self-managed Red Hat OpenShift Container Platform on Amazon AWS infrastructure (marked as Optional / AWS) and if you use AWS Elastic Container Registry to host the Solace PubSub+ Docker image (marked as Optional / ECR).
 
 **Hint:** You may skip Step 1 if you already have your own OpenShift environment available.
 
-> Note: If using MiniShift follow the [instructions to get to a working MiniShift deployment](https://docs.okd.io/latest/minishift/getting-started/index.html ). If using MiniShift in a Windows environment one easy way to follow the shell scripts in the subsequent steps of this guide is to use [Git BASH for Windows](https://gitforwindows.org/ ) and ensure any script files are using Unix style line endings by running the `dos2unix` tool if needed. 
+> Note: If using CodeReady Containers follow the [instructions to get to a working CodeReady Containers deployment](https://developers.redhat.com/products/codeready-containers/getting-started ). Linux, MacOS and Windows are supported.
 
-### Step 1: (Optional / AWS) Deploy OpenShift Container Platform onto AWS using the RedHat OpenShift AWS QuickStart Project
+### Step 1: (Optional / AWS) Deploy a self-managed OpenShift Container Platform onto AWS
 
-* (Part I) Log into the AWS Web Console and run the [OpenShift AWS QuickStart project](https://aws.amazon.com/quickstart/architecture/openshift/ ), which will use AWS CloudFormation for the deployment.  We recommend you deploy OpenShift across 3 AWS Availability Zones for maximum redundancy.  Please refer to the RedHat OpenShift AWS QuickStart guide and supporting documentation:
-
-  * [Deploying and Managing OpenShift on Amazon Web Services](https://access.redhat.com/documentation/en-us/reference_architectures/2018/html/deploying_and_managing_openshift_3.9_on_amazon_web_services/ )
-  
-  **Important:** As described in above documentation, this deployment requires a Red Hat account with a valid Red Hat subscription to OpenShift and will consume 10 OpenShift entitlements in a maximum redundancy configuration. When no longer needed ensure to follow the steps in the [Deleting the OpenShift Container Platform deployment](#deleting-the-openshift-container-platform-deployment ) section of this guide to free up the entitlements.
-
-  This deployment will create 10 EC2 instances: an *ansible-configserver* and three of each *openshift-etcd*, *openshift-master* and *openshift-nodes* servers. <br>
-  
-  **Note:** only the "*ansible-configserver*" is exposed externally in a public subnet. To access the other servers that are in a private subnet, first [SSH into](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html ) the *ansible-configserver* instance then use that instance as a bastion host to SSH into the target server using it's private IP. For that we recommend enabling [SSH agent forwarding](https://developer.github.com/v3/guides/using-ssh-agent-forwarding/ ) on your local machine to avoid the insecure option of copying and storing private keys remotely on the *ansible-configserver*.
-
-* (Part II) Once you have deployed OpenShift using the AWS QuickStart you will have to perform additional steps to re-configure OpenShift to integrate fully with AWS.  For full details, please refer to the RedHat OpenShift documentation for configuring OpenShift for AWS:
-
-  * [OpenShift > Configuring for AWS](https://docs.openshift.com/container-platform/3.10/install_config/configuring_aws.html )
-  
-  To help with that this quick start provides a script to automate the execution of the required steps:
-  
-   * Add the required AWS IAM policies to the ‘Setup Role’ (IAM) used by the RedHat QuickStart to deploy OpenShift to AWS
-   * Tag public subnets so when creating a public service suitable public subnets can be found
-   * Re-configure OpenShift Masters and OpenShift Nodes to make OpenShift aware of AWS deployment specifics
-   
-  SSH into the *ansible-configserver* then follow the commands.
-  
+Pre-requisites:
+* This step requires a free Red Hat account, [create one](https://developers.redhat.com/login ) if needed
+* A command console is required on your platform. Examples here are provided using Linux. MacOS is also supported.
+* Designate a working directory for the OpenShift cluster installation. Files created here by the automated install process will be required when deleting the OpenShift cluster.
 ```
-## On the ansible-configserver server
-# get the scripts
-cd ~
-git clone https://github.com/SolaceProducts/pubsubplus-openshift-quickstart.git
-cd pubsubplus-openshift-quickstart/scripts
-# substitute your own parameters for the following exports
-# You can get the stack names e.g.: from the CloudFormation page of the AWS services console,
-# see the 'Overview' tab of the *nested* OpenShiftStack and VPC substacks.
-# You can get the access keys from the AWS services console IAM > Users > Security credentials.
-export NESTEDOPENSHIFTSTACK_STACKNAME=XXXXXXXXXXXXXXXXXXXXX
-export VPC_STACKNAME=XXXXXXXXXXXXXXXXXXXXX
-export AWS_ACCESS_KEY_ID=XXXXXXXXXXXXXXXXXXXXX
-export AWS_SECRET_ACCESS_KEY=XXXXXXXXXXXXXXXXXXXXX
-# run the config script
-./configureAWSOpenShift.sh
+mkdir ~/workspace; cd ~/workspace
 ```
 
-The script will end with listing the private IP of the *openshift-master* servers, one of which you will need to SSH into for the next step. The command to access it is `ssh <master-ip>` with SSH agent forwarding enabled.
+Procedure:
+* From the [Install OpenShift Container Platform 4, In the public cloud](https://cloud.redhat.com/openshift/install#public-cloud ) section select "AWS", then "Installer-provisioned infrastructure". This will bring to a page with the required binaries and documentation.
+* Download and expand the "OpenShift installer"
+```
+wget <link-address>  # copy here the link address from the "Download installer" button
+tar -xvf openshift-install-linux.tar.gz    # Adjust filename if needed
+rm openshift-install-linux.tar.gz
+```
+* Run the utility to create an install configuration, provide information at the prompts including the Pull Secret from the RedHat instructions page. This will create the file `install-config.yaml` with [installation configuration parameters](https://docs.openshift.com/container-platform/4.6/installing/installing_aws/installing-aws-customizations.html#installation-aws-config-yaml_installing-aws-customizations), most importantly the configuration for the worker and master nodes.
+```
+./openshift-install create install-config --dir=.
+```
+* Edit `install-config.yaml` as the worker node AWS machine type needs to be updated from default to meet [minimum CPU and Memory requirements](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#cpu-and-memory-requirements) for the targeted PubSub+ Software Event Broker configuration. When selecting an [EC2 instance type](https://aws.amazon.com/ec2/instance-types/) allow at least 1 CPU and 1GiB memory for OpenShift purposes that cannot be used by the broker. Here is an example updated configuration:
+```
+...
+compute:
+- architecture: amd64
+  hyperthreading: Enabled
+  name: worker
+  platform:
+    aws:
+      type: m5.2xlarge  # Adjust to your requirements
+  replicas: 3
+...
+```
+* Create a backup copy of the config file then launch the installation. This may take 40 minutes or more.
+```
+cp install-config.yaml install-config.yaml.bak
+./openshift-install create cluster --dir=.
+```
+* A successful installation will end with hints how to get started. Take notes for future reference.
+```
+INFO Install complete!
+INFO To access the cluster as the system:admin user when using 'oc', run 'export KUBECONFIG=/opt/auth/kubeconfig'
+INFO Access the OpenShift web-console here: https://console-openshift-console.apps.iuacc.soltest.net
+INFO Login to the console with user: "kubeadmin", and password: "CKGc9-XUT6J-PDtWp-d4DSQ"
+```
+* [Install](https://docs.openshift.com/container-platform/4.6/installing/installing_aws/installing-aws-default.html#cli-installing-cli_installing-aws-default) the `oc` client CLI tool.
+* Follow above hints to get started, including verifying access to the web-console.
 
-Also verify you have access and can login to the OpenShift console. You can get the URL from the CloudFormation page of the AWS services console, see the 'Outputs' tab of the *nested* OpenShiftStack substack.
 
-![alt text](/docs/images/GetOpenShiftURL.png "Getting to OpenShift console URL")
-
-<p align="center">OpenShift deployment example with nested OpenShiftStack, VPCStack, tabs, keys and values</p>
 
 
 ### Step 2: Prepare your workspace
