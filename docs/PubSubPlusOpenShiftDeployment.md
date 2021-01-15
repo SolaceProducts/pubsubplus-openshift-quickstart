@@ -198,6 +198,7 @@ helm install --name my-ha-release \
 # Wait until all pods running and ready and the active event broker pod label is "active=true" 
 oc get pods --show-labels -w
 ```
+
      * Single-node, non-HA deployment example:
 ```bash
 # One-time action: Add the PubSub+ charts to local Helm
@@ -211,7 +212,7 @@ helm install --name my-nonha-release \
 oc get pods --show-labels -w
 ```
 
-Note: an alternative to longer `--set` parameters is to define same parameter values in a YAML file:
+Note: as an alternative to longer `--set` parameters, it is possible to define same parameter values in a YAML file:
 ```yaml
 # Create example values file
 echo "
