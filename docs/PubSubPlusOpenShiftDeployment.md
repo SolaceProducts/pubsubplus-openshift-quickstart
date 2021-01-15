@@ -159,11 +159,11 @@ oc create secret generic pullsecret --from-file=.dockerconfigjson=$(readlink -f 
 
 Additional information on private registries is also available from the Solace Kubernetes Quickstart documentation, refer to the [Using private registries](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#using-private-registries) section.
 
-> Note: If using CodeReady Containers a workaround may be required if ECR login fails on the console (e.g. on Windows). In this case log into the OpenShift node: `oc get node`, then `oc debug node/<reported-node-name>`, finally execute `chroot /host` at the prompt. Since it is not straightforward to install the `aws` CLI on CoreOS running on the node, obtain `aws ecr get-login-password` from a different machine where `aws` is installed. Then copy and paste it into this command: `echo "<paste-obtained-password-text>" | podman login --username AWS --password-stdin <registry>` - get `<registry>` from the URI from your ECR registry, in the example format `9872397498329479394.dkr.ecr.us-east-2.amazonaws.com`. Then run `podman pull <your-ECR-image>` to load it locally on the node. Exit the node and it will be possible to use your ECR image URL and tag for deployment (no need to use a pull secret here).
+> Note: If using CodeReady Containers a workaround may be required if ECR login fails on the console (e.g. on Windows). In this case log into the OpenShift node: `oc get node`, then `oc debug node/<reported-node-name>`, finally execute `chroot /host` at the prompt. Since it is not straightforward to install the `aws` CLI on CoreOS running on the node, obtain `aws ecr get-login-password --region <ecr-region>` from a different machine where `aws` is installed. Then copy and paste it into this command: `echo "<paste-obtained-password-text>" | podman login --username AWS --password-stdin <registry>` - get `<registry>` from the URI from your ECR registry, in the example format `9872397498329479394.dkr.ecr.us-east-2.amazonaws.com`. Then run `podman pull <your-ECR-image>` to load it locally on the node. Exit the node and it will be possible to use your ECR image URL and tag for deployment (no need to use a pull secret here).
 
 ### Step 4-Option 1: Deploy the event broker using Helm
 
-Deploying using Helm provides more flexibility in terms of event broker deployment options, compared to those offered by the OpenShift templates provided by this project.
+Using Helm to deploy provides more flexibility in terms of event broker deployment options, compared to those offered by the OpenShift templates (Option 2, also provided by this project).
 
 More information is provided in the following documents:
 * [Solace PubSub+ on Kubernetes Deployment Guide](//github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md)
@@ -186,7 +186,7 @@ Procedure:
   curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
 ```
 * See following examples:
-    a. HA deployment example:
+     * HA deployment example:
 ```bash
 # One-time action: Add the PubSub+ charts to local Helm
 helm repo add solacecharts https://solaceproducts.github.io/pubsubplus-kubernetes-quickstart/helm-charts
@@ -198,7 +198,7 @@ helm install --name my-ha-release \
 # Wait until all pods running and ready and the active event broker pod label is "active=true" 
 oc get pods --show-labels -w
 ```
-    b. Single-node, non-HA deployment example:
+     * Single-node, non-HA deployment example:
 ```bash
 # One-time action: Add the PubSub+ charts to local Helm
 helm repo add solacecharts https://solaceproducts.github.io/pubsubplus-kubernetes-quickstart/helm-charts
