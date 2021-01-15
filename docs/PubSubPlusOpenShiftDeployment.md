@@ -151,18 +151,17 @@ If using a private image registry, such as AWS ECR, a pull secret is required to
 * Push the broker image to the private registry. Follow the specific procedures for the registry you are using, e.g.: [for the AWS ECR](https://docs.aws.amazon.com/AmazonECR/latest/userguide/getting-started-cli.html ).
 Note: if advised to run `aws ecr get-login-password` as part of the "Authenticate to your registry" step and it fails, try running `$(aws ecr get-login --region <your-registry-region> --no-include-email)` instead.
 ![alt text](/docs/images/ECR-Registry.png "ECR Registry")
-* Create a secret `pullsecret` from the registry information in the Docker configuration:
+* Create a secret `pullsecret` from the registry information in the Docker configuration. This assumes that ECR login happened on the same machine:
 ```
 oc create secret generic pullsecret --from-file=.dockerconfigjson=$(readlink -f ~/.docker/config.json) --type=kubernetes.io/dockerconfigjson
 ```
-* Use this secret in following Step 4.
+* Use this pull secret in following Step 4.
 
-> Note: If using CodeReady Containers a workaround is required: running the `addECRsecret.sh` will not be enough and requires manually loading the broker image to MiniShift's Docker. (1) Follow the steps to [configure your console to reuse the Minishift Docker daemon](//docs.okd.io/3.11/minishift/using/docker-daemon.html), then (2) use the `docker pull` command to pull the target image from ECR. Ensure to use the exact same image URI as will be passed to the broker deployment in next Step 6. Finally (3) use `eval $(minishift oc-env)` to ensure the [oc binary is added to your PATH](//docs.okd.io/3.11/minishift/openshift/openshift-client-binary.html#openshift-client-binary-overview).
+Additional information on private registries is also available from the Solace Kubernetes Quickstart documentation, refer to the [Using private registries](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#using-private-registries) section.
 
+> Note: If using CodeReady Containers a workaround may be required if ECR login fails on the console (e.g. on Windows). In this case log into the OpenShift node: `oc get node`, then `oc debug node/<reported-node-name>`, finally execute `chroot /host` at the prompt. Since it is not straightforward to install the `aws` CLI on CoreOS running on the node, obtain `aws ecr get-login-password` from a different machine where `aws` is installed. Then copy and paste it into this command: `echo "<paste-obtained-password-text>" | podman login --username AWS --password-stdin <registry>` - get `<registry>` from the URI from your ECR registry, in the example format `9872397498329479394.dkr.ecr.us-east-2.amazonaws.com`. Then run `podman pull <your-ECR-image>` to load it locally on the node. Exit the node and it will be possible to use your ECR image URL and tag for deployment (no need to use a pull secret here).
 
-Additional information is also available from the Solace Kubernetes Quickstart documentation, refer to the [Using private registries](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#using-private-registries) section.
-
-### Step 6-Option 1: Deploy the event broker using Helm
+### Step 4-Option 1: Deploy the event broker using Helm
 
 Deploying using Helm provides more flexibility in terms of event broker deployment options, compared to those offered by the OpenShift templates provided by this project.
 
