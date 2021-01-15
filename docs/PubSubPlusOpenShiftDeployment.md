@@ -151,9 +151,9 @@ If using a private image registry, such as AWS ECR, a pull secret is required to
 * Push the broker image to the private registry. Follow the specific procedures for the registry you are using, e.g.: [for the AWS ECR](https://docs.aws.amazon.com/AmazonECR/latest/userguide/getting-started-cli.html ).
 Note: if advised to run `aws ecr get-login-password` as part of the "Authenticate to your registry" step and it fails, try running `$(aws ecr get-login --region <your-registry-region> --no-include-email)` instead.
 ![alt text](/docs/images/ECR-Registry.png "ECR Registry")
-* Create a secret `pullsecret` from the registry information in the Docker configuration. This assumes that ECR login happened on the same machine:
+* Create a pull secret from the registry information in the Docker configuration. This assumes that ECR login happened on the same machine:
 ```
-oc create secret generic pullsecret --from-file=.dockerconfigjson=$(readlink -f ~/.docker/config.json) --type=kubernetes.io/dockerconfigjson
+oc create secret generic <my-pullsecret> --from-file=.dockerconfigjson=$(readlink -f ~/.docker/config.json) --type=kubernetes.io/dockerconfigjson
 ```
 * Use this pull secret in following Step 4.
 
@@ -186,7 +186,7 @@ Procedure:
   curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
 ```
 * See following examples:
-     * HA deployment example:
+HA deployment example:
 ```bash
 # One-time action: Add the PubSub+ charts to local Helm
 helm repo add solacecharts https://solaceproducts.github.io/pubsubplus-kubernetes-quickstart/helm-charts
@@ -199,14 +199,14 @@ helm install --name my-ha-release \
 oc get pods --show-labels -w
 ```
 
-     * Single-node, non-HA deployment example:
-
+Single-node, non-HA deployment example with pull secret:
 ```bash
 # One-time action: Add the PubSub+ charts to local Helm
 helm repo add solacecharts https://solaceproducts.github.io/pubsubplus-kubernetes-quickstart/helm-charts
 # Initiate the non-HA deployment
 helm install --name my-nonha-release \
   --set securityContext.enabled=false,solace.redundancy=true,solace.usernameAdminPassword=<EVENTBROKER_ADMIN_PASSWORD> \
+  --set image.pullSecretName=<my-pullsecret> \
   solacecharts/pubsubplus
 # Check the notes printed on screen
 # Wait until the event broker pod is running, ready and the pod label is "active=true" 
