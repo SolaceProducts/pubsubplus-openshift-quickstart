@@ -186,7 +186,7 @@ Procedure:
   curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
 ```
 * See following examples:
-<br>
+
 HA deployment example:
 ```bash
 # One-time action: Add the PubSub+ charts to local Helm
