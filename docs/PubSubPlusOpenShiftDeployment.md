@@ -36,7 +36,7 @@ Contents:
 
 ## Purpose of this Repository
 
-This repository provides an example of how to deploy the Solace PubSub+ Software Event Broker onto an OpenShift 4 platform. There are [multiple ways](https://www.openshift.com/try ) to get to an OpenShift platform. This guide will specifically use the Red Hat OpenShift Container Platform for deploying an HA group with concepts transferable to other compatible platforms. There will be also hints on how to set up a simple single-node deployment using [CodeReady Containers](https://developers.redhat.com/products/codeready-containers/overview ) for development, testing or proof of concept purposes.
+This repository provides an example of how to deploy the Solace PubSub+ Software Event Broker onto an OpenShift 4 platform. There are [multiple ways](https://www.openshift.com/try ) to get to an OpenShift platform. This guide will specifically use the Red Hat OpenShift Container Platform for deploying an HA group with concepts transferable to other compatible platforms. There will be also hints on how to set up a simple single-node deployment using [CodeReady Containers](https://developers.redhat.com/products/codeready-containers/overview ) (the equivalent of MiniShift for OpenShift 4)  for development, testing or proof of concept purposes.
 
 The supported Solace PubSub+ Software Event Broker version is 9.7 or later.
 
@@ -75,13 +75,13 @@ The following steps describe how to deploy an event broker onto an OpenShift env
 
 **Hint:** You may skip Step 1 if you already have your own OpenShift environment available.
 
-> Note: If using CodeReady Containers follow the [instructions to get to a working CodeReady Containers deployment](https://developers.redhat.com/products/codeready-containers/getting-started ). Linux, MacOS and Windows are supported.
+> Note: If using CodeReady Containers follow the [instructions to get to a working CodeReady Containers deployment](https://developers.redhat.com/products/codeready-containers/getting-started ). Linux, MacOS and Windows are supported. At the `crc start` step it helps to have a local `pullsecret` file created and also specify CPU and memory requirements, allowing 1 CPU and 2.5 GiB memory for CRC internal purposes. It also helps to specify a DNS server. Example: `crc start -p ./pullsecret -c 3 -m 8148 --nameserver 1.1.1.1`.
 
 ### Step 1: (Optional / AWS) Deploy a self-managed OpenShift Container Platform onto AWS
 
 Pre-requisites:
-* This step requires a free Red Hat account, [create one](https://developers.redhat.com/login ) if needed
-* A command console is required on your platform. Examples here are provided using Linux. MacOS is also supported.
+* This requires a free Red Hat account, [create one](https://developers.redhat.com/login ) if needed
+* A command console is required on your host platform with Internet access. Examples here are provided using Linux. MacOS is also supported.
 * Designate a working directory for the OpenShift cluster installation. Files created here by the automated install process will be required when deleting the OpenShift cluster.
 ```
 mkdir ~/workspace; cd ~/workspace
@@ -89,7 +89,7 @@ mkdir ~/workspace; cd ~/workspace
 
 Procedure:
 * From the [Install OpenShift Container Platform 4, In the public cloud](https://cloud.redhat.com/openshift/install#public-cloud ) section select "AWS", then "Installer-provisioned infrastructure". This will bring to a page with the required binaries and documentation.
-* Download and expand the "OpenShift installer"
+* On your host command console download and expand the "OpenShift installer"
 ```
 wget <link-address>  # copy here the link address from the "Download installer" button
 tar -xvf openshift-install-linux.tar.gz    # Adjust filename if needed
@@ -128,113 +128,39 @@ INFO Login to the console with user: "kubeadmin", and password: "CKGc9-XUT6J-PDt
 * Follow above hints to get started, including verifying access to the web-console.
 
 
+### Step 2: Create a new OpenShift project to host the event broker deployment
 
-
-### Step 2: Prepare your workspace
-
-**Important:** This and subsequent steps shall be executed on a host having the OpenShift client tools and able to reach your OpenShift cluster nodes - conveniently, this can be one of the *openshift-master* servers.
-
-> If using MiniShift, continue using your terminal.
-
-* SSH into your selected host and ensure you are logged in to OpenShift. If you used Step 1 to deploy OpenShift, the requested server URL is the same as the OpenShift console URL, the username is `admin` and the password is as specified in the CloudFormation template. Otherwise use the values specific to your environment.
-
-```
-## On an openshift-master server
-oc whoami  
-# if not logged in yet
-oc login   
-```
-
-* The Solace OpenShift QuickStart project contains useful scripts to help you prepare an OpenShift project for event broker deployment. Retrieve the project in your selected host:
-
-```
-mkdir ~/workspace
-cd ~/workspace
-git clone https://github.com/SolaceProducts/pubsubplus-openshift-quickstart.git
-cd pubsubplus-openshift-quickstart
-```
-
-### Step 3: (Optional: only execute for Deployment option 1) Install the Helm v2 client and server-side tools
-
-This will deploy Helm in a dedicated "tiller-project" project. Do not use this project for your deployments.
-
-- First download the Helm v2 client. If using Windows, get the [Helm executable](https://storage.googleapis.com/kubernetes-helm/helm-v2.16.0-windows-amd64.zip ) and put it in a directory on your path.
-```bash
-  # Download Helm v2 client, latest version if needed
-  curl -sSL https://raw.githubusercontent.com/helm/helm/master/scripts/get | bash
-```
-
-- Use script to install the Helm v2 client and its Tiller server-side operator.
-```bash
-  # Setup local Helm client
-  helm init --client-only
-  # Install Tiller server-side operator into a new "tiller-project"
-  oc new-project tiller-project
-  oc process -f https://github.com/openshift/origin/raw/master/examples/helm/tiller-template.yaml -p TILLER_NAMESPACE="tiller-project" -p HELM_VERSION=v2.16.0 | oc create -f -
-  oc rollout status deployment tiller
-  # also let Helm know where Tiller was deployed
-  export TILLER_NAMESPACE=tiller-project
-```
-
-### Step 4: Create a new OpenShift project to host the event broker deployment
-
-This will create a new project for deployments if needed or you can use your existing project except "helm" (the "helm" project has special privileges assigned which shall not be used for deployments).
+Create a new project or switch to your existing project (do not use the `default` project as it's loose permissions doesn't reflect a typical OpenShift environment)
 ```
 oc new-project solace-pubsub    # adjust your project name as needed here and in subsequent commands
 ```
 
-### Step 5: Optional: Load the event broker (Docker image) to your Docker Registry
+### Step 3: Optional: Using a Private Image Registry
 
-Deployment scripts will pull the Solace PubSub+ image from a [Docker registry](https://docs.Docker.com/registry/ ). There are several [options which registry to use](https://docs.openshift.com/container-platform/3.11/architecture/infrastructure_components/image_registry.html#overview ) depending on the requirements of your project, see some examples in (Part II) of this step.
+By default, deployment scripts will pull the Solace PubSub+ image from [Docker Hub](https://hub.docker.com/r/solace/solace-pubsub-standard/tags?page=1&ordering=last_updated ) and assuming Internet access of the OpenShift worker nodes no further configuration is required.
 
-**Hint:** You may skip the rest of this step if using the free PubSub+ Standard Edition available from the [Solace public Docker Hub registry](https://hub.Docker.com/r/solace/solace-pubsub-standard/tags/ ). The Docker Registry URL to use will be `solace/solace-pubsub-standard:<TagName>`.
+If using a private image registry, such as AWS ECR, a pull secret is required to enable access to the registry. The followings will walk through how to use AWS ECR for the broker image.
 
-* **(Part I)** Download a copy of the event broker Docker image.
-
-  Go to the Solace Developer Portal and download the Solace PubSub+ as a **Docker** image or obtain your version from Solace Support.
-
+* Download a copy of the event broker image: go to the Solace Developer Portal and download the Solace PubSub+ as a **Docker** image or obtain your version from Solace Support.
      * If using Solace PubSub+ Enterprise Evaluation Edition, go to the Solace Downloads page. For the image reference, copy and use the download URL in the Solace PubSub+ Enterprise Evaluation Edition Docker Images section.
 
          | PubSub+ Enterprise Evaluation Edition<br/>Docker Image
          | :---: |
          | 90-day trial version of PubSub+ Enterprise |
          | [Get URL of Evaluation Docker Image](http://dev.solace.com/downloads#eval ) |
-
-
-* **(Part II)** Deploy the event broker Docker image to your Docker registry of choice
-
-  Options include:
-
-  * You can choose to use [OpenShift's Docker registry.](https://docs.openshift.com/container-platform/3.10/install_config/registry/deploy_registry_existing_clusters.html ). For MiniShift a simple option is to use the [Minishift Docker daemon](//docs.okd.io/latest/minishift/using/docker-daemon.html).
-
-  * **(Optional / ECR)** You can utilize the AWS Elastic Container Registry (ECR) to host the event broker Docker image. For more information, refer to [Amazon Elastic Container Registry](https://aws.amazon.com/ecr/ ). If you are using ECR as your Docker registry then you must add the ECR login credentials (as an OpenShift secret) to your event broker HA deployment.  This project contains a helper script to execute this step:
-
-```shell
-    # Required if using ECR for Docker registry
-    # Ensure to use aws cli v1, any sub version
-    cd ~/workspace/pubsubplus-openshift-quickstart/scripts
-    sudo su
-    aws configure       # provide AWS config for root; provide your key ID, key and region.
-    ./addECRsecret.sh solace-pubsub   # adjust your project name as needed
-```
-
-  Here is an outline of the additional steps required if loading an image to ECR:
-  
-  * Copy the Solace Docker image location and download the image archive locally using the `wget <url>` command.
-  * Load the downloaded image to the local docker image repo using the `docker load -i <archive>` command
-  * Go to your target ECR repository in the [AWS ECR Repositories console](https://console.aws.amazon.com/ecr ) and get the push commands information by clicking on the "View push commands" button.
-  * Start from the `docker tag` command to tag the image you just loaded. Use `docker images` to find the  Solace Docker image just loaded. You may need to use 
-  * Finally, use the `docker push` command to push the image.
-  * Exit from superuser to normal user
-
+* Push the broker image to the private registry. Follow the specific procedures for the registry you are using, e.g.: [for the AWS ECR](https://docs.aws.amazon.com/AmazonECR/latest/userguide/getting-started-cli.html ).
+Note: if advised to run `aws ecr get-login-password` as part of the "Authenticate to your registry" step and it fails, try running `$(aws ecr get-login --region <your-registry-region> --no-include-email)` instead.
 ![alt text](/docs/images/ECR-Registry.png "ECR Registry")
+* Create a secret `pullsecret` from the registry information in the Docker configuration:
+```
+oc create secret generic pullsecret --from-file=.dockerconfigjson=$(readlink -f ~/.docker/config.json) --type=kubernetes.io/dockerconfigjson
+```
+* Use this secret in following Step 4.
 
-<br>
-
-> Note: If using MiniShift a workaround is required: running the `addECRsecret.sh` will not be enough and requires manually loading the broker image to MiniShift's Docker. (1) Follow the steps to [configure your console to reuse the Minishift Docker daemon](//docs.okd.io/3.11/minishift/using/docker-daemon.html), then (2) use the `docker pull` command to pull the target image from ECR. Ensure to use the exact same image URI as will be passed to the broker deployment in next Step 6. Finally (3) use `eval $(minishift oc-env)` to ensure the [oc binary is added to your PATH](//docs.okd.io/3.11/minishift/openshift/openshift-client-binary.html#openshift-client-binary-overview).
+> Note: If using CodeReady Containers a workaround is required: running the `addECRsecret.sh` will not be enough and requires manually loading the broker image to MiniShift's Docker. (1) Follow the steps to [configure your console to reuse the Minishift Docker daemon](//docs.okd.io/3.11/minishift/using/docker-daemon.html), then (2) use the `docker pull` command to pull the target image from ECR. Ensure to use the exact same image URI as will be passed to the broker deployment in next Step 6. Finally (3) use `eval $(minishift oc-env)` to ensure the [oc binary is added to your PATH](//docs.okd.io/3.11/minishift/openshift/openshift-client-binary.html#openshift-client-binary-overview).
 
 
-For general additional information, refer to the [Using private registries](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#using-private-registries) section in the general Event Broker in Kubernetes Documentation.
+Additional information is also available from the Solace Kubernetes Quickstart documentation, refer to the [Using private registries](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#using-private-registries) section.
 
 ### Step 6-Option 1: Deploy the event broker using Helm
 
@@ -250,24 +176,18 @@ Consult the [Deployment Considerations](https://github.com/SolaceProducts/pubsub
 
 In particular, the `securityContext.enabled` parameter must be set to `false`, indicating not to use the provided pod security context but let OpenShift set it, using SecurityContextConstraints (SCC). By default OpenShift will use the "restricted" SCC.
 
-By default the publicly available [latest Docker image of PubSub+ Standard Edition](https://hub.Docker.com/r/solace/solace-pubsub-standard/tags/) will be used. [Load a different image into a registry](#step-5-optional-load-the-event-broker-docker-image-to-your-docker-registry) if required. If using a different image, add the `image.repository=<your-image-location>,image.tag=<your-image-tag>` values to the `--set` commands below, comma-separated.
+By default the publicly available [latest Docker image of PubSub+ Standard Edition](https://hub.Docker.com/r/solace/solace-pubsub-standard/tags/) will be used. Use a different image tag if required or [use an image from a different registry](#step-3-optional-using-a-private-image-registry). If using a different image, add the `image.repository=<your-image-location>,image.tag=<your-image-tag>` values to the `--set` commands below, comma-separated.
 
 Solace PubSub+ can be vertically scaled by deploying in one of the [client connection scaling tiers](//docs.solace.com/Configuring-and-Managing/SW-Broker-Specific-Config/Scaling-Tier-Resources.htm), controlled by the `solace.size` chart parameter.
 
-Next an HA and a non-HA deployment examples are provided, using default parameters. For configuration options, refer to the [Solace PubSub+ Advanced Event Broker Helm Chart](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/tree/master/pubsubplus) reference.
-After initiating a deployment with one of the commands below skip to the [Validating the Deployment](#validating-the-deployment) section.
+Procedure:
 
-- **Important**: For each new project using Helm v2, grant admin access to the server-side Tiller service from the "tiller-project" and set the TILLER_NAMESPACE environment, which is used by the Helm client to locate where Tiller has been deployed.
+* Install Helm: use the [instructions from Helm](//github.com/helm/helm#install) or if using Linux simply run following. Helm is configured properly if the command `helm version` returns no error.
 ```bash
-  oc policy add-role-to-user admin "system:serviceaccount:tiller-project:tiller"
-  # if not already exported, ensure Helm knows where Tiller was deployed
-  export TILLER_NAMESPACE=tiller-project
+  curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
 ```
-
-> Ensure each command-line session has the TILLER_NAMESPACE environment variable properly set!
-
-HA deployment example:
-
+* See following examples:
+    a. HA deployment example:
 ```bash
 # One-time action: Add the PubSub+ charts to local Helm
 helm repo add solacecharts https://solaceproducts.github.io/pubsubplus-kubernetes-quickstart/helm-charts
@@ -279,9 +199,7 @@ helm install --name my-ha-release \
 # Wait until all pods running and ready and the active event broker pod label is "active=true" 
 oc get pods --show-labels -w
 ```
-
-Single-node, non-HA deployment example:
-
+    b. Single-node, non-HA deployment example:
 ```bash
 # One-time action: Add the PubSub+ charts to local Helm
 helm repo add solacecharts https://solaceproducts.github.io/pubsubplus-kubernetes-quickstart/helm-charts
