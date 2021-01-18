@@ -187,7 +187,7 @@ Procedure:
 ```
 * See following examples:
 
-HA deployment example:
+_HA_ deployment example:
 ```bash
 # One-time action: Add the PubSub+ charts to local Helm
 helm repo add solacecharts https://solaceproducts.github.io/pubsubplus-kubernetes-quickstart/helm-charts
@@ -200,7 +200,7 @@ helm install --name my-ha-release \
 oc get pods --show-labels -w
 ```
 
-Single-node, non-HA deployment example with pull secret:
+Single-node, _non-HA_ deployment example with _pull_ _secret_:
 ```bash
 # One-time action: Add the PubSub+ charts to local Helm
 helm repo add solacecharts https://solaceproducts.github.io/pubsubplus-kubernetes-quickstart/helm-charts
