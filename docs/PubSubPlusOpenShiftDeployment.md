@@ -9,21 +9,19 @@ This is detailed documentation of deploying Solace PubSub+ Software Event Broker
 
 Contents:
   * [Purpose of this Repository](#purpose-of-this-repository)
-  * [Description of the Solace PubSub+ Software Event Broker](#description-of-solace-pubsub-software-event-broker)
+  * [Description of Solace PubSub+ Software Event Broker](#description-of-solace-pubsub-software-event-broker)
   * [Production Deployment Architecture](#production-deployment-architecture)
   * [Deployment Options](#deployment-options)
       - [Option 1, using Helm](#option-1-using-helm)
       - [Option 2, using OpenShift templates](#option-2-using-openshift-templates)
-  * [How to deploy Solace PubSub+ onto OpenShift / AWS](#how-to-deploy-solace-pubsub-onto-openshift--aws)
-    + [Step 1: (Optional / AWS) Deploy OpenShift Container Platform onto AWS using the RedHat OpenShift AWS QuickStart Project](#step-1-optional--aws-deploy-openshift-container-platform-onto-aws-using-the-redhat-openshift-aws-quickstart-project)
-    + [Step 2: Prepare your workspace](#step-2-prepare-your-workspace)
-    + [Step 3: (Optional: only execute for Deployment option 1) Install the Helm v2 client and server-side tools](#step-3-optional-only-execute-for-deployment-option-1-install-the-helm-v2-client-and-server-side-tools)
-    + [Step 4: Create a new OpenShift project to host the event broker deployment](#step-4-create-a-new-openshift-project-to-host-the-event-broker-deployment)
-    + [Step 5: Optional: Load the event broker (Docker image) to your Docker Registry](#step-5-optional-load-the-event-broker-docker-image-to-your-docker-registry)
-    + [Step 6-Option 1: Deploy the event broker using Helm](#step-6-option-1-deploy-the-event-broker-using-helm)
-    + [Step 6-Option 2: Deploy the event broker using the OpenShift templates included in this project](#step-6-option-2-deploy-the-event-broker-using-the-openshift-templates-included-in-this-project)
+  * [How to deploy Solace PubSub+ onto OpenShift / AWS](#how-to-deploy-solace-pubsub-onto-openshift-aws)
+    + [Step 1: (Optional / AWS) Deploy a self-managed OpenShift Container Platform onto AWS](#step-1-optional-aws-deploy-a-self-managed-openshift-container-platform-onto-aws)
+    + [Step 2: Specify an OpenShift project for deployment](#step-2-specify-an-openshift-project-for-deployment)
+    + [Step 3: Optional: Using a Private Image Registry](#step-3-optional-using-a-private-image-registry)
+    + [Step 4-Option 1: Deploy using Helm](#step-4-option-1-deploy-using-helm)
+    + [Step 4-Option 2: Deploy using OpenShift Templates](#step-4-option-2-deploy-using-openshift-templates)
   * [Validating the Deployment](#validating-the-deployment)
-    + [Viewing Bringup Logs](#viewing-bringup-logs)
+    + [Viewing Bringup logs](#viewing-bringup-logs)
   * [Gaining Admin and SSH access to the event broker](#gaining-admin-and-ssh-access-to-the-event-broker)
   * [Testing data access to the event broker](#testing-data-access-to-the-event-broker)
   * [Deleting a deployment](#deleting-a-deployment)
@@ -32,7 +30,6 @@ Contents:
   * [Special topics](#special-topics)
     + [Using NFS for persistent storage](#using-nfs-for-persistent-storage)
   * [Resources](#resources)
-
 
 ## Purpose of this Repository
 
@@ -232,14 +229,13 @@ helm install --name my-release \
 This deployment is using OpenShift templates and don't require Helm. It assumes [Step 2](#step-2-specify-an-openshift-project-for-deployment) and [optional step 3](#step-3-optional-using-a-private-image-registry) have been completed.
 
 Pre-requisites and notes:
-* Determine your event broker disk space requirements. `BROKER_STORAGE_SIZE` default is 30 gigabytes of disk space.
 * Define a strong password for the 'admin' user of the event broker and then base64 encode the value.  This value will be specified as a parameter when processing the event broker OpenShift template:
 ```
 echo -n 'strong@dminPw!' | base64
 ```
 * DOCKER_REGISTRY_URL and EVENTBROKER_IMAGE_TAG default to `solace/solace-pubsub-standard` and `latest`.
-* The template by default provides for a broker supporting 100 connections. Adjust `export system_scaling_maxconnectioncount` in the template for higher scaling but ensure adequate resources are available to the pod(s) by adjusting bot `cpu` and `memory` requests and limits. Refer to the [System Requirements in the Solace documentation](//docs.solace.com/Configuring-and-Managing/SW-Broker-Specific-Config/Scaling-Tier-Resources.htm).
-
+* Determine your event broker [disk space requirements](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#disk-storage). `BROKER_STORAGE_SIZE` default is 30 gigabytes of disk space.
+* The template by default provides for a broker supporting 100 connections. Adjust `export system_scaling_maxconnectioncount` in the template for higher scaling but ensure adequate resources are available to the pod(s) by adjusting both `cpu` and `memory` requests and limits. Refer to the [System Requirements in the Solace documentation](//docs.solace.com/Configuring-and-Managing/SW-Broker-Specific-Config/Scaling-Tier-Resources.htm).
 
 Procedure:
 
@@ -388,7 +384,7 @@ Where (N) above is the ordinal of the Solace PubSub+:
 
 ## Gaining Admin and SSH access to the event broker
 
-The external management host URI will be the Solace Connection URI associated with the load balancer generated by the event broker OpenShift template.  Access will go through the load balancer service as described in the introduction and will always point to the active event broker. The default port is 22 for CLI and 8080 for SEMP/SolAdmin.
+The external management host URI will be the Solace Connection URI associated with the load balancer generated by the event broker OpenShift template.  Access will go through the load balancer service as described in the introduction and will always point to the active event broker. The default port is 22 for CLI and 8080 for SEMP/[Solace PubSub+ Broker Manager](https://docs.solace.com/Solace-PubSub-Manager/PubSub-Manager-Overview.htm).
 
 If you deployed OpenShift in AWS, then the Solace OpenShift QuickStart will have created an EC2 Load Balancer to front the event broker / OpenShift service.  The Load Balancer public DNS name can be found in the AWS EC2 console under the 'Load Balancers' section.
 
@@ -396,13 +392,10 @@ To launch Solace CLI or SSH into the individual event broker instances from the 
 
 ```
 # CLI access
-oc exec -it XXX-XXX-pubsubplus-X cli   # adjust pod name to your deployment
+oc exec -it XXX-XXX-pubsubplus-X -- cli   # adjust pod name to your deployment
 # shell access
-oc exec -it XXX-XXX-pubsubplus-X bash  # adjust pod name to your deployment
+oc exec -it XXX-XXX-pubsubplus-X -- bash  # adjust pod name to your deployment
 ```
-
-> Note for MiniShift: if using Windows you may get an error message: `Unable to use a TTY`. Install and preceed above commands with `winpty` until this is fixed in the MiniShift project.
-
 
 You can also gain access to the Solace CLI and container shell for individual event broker instances from the OpenShift UI.  A web-based terminal emulator is available from the OpenShift UI.  Navigate to an individual event broker Pod using the OpenShift UI:
 
@@ -420,7 +413,9 @@ See the [Solace Kubernetes Quickstart README](//github.com/SolaceProducts/pubsub
 
 ## Testing data access to the event broker
 
-To test data traffic though the newly created event broker instance, visit the Solace Developer Portal and select your preferred programming language to [send and receive messages](http://dev.solace.com/get-started/send-receive-messages/ ). Under each language there is a Publish/Subscribe tutorial that will help you get started.
+To test data traffic though the newly created event broker instance, a simple option to use is the [SDKPerf tool](https://docs.solace.com/SDKPerf/SDKPerf.htm). Another option to quickly check messaging is [Try Me!](https://docs.solace.com/Solace-PubSub-Manager/PubSub-Manager-Overview.htm#Test-Messages), which is integrated into the [Solace PubSub+ Broker Manager](https://docs.solace.com/Solace-PubSub-Manager/PubSub-Manager-Overview.htm).
+
+To try with building a client, visit the Solace Developer Portal and select your preferred programming language to [send and receive messages](http://dev.solace.com/get-started/send-receive-messages/ ). Under each language there is a Publish/Subscribe tutorial that will help you get started.
 
 Note: the Host will be the Solace Connection URI. It may be necessary to [open up external access to a port](//github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#modifying-or-upgrading-a-deployment ) used by the particular messaging API if it is not already exposed.
 
@@ -464,14 +459,13 @@ oc delete project solace-pubsub   # adjust your project name as needed
 
 ### Deleting the AWS OpenShift Container Platform deployment
 
-To delete your OpenShift Container Platform deployment that was set up at Step 1, first you need to detach the IAM policies from the ‘Setup Role’ (IAM) that were attached in (Part II) of Step 1. Then you also need to ensure to free up the allocated OpenShift entitlements from your subscription otherwise they will no longer be available for a subsequent deployment.
-
-Use this quick start's script to automate the execution of the required steps. SSH into the *ansible-configserver* then follow the commands:
+To delete your OpenShift Container Platform deployment that was set up at Step 1:
 
 ```
-# assuming pubsubplus-openshift-quickstart/scripts are still available from Step 1
-cd ~/pubsubplus-openshift-quickstart/scripts
-./prepareDeleteAWSOpenShift.sh
+cd ~/workspace
+./openshift-install help # Check options
+./openshift-install destroy cluster
+./openshift-install destroy bootstrap
 ```
 
 Now the OpenShift stack delete can be initiated from the AWS CloudFormation console.
@@ -499,7 +493,7 @@ sudo oc adm policy add-scc-to-user nfs-provisioner -z nfs-test-nfs-server-provis
 oc get pod nfs-test-nfs-server-provisioner-0
 ```
 
-If using templates top deploy locate the volume mont for `softAdb` in the template and disable it by commenting it out:
+If using templates to deploy locate the volume mount for `softAdb` in the template and disable it by commenting it out:
 
 ```yaml
 # only mount softAdb when not using NFS, comment it out otherwise
