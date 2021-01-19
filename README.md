@@ -56,7 +56,7 @@ Helm is configured properly if the command `helm version` returns no error.
   helm repo add solacecharts https://solaceproducts.github.io/pubsubplus-kubernetes-quickstart/helm-charts
 ```
 
-- Create or switch to your project
+- Create a new project or switch to your existing project (do not use the `default` project as it's loose permissions doesn't reflect a typical OpenShift environment)
 ```bash
   oc new-project solace-pubsub
 ```
@@ -90,9 +90,11 @@ c) Create a Solace PubSub+ HA deployment, supporting 100 connections scaling usi
 
 The above options will start the deployment and write related information and notes to the console.
 
-> Note: If using CodeReady Containers check the results of `oc get svc my-release-pubsubplus`. This will return the ephemeral nodePort port numbers for each message router service. Use these port numbers together with CodeReady Containers' public IP address which can be obtained from the command `crc ip`.
+Broker services are exposed by default through a Load Balancer that is specific to your OpenShift platform. For details check the `Services access` section of the notes.
 
 Wait for the deployment to complete following the instructions, then you can [validate the deployment and try the management and messaging services](/docs/PubSubPlusOpenShiftDeployment.md#validating-the-deployment).
+ 
+> Note: there is no Load Balancer support if using CodeReady Containers and services shall be accessed through NodePorts instead. Check the results of `oc get svc my-release-pubsubplus`. This will return the ephemeral nodePort port numbers for each message router service. Use these port numbers together with CodeReady Containers' public IP address which can be obtained from the command `crc ip`.
 
 If any issues, refer to the [Troubleshooting](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#troubleshooting) section of the general PubSub+ Kubernetes Documentation - substitute any `kubectl` commands with `oc` commands.
 
