@@ -128,7 +128,7 @@ INFO Login to the console with user: "kubeadmin", and password: "CKGc9-XUT6J-PDt
 * Follow above hints to get started, including verifying access to the web-console.
 
 
-### Step 2: Create a new OpenShift project to host the event broker deployment
+### Step 2: Specify an OpenShift project for deployment
 
 Create a new project or switch to your existing project (do not use the `default` project as it's loose permissions doesn't reflect a typical OpenShift environment)
 ```
@@ -153,34 +153,32 @@ Note: if advised to run `aws ecr get-login-password` as part of the "Authenticat
 ![alt text](/docs/images/ECR-Registry.png "ECR Registry")
 * Create a pull secret from the registry information in the Docker configuration. This assumes that ECR login happened on the same machine:
 ```
-oc create secret generic <my-pullsecret> --from-file=.dockerconfigjson=$(readlink -f ~/.docker/config.json) --type=kubernetes.io/dockerconfigjson
+oc create secret generic <my-pullsecret> \
+   --from-file=.dockerconfigjson=$(readlink -f ~/.docker/config.json) \
+   --type=kubernetes.io/dockerconfigjson
 ```
-* Use this pull secret in following Step 4.
+* Use `<my-pullsecret>` in following Step 4.
 
 Additional information on private registries is also available from the Solace Kubernetes Quickstart documentation, refer to the [Using private registries](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#using-private-registries) section.
 
-> Note: If using CodeReady Containers a workaround may be required if ECR login fails on the console (e.g. on Windows). In this case log into the OpenShift node: `oc get node`, then `oc debug node/<reported-node-name>`, finally execute `chroot /host` at the prompt. Since it is not straightforward to install the `aws` CLI on CoreOS running on the node, obtain `aws ecr get-login-password --region <ecr-region>` from a different machine where `aws` is installed. Then copy and paste it into this command: `echo "<paste-obtained-password-text>" | podman login --username AWS --password-stdin <registry>` - get `<registry>` from the URI from your ECR registry, in the example format `9872397498329479394.dkr.ecr.us-east-2.amazonaws.com`. Then run `podman pull <your-ECR-image>` to load it locally on the node. Exit the node and it will be possible to use your ECR image URL and tag for deployment (no need to use a pull secret here).
+> Note: If using CodeReady Containers a workaround may be required if ECR login fails on the console (e.g. on Windows). In this case log into the OpenShift node: `oc get node`, then `oc debug node/<reported-node-name>`, finally execute `chroot /host` at the prompt. Since it is not straightforward to install the `aws` CLI on CoreOS running on the node, obtain `aws ecr get-login-password --region <ecr-region>` from a different machine where `aws` is installed. Then copy and paste it into this command: `echo "<paste-obtained-password-text>" | podman login --username AWS --password-stdin <registry>` - get `<registry>` from the URI from your ECR registry, in the example format of `9872397498329479394.dkr.ecr.us-east-2.amazonaws.com`. Then run `podman pull <your-ECR-image>` to load it locally on the CRC node. Exit the node and it will be possible to use your ECR image URL and tag for deployment (no need to use a pull secret here).
 
 ### Step 4-Option 1: Deploy the event broker using Helm
 
-Using Helm to deploy provides more flexibility in terms of event broker deployment options, compared to those offered by the OpenShift templates (Option 2, also provided by this project).
+Using Helm to deploy offers more flexibility in terms of event broker deployment options, compared to those offered by the OpenShift templates (Option 2, also provided by this project).
 
-More information is provided in the following documents:
+Additional information is provided in the following documents:
 * [Solace PubSub+ on Kubernetes Deployment Guide](//github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md)
 * [Kubernetes Deployment Quick Start Guide](//github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/README.md)
 
-The deployment is using PubSub+ Software Event Broker Helm charts and customized by overriding [default chart parameters](//github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/tree/master/pubsubplus#configuration).
+The deployment is using PubSub+ Software Event Broker Helm charts and it is customized by overriding [default chart parameters](//github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/tree/master/pubsubplus#configuration).
 
-Consult the [Deployment Considerations](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#pubsub-event-broker-deployment-considerations) section of the general Event Broker in Kubernetes Documentation when planning your deployment.
-
-In particular, the `securityContext.enabled` parameter must be set to `false`, indicating not to use the provided pod security context but let OpenShift set it, using SecurityContextConstraints (SCC). By default OpenShift will use the "restricted" SCC.
-
-By default the publicly available [latest Docker image of PubSub+ Standard Edition](https://hub.Docker.com/r/solace/solace-pubsub-standard/tags/) will be used. Use a different image tag if required or [use an image from a different registry](#step-3-optional-using-a-private-image-registry). If using a different image, add the `image.repository=<your-image-location>,image.tag=<your-image-tag>` values to the `--set` commands below, comma-separated.
-
-Solace PubSub+ can be vertically scaled by deploying in one of the [client connection scaling tiers](//docs.solace.com/Configuring-and-Managing/SW-Broker-Specific-Config/Scaling-Tier-Resources.htm), controlled by the `solace.size` chart parameter.
+* Consult the [Deployment Considerations](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#pubsub-event-broker-deployment-considerations) section of the general Event Broker in Kubernetes Documentation when planning your deployment.
+* In particular, the `securityContext.enabled` parameter must be set to `false`, indicating not to use the provided pod security context but let OpenShift set it, using SecurityContextConstraints (SCC). By default OpenShift will use the "restricted" SCC.
+* By default the publicly available [latest Docker image of PubSub+ Standard Edition](https://hub.Docker.com/r/solace/solace-pubsub-standard/tags/) will be used. Use a different image tag if required or [use an image from a different registry](#step-3-optional-using-a-private-image-registry). If using a different image, add the `image.repository=<your-image-location>,image.tag=<your-image-tag>` values to the `--set` commands below, comma-separated. Also specify a pull secret is required: `image.pullSecretName=<my-pullsecret>`
+* The broker can be [vertically scaled](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#deployment-scaling ) using the `solace.size` chart parameter.
 
 Procedure:
-
 * Install Helm: use the [instructions from Helm](//github.com/helm/helm#install) or if using Linux simply run following. Helm is configured properly if the command `helm version` returns no error.
 ```bash
   curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
@@ -191,9 +189,9 @@ _HA_ deployment example:
 ```bash
 # One-time action: Add the PubSub+ charts to local Helm
 helm repo add solacecharts https://solaceproducts.github.io/pubsubplus-kubernetes-quickstart/helm-charts
-# Initiate the HA deployment
+# Initiate the HA deployment - specify an admin password
 helm install --name my-ha-release \
-  --set securityContext.enabled=false,solace.redundancy=true,solace.usernameAdminPassword=<EVENTBROKER_ADMIN_PASSWORD> \
+  --set securityContext.enabled=false,solace.redundancy=true,solace.usernameAdminPassword=<broker-admin-password> \
   solacecharts/pubsubplus
 # Check the notes printed on screen
 # Wait until all pods running and ready and the active event broker pod label is "active=true" 
@@ -204,9 +202,9 @@ Single-node, _non-HA_ deployment example with _pull_ _secret_:
 ```bash
 # One-time action: Add the PubSub+ charts to local Helm
 helm repo add solacecharts https://solaceproducts.github.io/pubsubplus-kubernetes-quickstart/helm-charts
-# Initiate the non-HA deployment
+# Initiate the non-HA deployment - specify an admin password
 helm install --name my-nonha-release \
-  --set securityContext.enabled=false,solace.redundancy=true,solace.usernameAdminPassword=<EVENTBROKER_ADMIN_PASSWORD> \
+  --set securityContext.enabled=false,solace.redundancy=true,solace.usernameAdminPassword=<broker-admin-password> \
   --set image.pullSecretName=<my-pullsecret> \
   solacecharts/pubsubplus
 # Check the notes printed on screen
@@ -216,13 +214,13 @@ oc get pods --show-labels -w
 
 Note: as an alternative to longer `--set` parameters, it is possible to define same parameter values in a YAML file:
 ```yaml
-# Create example values file
+# Create example values file - specify an admin password
 echo "
 securityContext
   enabled: false
 solace
   redundancy: true,
-  usernameAdminPassword: <EVENTBROKER_ADMIN_PASSWORD>" > deployment-values.yaml
+  usernameAdminPassword: <broker-admin-password>" > deployment-values.yaml
 # Use values file
 helm install --name my-release \
   -v deployment-values.yaml \
@@ -233,19 +231,14 @@ helm install --name my-release \
 
 This deployment is using OpenShift templates and don't require Helm. It assumes [Step 2](#step-2-prepare-your-workspace) and [optional step 5](#step-5-optional-load-the-event-broker-docker-image-to-your-docker-registry) have been completed.
 
-**Prerequisites:**
-1. Determine your event broker disk space requirements.  We recommend a minimum of 30 gigabytes of disk space.
-2. Define a strong password for the 'admin' user of the event broker and then base64 encode the value.  This value will be specified as a parameter when processing the event broker OpenShift template:
+Pre-requisites:
+* Determine your event broker disk space requirements.  We recommend a minimum of 30 gigabytes of disk space.
+* Define a strong password for the 'admin' user of the event broker and then base64 encode the value.  This value will be specified as a parameter when processing the event broker OpenShift template:
 ```
 echo -n 'strong@dminPw!' | base64
 ```
-3. Switch to the templates directory:
-```
-oc project solace-pubsub   # adjust your project name as needed
-cd ~/workspace/pubsubplus-openshift-quickstart/templates
-```
 
-**Deploy the event broker:**
+Procedure:
 
 You can deploy the event broker in either a single-node or high-availability configuration.
 
@@ -256,21 +249,21 @@ The template by default provides for a small-footprint Solace PubSub+ deployment
 Also note that if a deployment failed and then deleted using `oc delete -f`, ensure to delete any remaining PVCs. Failing to do so and retrying using the same deployment name will result in an already used PV volume mounted and the pod(s) may not come up.
 
 * For a **Single-Node** configuration:
-  * Process the Solace 'Single Node' OpenShift template to deploy the event broker in a single-node configuration.  Specify values for the DOCKER_REGISTRY_URL, EVENTBROKER_IMAGE_TAG, EVENTBROKER_STORAGE_SIZE, and EVENTBROKER_ADMIN_PASSWORD parameters:
+  * Process the Solace 'Single Node' OpenShift template to deploy the event broker in a single-node configuration.  Specify values for the DOCKER_REGISTRY_URL, EVENTBROKER_IMAGE_TAG, EVENTBROKER_STORAGE_SIZE, and broker-admin-password parameters:
 ```
 oc project solace-pubsub   # adjust your project name as needed
 cd  ~/workspace/pubsubplus-openshift-quickstart/templates
-oc process -f eventbroker_singlenode_template.yaml DEPLOYMENT_NAME=test-singlenode DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> EVENTBROKER_IMAGE_TAG=<replace with your Solace PubSub+ Docker image tag> EVENTBROKER_STORAGE_SIZE=30Gi EVENTBROKER_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
+oc process -f eventbroker_singlenode_template.yaml DEPLOYMENT_NAME=test-singlenode DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> EVENTBROKER_IMAGE_TAG=<replace with your Solace PubSub+ Docker image tag> EVENTBROKER_STORAGE_SIZE=30Gi broker-admin-password=<base64 encoded password> | oc create -f -
 # Wait until all pods running and ready
 watch oc get statefulset,service,pods,pvc,pv
 ```
 
 * For a **High-Availability** configuration:
-  * Process the Solace 'HA' OpenShift template to deploy the event broker in a high-availability configuration.  Specify values for the DOCKER_REGISTRY_URL, EVENTBROKER_IMAGE_TAG, EVENTBROKER_STORAGE_SIZE, and EVENTBROKER_ADMIN_PASSWORD parameters:
+  * Process the Solace 'HA' OpenShift template to deploy the event broker in a high-availability configuration.  Specify values for the DOCKER_REGISTRY_URL, EVENTBROKER_IMAGE_TAG, EVENTBROKER_STORAGE_SIZE, and broker-admin-password parameters:
 ```
 oc project solace-pubsub   # adjust your project name as needed
 cd  ~/workspace/pubsubplus-openshift-quickstart/templates
-oc process -f eventbroker_ha_template.yaml DEPLOYMENT_NAME=test-ha DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> EVENTBROKER_IMAGE_TAG=<replace with your Solace PubSub+ Docker image tag> EVENTBROKER_STORAGE_SIZE=30Gi EVENTBROKER_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
+oc process -f eventbroker_ha_template.yaml DEPLOYMENT_NAME=test-ha DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> EVENTBROKER_IMAGE_TAG=<replace with your Solace PubSub+ Docker image tag> EVENTBROKER_STORAGE_SIZE=30Gi broker-admin-password=<base64 encoded password> | oc create -f -
 # Wait until all pods running and ready
 watch oc get statefulset,service,pods,pvc,pv
 ```

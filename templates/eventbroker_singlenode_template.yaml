@@ -296,11 +296,13 @@ objects:
           app.kubernetes.io/name: pubsubplus
           app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
       spec:
+        imagePullSecrets:
+        - name: ${IMAGE_REGISTRY_PULLSECRET}
         serviceAccountName: "${DEPLOYMENT_NAME}-pubsubplus-sa"
         terminationGracePeriodSeconds: 1200
         containers:
         - name: pubsubplus
-          image: "${DOCKER_REGISTRY_URL}:${EVENTBROKER_IMAGE_TAG}"
+          image: "${IMAGE_REGISTRY_URL}:${EVENTBROKER_IMAGE_TAG}"
           imagePullPolicy: IfNotPresent
           resources:
             requests:
@@ -437,11 +439,16 @@ parameters:
     from: '[A-Z0-9]{8}'
     value: example
     required: true
-  - name: DOCKER_REGISTRY_URL
-    displayName: Docker Registry URL
-    description: The Docker registry URL for the registry containing the PubSub+ Event Broker docker image
+  - name: IMAGE_REGISTRY_URL
+    displayName: Image Registry URL
+    description: The image registry URL for the registry containing the PubSub+ Event Broker docker image
     value: solace/solace-pubsub-standard
     required: true
+  - name: IMAGE_REGISTRY_PULLSECRET
+    displayName: Image Registry Pull Secret
+    description: The pull secret to be used to obtain the PubSub+ Event Broker docker image
+    value:
+    required: false
   - name: EVENTBROKER_IMAGE_TAG
     displayName: PubSub+ Event Broker Docker Image Tag
     description: The Docker image tag for the PubSub+ Event Broker docker image from your Docker registry
@@ -450,7 +457,6 @@ parameters:
   - name: EVENTBROKER_ADMIN_PASSWORD
     displayName: Base64 encoded password for PubSub+ username 'admin'
     description: The Event Broker 'admin' user's password (base64 encoded).  This PubSub+ OpenShift template will create an administrative user with username 'admin' with specified password.
-    value: "cEBzc3cwcmQ=" # password 'p@ssw0rd'
     required: true
   - name: EVENTBROKER_STORAGE_SIZE
     displayName: PubSub+ Event Broker Persistent Storage Disk Size
