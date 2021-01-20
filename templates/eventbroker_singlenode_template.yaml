@@ -16,7 +16,7 @@ objects:
       app.kubernetes.io/name: pubsubplus
   type: Opaque
   data:
-    username_admin_password: "${EVENTBROKER_ADMIN_PASSWORD}"
+    username_admin_password: "${BROKER_ADMIN_PASSWORD}"
 
 - kind: ConfigMap
   apiVersion: v1
@@ -297,12 +297,12 @@ objects:
           app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
       spec:
         imagePullSecrets:
-        - name: ${IMAGE_REGISTRY_PULLSECRET}
+        - name: ${BROKER_IMAGE_REGISTRY_PULLSECRET}
         serviceAccountName: "${DEPLOYMENT_NAME}-pubsubplus-sa"
         terminationGracePeriodSeconds: 1200
         containers:
         - name: pubsubplus
-          image: "${IMAGE_REGISTRY_URL}:${EVENTBROKER_IMAGE_TAG}"
+          image: "${BROKER_IMAGE_REGISTRY_URL}:${BROKER_IMAGE_TAG}"
           imagePullPolicy: IfNotPresent
           resources:
             requests:
@@ -429,7 +429,7 @@ objects:
         accessModes: [ "ReadWriteOnce" ]
         resources:
           requests:
-            storage: "${EVENTBROKER_STORAGE_SIZE}"
+            storage: "${BROKER_STORAGE_SIZE}"
 
 parameters:
   - name: DEPLOYMENT_NAME
@@ -439,26 +439,26 @@ parameters:
     from: '[A-Z0-9]{8}'
     value: example
     required: true
-  - name: IMAGE_REGISTRY_URL
+  - name: BROKER_IMAGE_REGISTRY_URL
     displayName: Image Registry URL
     description: The image registry URL for the registry containing the PubSub+ Event Broker docker image
     value: solace/solace-pubsub-standard
     required: true
-  - name: IMAGE_REGISTRY_PULLSECRET
+  - name: BROKER_IMAGE_REGISTRY_PULLSECRET
     displayName: Image Registry Pull Secret
     description: The pull secret to be used to obtain the PubSub+ Event Broker docker image
     value:
     required: false
-  - name: EVENTBROKER_IMAGE_TAG
+  - name: BROKER_IMAGE_TAG
     displayName: PubSub+ Event Broker Docker Image Tag
     description: The Docker image tag for the PubSub+ Event Broker docker image from your Docker registry
     value: latest
     required: true
-  - name: EVENTBROKER_ADMIN_PASSWORD
+  - name: BROKER_ADMIN_PASSWORD
     displayName: Base64 encoded password for PubSub+ username 'admin'
     description: The Event Broker 'admin' user's password (base64 encoded).  This PubSub+ OpenShift template will create an administrative user with username 'admin' with specified password.
     required: true
-  - name: EVENTBROKER_STORAGE_SIZE
+  - name: BROKER_STORAGE_SIZE
     displayName: PubSub+ Event Broker Persistent Storage Disk Size
     description: The size in gigabytes for a Event Broker Pod's persistent volume (with suffix 'Gi'), example 30Gi for 30 gigabytes
     value: 30Gi

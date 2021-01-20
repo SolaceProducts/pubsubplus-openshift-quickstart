@@ -472,6 +472,11 @@ Now the OpenShift stack delete can be initiated from the AWS CloudFormation cons
 
 ## Special topics
 
+### Server Certificate Support
+
+
+
+
 ### Using NFS for persistent storage
 
 The Solace PubSub+ supports NFS for persistent storage, with "root_squash" option configured on the NFS server.
