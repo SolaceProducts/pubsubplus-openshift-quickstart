@@ -37,9 +37,6 @@ objects:
       export system_scaling_maxconnectioncount="100"
       cat /mnt/disks/certs/server/tls.key /mnt/disks/certs/server/tls.crt > /dev/shm/server.cert
       export tls_servercertificate_filepath="/dev/shm/server.cert"
-      # [TODO] KBARR not using correct method of finding ordinal until we bump min Kubernetes release above 1.8.1
-      # https://github.com/kubernetes/kubernetes/issues/40651
-      # node_ordinal=$(STATEFULSET_ORDINAL)
       IFS='-' read -ra host_array <<< $(hostname)
       node_ordinal=${host_array[-1]}
       if [[ ! -z `echo $STATEFULSET_NAMESPACE` ]]; then
@@ -47,7 +44,7 @@ objects:
       else
         namespace=default
       fi
-      service=btest1-pubsubplus
+      service="${DEPLOYMENT_NAME}-pubsubplus"
       # Deal with the fact we cannot accept "-" in routre names
       service_name=$(echo ${service} | sed 's/-//g')
       export routername=$(echo $(hostname) | sed 's/-//g')
