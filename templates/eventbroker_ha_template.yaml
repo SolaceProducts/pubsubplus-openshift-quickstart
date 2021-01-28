@@ -853,4 +853,4 @@ parameters:
   #   displayName: Certificate Secret for Broker TLS Config
   #   description: The server key and certificate for the event broker packaged in a Kubernetes secret
   #   value:
-  #   required: false
+  #   required: true

@@ -236,6 +236,7 @@ echo -n 'strong@dminPw!' | base64
 * DOCKER_REGISTRY_URL and EVENTBROKER_IMAGE_TAG default to `solace/solace-pubsub-standard` and `latest`.
 * Determine your event broker [disk space requirements](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#disk-storage). `BROKER_STORAGE_SIZE` default is 30 gigabytes of disk space.
 * The template by default provides for a broker supporting 100 connections. Adjust `export system_scaling_maxconnectioncount` in the template for higher scaling but ensure adequate resources are available to the pod(s) by adjusting both `cpu` and `memory` requests and limits. Refer to the [System Requirements in the Solace documentation](//docs.solace.com/Configuring-and-Managing/SW-Broker-Specific-Config/Scaling-Tier-Resources.htm).
+* If using [TLS to access broker services](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#enabling-use-of-tls-to-access-broker-services) server key and certificate configuration is required. Uncomment related parts of the template file in a local copy and additionally specify the `BROKER_TLS_CERT_SECRET` parameter.
 
 Procedure:
 
@@ -262,6 +263,7 @@ oc process -f https://raw.githubusercontent.com/SolaceProducts/pubsubplus-opensh
     BROKER_IMAGE_TAG=<replace with your Solace PubSub+ Docker image tag> \
     BROKER_IMAGE_REGISTRY_PULLSECRET=<my-pullsecret>
     BROKER_STORAGE_SIZE=30Gi \
+    BROKER_TLS_CERT_SECRET=<my-tls-server-secret>  # See notes above \
     BROKER_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
 # Wait until all pods running and ready
 oc get pods -w --show-labels
