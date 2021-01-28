@@ -795,7 +795,7 @@ objects:
               defaultMode: 0400
           - name: server-certs
             secret:
-              secretName: MYSECRET
+              secretName: "${BROKER_TLS_CERT_SECRET}"
               defaultMode: 0400
           - name: dshm
             emptyDir:
