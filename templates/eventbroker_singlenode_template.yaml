@@ -35,9 +35,9 @@ objects:
       export service_semp_tlsport='1943'
       export logging_debug_output=all
       export system_scaling_maxconnectioncount="100"
-      cat /mnt/disks/certs/server/tls.key /mnt/disks/certs/server/tls.crt > /dev/shm/server.cert
-      export tls_servercertificate_filepath="/dev/shm/server.cert"
-
+      # Uncomment if using TLS configuration
+      # cat /mnt/disks/certs/server/tls.key /mnt/disks/certs/server/tls.crt > /dev/shm/server.cert
+      # export tls_servercertificate_filepath="/dev/shm/server.cert"
     startup-broker.sh: |-
       #!/bin/bash
       APP=`basename "$0"`
@@ -62,15 +62,16 @@ objects:
         echo "`date` ERROR: ${APP}-Solace Management API never came up"  >&2
         exit 1
       fi
-      rm /dev/shm/server.cert # remove as soon as possible
-      cert_results=$(curl --write-out '%{http_code}' --silent --output /dev/null -k -X PATCH -u admin:${password} https://localhost:1943/SEMP/v2/config/ \
-        -H "content-type: application/json" \
-        -d "{\"tlsServerCertContent\":\"$(cat /mnt/disks/certs/server/tls.key /mnt/disks/certs/server/tls.crt | awk '{printf "%s\\n", $0}')\"}")
-      if [ "${cert_results}" != "200" ]; then
-        echo "`date` ERROR: ${APP}-Unable to set the server certificate, exiting"  >&2
-        exit 1
-      fi
-      echo "`date` INFO: ${APP}-Server certificate has been configured"
+      # Uncomment if using TLS configuration
+      # rm /dev/shm/server.cert # remove as soon as possible
+      # cert_results=$(curl --write-out '%{http_code}' --silent --output /dev/null -k -X PATCH -u admin:${password} https://localhost:1943/SEMP/v2/config/ \
+      #   -H "content-type: application/json" \
+      #   -d "{\"tlsServerCertContent\":\"$(cat /mnt/disks/certs/server/tls.key /mnt/disks/certs/server/tls.crt | awk '{printf "%s\\n", $0}')\"}")
+      # if [ "${cert_results}" != "200" ]; then
+      #   echo "`date` ERROR: ${APP}-Unable to set the server certificate, exiting"  >&2
+      #   exit 1
+      # fi
+      # echo "`date` INFO: ${APP}-Server certificate has been configured"
       echo "`date` INFO: ${APP}-PubSub+ Event Broker bringup is complete for this node."
       exit 0
 
@@ -429,9 +430,10 @@ objects:
           - name: secrets
             mountPath: /mnt/disks/secrets
             readOnly: true
-          - name: server-certs
-            mountPath: /mnt/disks/certs/server
-            readOnly: true
+          # Uncomment if using TLS configuration
+          # - name: server-certs
+          #   mountPath: /mnt/disks/certs/server
+          #   readOnly: true
           - name: dshm
             mountPath: /dev/shm
           - name: data
@@ -506,10 +508,11 @@ objects:
             secret:
               secretName: "${DEPLOYMENT_NAME}-pubsubplus-secrets"
               defaultMode: 0400
-          - name: server-certs
-            secret:
-              secretName: "${BROKER_TLS_CERT_SECRET}"
-              defaultMode: 0400
+          # Uncomment if using TLS configuration
+          # - name: server-certs
+          #   secret:
+          #     secretName: "${BROKER_TLS_CERT_SECRET}"
+          #     defaultMode: 0400
           - name: dshm
             emptyDir:
               medium: Memory
@@ -560,8 +563,9 @@ parameters:
     description: The size in gigabytes for a Event Broker Pod's persistent volume (with suffix 'Gi'), example 30Gi for 30 gigabytes
     value: 30Gi
     required: true
-  - name: BROKER_TLS_CERT_SECRET
-    displayName: Certificate Secret for Broker TLS Config
-    description: The server key and certificate for the event broker packaged in a Kubernetes secret
-    value:
-    required: true
+  # Uncomment if using TLS configuration
+  # - name: BROKER_TLS_CERT_SECRET
+  #   displayName: Certificate Secret for Broker TLS Config
+  #   description: The server key and certificate for the event broker packaged in a Kubernetes secret
+  #   value:
+  #   required: true
