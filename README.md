@@ -6,7 +6,7 @@ The [Solace PubSub+ Platform](https://solace.com/products/platform/)'s [software
 
 This project is a best practice template intended for development and demo purposes. It has been tested using OpenShift v4.6. The tested and recommended Solace PubSub+ Software Event Broker version is 9.8.
 
-This document provides a quick getting started guide to install a Solace PubSub+ Software Event Broker in various configurations onto an OpenShift 4 platform.
+This document provides a quick getting started guide to install a Solace PubSub+ Software Event Broker in various configurations onto an OpenShift 4 platform. For OpenShift 3.11, refer to the [archived version of this quick start](https://github.com/SolaceProducts/pubsubplus-openshift-quickstart/tree/v1.1.1).
 
 Detailed documentation is provided in the [Solace PubSub+ on OpenShift Documentation](/docs/PubSubPlusOpenShiftDeployment.md). There is also a general [Solace PubSub+ on Kubernetes Documentation](//github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md) available, which the OpenShift deployment  builds upon.
 

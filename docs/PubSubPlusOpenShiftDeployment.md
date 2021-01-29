@@ -4,6 +4,7 @@ This is detailed documentation of deploying Solace PubSub+ Software Event Broker
 * For a hands-on quick start using an existing OpenShift platform, refer to the [Quick Start guide](/README.md).
 * For considerations about deploying in a general Kubernetes environment, refer to the [Solace PubSub+ on Kubernetes Documentation](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md)
 * For the `pubsubplus` Helm chart configuration options, refer to the [PubSub+ Software Event Broker Helm Chart Reference](/pubsubplus/README.md).
+* For OpenShift 3.11, refer to the [archived version of this project](https://github.com/SolaceProducts/pubsubplus-openshift-quickstart/tree/v1.1.1).
 
 
 
