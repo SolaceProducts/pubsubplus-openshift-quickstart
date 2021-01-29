@@ -41,14 +41,18 @@ jobs:
 
     - name: Prep target runner VM
       run: |
-        if gcloud compute instances describe ${TESTGCPMACHINE} --project "capable-stream-180018" --zone "us-east4-a" | grep status | grep RUNNING ; then echo "Test machine is already running, likely in use. Unable to continue this test run, exiting"; exit; fi
+        if gcloud compute instances describe ${TESTGCPMACHINE} --project "capable-stream-180018" --zone "us-east4-a" | grep status | grep RUNNING ; then
+          echo "Test machine is already running, likely in use. Unable to continue this test run, exiting"
+          echo "RUNCONFLICT=true" >> $GITHUB_ENV
+          exit
+        fi
         gcloud compute instances start ${TESTGCPMACHINE} --project "capable-stream-180018" --zone "us-east4-a"
         rm ~/.ssh/google_compute_* || echo "GCP certs were clean"
         gcloud compute --project "capable-stream-180018" ssh --zone "us-east4-a" --force-key-file-overwrite --quiet "${TESTUSER}@${TESTGCPMACHINE}" --quiet --command "rm -f /opt/scripts/*; rm -f /opt/templates/*" # cleanup remote directories
         gcloud compute --project "capable-stream-180018" scp --zone "us-east4-a" --quiet templates/* "${TESTUSER}@${TESTGCPMACHINE}:/opt/templates" # Copy templates to remote
         gcloud compute --project "capable-stream-180018" scp --zone "us-east4-a" --quiet ci/* "${TESTUSER}@${TESTGCPMACHINE}:/opt/scripts" # Copy scripts to remote
 
-    - name: Deploy HA broker and test
+    - name: Setup CodeReady Containers
       run: |
         shopt -s expand_aliases; alias remote_command=${REMOTE_COMMAND}
         remote_command "chmod +x /opt/scripts/*" # ensure crc known start state
@@ -91,6 +95,9 @@ jobs:
     - name: Cleanup
       if: ${{ always() }}
       run: |
-        shopt -s expand_aliases; alias remote_command=${REMOTE_COMMAND}
-        remote_command "/opt/scripts/shutdownCrc"
-        gcloud compute instances stop ${TESTGCPMACHINE} --project "capable-stream-180018" --zone "us-east4-a"
+        # Only touch the remote VM if not used by someone else
+        if [[ ${RUNCONFLICT} != true ]]
+          shopt -s expand_aliases; alias remote_command=${REMOTE_COMMAND}
+          remote_command "/opt/scripts/shutdownCrc"
+          gcloud compute instances stop ${TESTGCPMACHINE} --project "capable-stream-180018" --zone "us-east4-a"
+        fi
