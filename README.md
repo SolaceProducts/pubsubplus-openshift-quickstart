@@ -4,7 +4,7 @@ The [Solace PubSub+ Platform](https://solace.com/products/platform/)'s [software
 
 ## Overview
 
-This document provides a quick getting started guide to install a Solace PubSub+ Software Event Broker in various configurations onto an OpenShift 3.11 platform.
+This document provides a quick getting started guide to install a Solace PubSub+ Software Event Broker in various configurations onto an OpenShift 4.6 platform.
 
 Detailed OpenShift-specific documentation is provided in the [Solace PubSub+ on OpenShift Documentation](/docs/PubSubPlusOpenShiftDeployment.md). There is also a general [Solace PubSub+ on Kubernetes Documentation](//github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md) available, which the OpenShift deployment  builds upon.
 
@@ -12,7 +12,7 @@ This guide is intended mainly for development and demo purposes. The recommended
 
 The PubSub+ deployment does not require any special OpenShift Security Context, the default "restricted" SCC can be used.
 
-We recommend using the Helm tool for convenience. An alternative method [using OpenShift templates](/docs/PubSubPlusOpenShiftDeployment.md#step-6-option-2-deploy-the-event-broker-using-the-openshift-templates-included-in-this-project) is also available.
+We recommend using the Helm tool for convenience.
 
 ## How to deploy Solace PubSub+ Software Event Broker
 
@@ -29,9 +29,10 @@ For other event broker configurations or sizes, refer to the [PubSub+ Software E
 
 ### 1. Get an OpenShift environment
 
-There are [multiple ways](https://docs.openshift.com/index.html ) to get to an OpenShift 3.11 platform, including [MiniShift](https://github.com/minishift/minishift#welcome-to-minishift ). The [detailed Event Broker on OpenShift Documentation](/docs/PubSubPlusOpenShiftDeployment.md#step-1-optional--aws-deploy-openshift-container-platform-onto-aws-using-the-redhat-openshift-aws-quickstart-project) describes how to set up a production-ready Red Hat OpenShift Container Platform platform on AWS.
+There are [multiple ways](https://docs.openshift.com/index.html ) to get to an OpenShift 4.6 platform, including [Code Ready Containers](https://developers.redhat.com/products/codeready-containers/overview). The [detailed Event Broker on OpenShift Documentation](/docs/PubSubPlusOpenShiftDeployment.md#step-1-optional--aws-deploy-openshift-container-platform-onto-aws-using-the-redhat-openshift-aws-quickstart-project) describes how to set up a production-ready Red Hat OpenShift Container Platform platform on AWS.
 
-Log in as `admin` using the `oc login -u admin` command. 
+The easiest way to get an OpenShift cluster up and running is through the [Developer Sandbox](https://developers.redhat.com/developer-sandbox) program. You can sign up for a free 14 days trial.
+
 
 Check to ensure your OpenShift environment is ready:
 ```bash
@@ -40,32 +41,6 @@ oc whoami
 ```
 
 ### 2. Install and configure Helm
-
-Note that Helm is transitioning from v2 to v3. Many deployments still use v2. PubSub+ can be deployed using either version, however concurrent use of v2 and v3 from the same command-line environment is not supported. Also note that there is a known [issue with using Helm v3 with OpenShift 3 objects](https://bugzilla.redhat.com/show_bug.cgi?id=1773682) and until resolved Helm v2 is recommended.
-
-<details open=true><summary><b>Instructions for Helm v2 setup</b></summary>
-<p>
-
-- First download the Helm v2 client. If using Windows, get the [Helm executable](https://storage.googleapis.com/kubernetes-helm/helm-v2.16.0-windows-amd64.zip ) and put it in a directory on your path.
-```bash
-  # Download Helm v2 client, latest version if needed
-  curl -sSL https://raw.githubusercontent.com/helm/helm/master/scripts/get | bash
-```
-
-- Use script to install the Helm v2 client and its Tiller server-side operator. This will deploy Tiller in a dedicated project. Do not use this project for your deployments.
-```bash
-  # Setup local Helm client
-  helm init --client-only
-  # Install Tiller server-side operator into a new "tiller-project"
-  oc new-project tiller-project
-  oc process -f https://github.com/openshift/origin/raw/master/examples/helm/tiller-template.yaml -p TILLER_NAMESPACE="tiller-project" -p HELM_VERSION=v2.16.0 | oc create -f -
-  oc rollout status deployment tiller
-  # also let Helm know where Tiller was deployed
-  export TILLER_NAMESPACE=tiller-project
-```
-
-</p>
-</details>
 
 <details><summary><b>Instructions for Helm v3 setup</b></summary>
 <p>
@@ -93,42 +68,6 @@ Helm is configured properly if the command `helm version` returns no error.
 ```bash
   oc new-project solace-pubsub
 ```
-
-<details open=true><summary><b>Instructions using Helm v2</b></summary>
-<p>
-
-- **Important**: For each new project using Helm v2, grant admin access to the server-side Tiller service from the "tiller-project" and set the TILLER_NAMESPACE environment.
-```bash
-  oc policy add-role-to-user admin "system:serviceaccount:tiller-project:tiller"
-  # if not already exported, ensure Helm knows where Tiller was deployed
-  export TILLER_NAMESPACE=tiller-project
-```
-> Ensure each command-line session has the TILLER_NAMESPACE environment variable properly set!
-
-- Use one of the chart variants to create a deployment. For configuration options and delete instructions, refer to the [PubSub+ Software Event Broker Helm Chart documentation](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/tree/master/pubsubplus#configuration).
-
-a) Create a Solace PubSub+ minimum deployment for development purposes using `pubsubplus-dev`. It requires a minimum of 1 CPU and 2 GB of memory be available to the PubSub+ pod.
-```bash
-  # Deploy PubSub+ Standard edition, minimum footprint developer version
-  helm install --name my-release solacecharts/pubsubplus-dev \
-    --set securityContext.enabled=false
-```
-
-b) Create a Solace PubSub+ standalone deployment, supporting 100 connections scaling using `pubsubplus`. A minimum of 2 CPUs and 4 GB of memory must be available to the PubSub+ pod.
-```bash
-  # Deploy PubSub+ Standard edition, standalone
-  helm install --name my-release solacecharts/pubsubplus \
-    --set securityContext.enabled=false
-```
-
-c) Create a Solace PubSub+ HA deployment, supporting 100 connections scaling using `pubsubplus-ha`. The minimum resource requirements are 2 CPU and 4 GB of memory available to each of the three PubSub+ pods.
-```bash
-  # Deploy PubSub+ Standard edition, HA
-  helm install --name my-release solacecharts/pubsubplus-ha \
-    --set securityContext.enabled=false
-```
-</p>
-</details>
 
 <details><summary><b>Instructions using Helm v3</b></summary>
 <p>
@@ -159,8 +98,6 @@ c) Create a Solace PubSub+ HA deployment, supporting 100 connections scaling usi
 </details>
 
 The above options will start the deployment and write related information and notes to the screen.
-
-> Note: If using MiniShift an additional step is required to expose the service: `oc get --export svc my-release-pubsubplus`. This will return a service definition with nodePort port numbers for each message router service. Use these port numbers together with MiniShift's public IP address which can be obtained from the command `minishift ip`.
 
 Wait for the deployment to complete following the instructions, then you can [validate the deployment and try the management and messaging services](/docs/PubSubPlusOpenShiftDeployment.md#validating-the-deployment).
 

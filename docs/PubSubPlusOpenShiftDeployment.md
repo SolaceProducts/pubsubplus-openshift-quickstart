@@ -1,6 +1,6 @@
-# Deploying a Solace PubSub+ Software Event Broker onto an OpenShift 3.11 platform
+# Deploying a Solace PubSub+ Software Event Broker onto an OpenShift 4.6 platform
 
-This is detailed documentation of deploying Solace PubSub+ Software Event Broker onto an OpenShift 3.11 platform including steps to set up a Red Hat OpenShift Container Platform platform on AWS.
+This is detailed documentation of deploying Solace PubSub+ Software Event Broker onto an OpenShift 4.6 platform including steps to set up a Red Hat OpenShift Container Platform platform on AWS.
 * For a hands-on quick start using an existing OpenShift platform, refer to the [Quick Start guide](/README.md).
 * For considerations about deploying in a general Kubernetes environment, refer to the [Solace PubSub+ on Kubernetes Documentation](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md)
 * For the `pubsubplus` Helm chart configuration options, refer to the [PubSub+ Software Event Broker Helm Chart Reference](/pubsubplus/README.md).
@@ -12,8 +12,6 @@ Contents:
   * [Description of the Solace PubSub+ Software Event Broker](#description-of-solace-pubsub-software-event-broker)
   * [Production Deployment Architecture](#production-deployment-architecture)
   * [Deployment Options](#deployment-options)
-      - [Option 1, using Helm](#option-1-using-helm)
-      - [Option 2, using OpenShift templates](#option-2-using-openshift-templates)
   * [How to deploy Solace PubSub+ onto OpenShift / AWS](#how-to-deploy-solace-pubsub-onto-openshift--aws)
     + [Step 1: (Optional / AWS) Deploy OpenShift Container Platform onto AWS using the RedHat OpenShift AWS QuickStart Project](#step-1-optional--aws-deploy-openshift-container-platform-onto-aws-using-the-redhat-openshift-aws-quickstart-project)
     + [Step 2: Prepare your workspace](#step-2-prepare-your-workspace)
@@ -36,11 +34,11 @@ Contents:
 
 ## Purpose of this Repository
 
-This repository provides an example of how to deploy the Solace PubSub+ Software Event Broker onto an OpenShift 3.11 platform. There are [multiple ways](https://docs.openshift.com/index.html ) to get to an OpenShift platform, including [MiniShift](https://github.com/minishift/minishift#welcome-to-minishift ). This guide will specifically use the Red Hat OpenShift Container Platform for deploying an HA group but concepts are transferable to other compatible platforms. There will be also hints on how to set up a simple single-node MiniKube deployment using MiniShift for development, testing or proof of concept purposes.
+This repository provides an example of how to deploy the Solace PubSub+ Software Event Broker onto an OpenShift 4.6 platform. There are [multiple ways](https://docs.openshift.com/index.html ) to get to an OpenShift platform, including [Code Ready Containers](https://developers.redhat.com/products/codeready-containers/overview). The easiest way to get an OpenShift cluster up and running is through the [Developer Sandbox](https://developers.redhat.com/developer-sandbox) program. You can sign up for a free 14 days trial. This guide will specifically use the Red Hat OpenShift Container Platform for deploying an HA group but concepts are transferable to other compatible platforms. 
 
 The supported Solace PubSub+ Software Event Broker version is 9.4 or later.
 
-For the Red Hat OpenShift Container Platform, we utilize the [RedHat OpenShift on AWS QuickStart](https://aws.amazon.com/quickstart/architecture/openshift/ ) project to deploy a Red Hat OpenShift Container Platform on AWS in a highly redundant configuration, spanning 3 zones.
+For the Red Hat OpenShift Container Platform, we utilize the [RedHat OpenShift on AWS QuickStart](https://docs.openshift.com/container-platform/4.6/installing/installing_aws/installing-aws-default.html) project to deploy a Red Hat OpenShift Container Platform on AWS in a highly redundant configuration, spanning 3 zones.
 
 This repository expands on the [Solace Kubernetes Quickstart](//github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/README.md ) to provide an example of how to deploy Solace PubSub+ in an HA configuration on the OpenShift Container Platform running in AWS.
 
@@ -58,30 +56,17 @@ The following diagram shows an example HA deployment in AWS:
 <br/>
 Key parts are the three PubSub+ Container instances in OpenShift pods, deployed on OpenShift (worker) nodes; the cloud load balancer exposing the event router's services and management interface; the OpenShift master nodes(s); and the Ansible Config Server, which acts as a bastion host for external ssh access.
 
-## Deployment Options
-
-#### Option 1, using Helm
-
-This option allows great flexibility using the Kubernetes `Helm` tool to automate the process of event broker deployment through a wide range of configuration options including in-service rolling upgrade of the event broker. The [Solace Kubernetes QuickStart project](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/tree/master ) will be referred to deploy the event broker onto your OpenShift environment.
-
-#### Option 2, using OpenShift templates
-
-This option can be used directly, without any additional tool to deploy the event broker in a limited number of configurations, using OpenShift templates included in this project. Follow the [steps provided](#step-6-option-2-deploy-the-event-broker-using-the-openshift-templates-included-in-this-project).
-
-
 ## How to deploy Solace PubSub+ onto OpenShift / AWS
 
 The following steps describe how to deploy an event broker onto an OpenShift environment. Optional steps are provided about setting up a Red Hat OpenShift Container Platform on Amazon AWS infrastructure (marked as Optional / AWS) and if you use AWS Elastic Container Registry to host the Solace PubSub+ Docker image (marked as Optional / ECR).
 
 **Hint:** You may skip Step 1 if you already have your own OpenShift environment available.
 
-> Note: If using MiniShift follow the [instructions to get to a working MiniShift deployment](https://docs.okd.io/latest/minishift/getting-started/index.html ). If using MiniShift in a Windows environment one easy way to follow the shell scripts in the subsequent steps of this guide is to use [Git BASH for Windows](https://gitforwindows.org/ ) and ensure any script files are using Unix style line endings by running the `dos2unix` tool if needed. 
-
 ### Step 1: (Optional / AWS) Deploy OpenShift Container Platform onto AWS using the RedHat OpenShift AWS QuickStart Project
 
 * (Part I) Log into the AWS Web Console and run the [OpenShift AWS QuickStart project](https://aws.amazon.com/quickstart/architecture/openshift/ ), which will use AWS CloudFormation for the deployment.  We recommend you deploy OpenShift across 3 AWS Availability Zones for maximum redundancy.  Please refer to the RedHat OpenShift AWS QuickStart guide and supporting documentation:
 
-  * [Deploying and Managing OpenShift on Amazon Web Services](https://access.redhat.com/documentation/en-us/reference_architectures/2018/html/deploying_and_managing_openshift_3.9_on_amazon_web_services/ )
+  * [Installing a cluster quickly on AWS](https://docs.openshift.com/container-platform/4.6/installing/installing_aws/installing-aws-default.html)
   
   **Important:** As described in above documentation, this deployment requires a Red Hat account with a valid Red Hat subscription to OpenShift and will consume 10 OpenShift entitlements in a maximum redundancy configuration. When no longer needed ensure to follow the steps in the [Deleting the OpenShift Container Platform deployment](#deleting-the-openshift-container-platform-deployment ) section of this guide to free up the entitlements.
 
@@ -89,50 +74,11 @@ The following steps describe how to deploy an event broker onto an OpenShift env
   
   **Note:** only the "*ansible-configserver*" is exposed externally in a public subnet. To access the other servers that are in a private subnet, first [SSH into](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html ) the *ansible-configserver* instance then use that instance as a bastion host to SSH into the target server using it's private IP. For that we recommend enabling [SSH agent forwarding](https://developer.github.com/v3/guides/using-ssh-agent-forwarding/ ) on your local machine to avoid the insecure option of copying and storing private keys remotely on the *ansible-configserver*.
 
-* (Part II) Once you have deployed OpenShift using the AWS QuickStart you will have to perform additional steps to re-configure OpenShift to integrate fully with AWS.  For full details, please refer to the RedHat OpenShift documentation for configuring OpenShift for AWS:
-
-  * [OpenShift > Configuring for AWS](https://docs.openshift.com/container-platform/3.10/install_config/configuring_aws.html )
-  
-  To help with that this quick start provides a script to automate the execution of the required steps:
-  
-   * Add the required AWS IAM policies to the ‘Setup Role’ (IAM) used by the RedHat QuickStart to deploy OpenShift to AWS
-   * Tag public subnets so when creating a public service suitable public subnets can be found
-   * Re-configure OpenShift Masters and OpenShift Nodes to make OpenShift aware of AWS deployment specifics
-   
-  SSH into the *ansible-configserver* then follow the commands.
-  
-```
-## On the ansible-configserver server
-# get the scripts
-cd ~
-git clone https://github.com/SolaceProducts/pubsubplus-openshift-quickstart.git
-cd pubsubplus-openshift-quickstart/scripts
-# substitute your own parameters for the following exports
-# You can get the stack names e.g.: from the CloudFormation page of the AWS services console,
-# see the 'Overview' tab of the *nested* OpenShiftStack and VPC substacks.
-# You can get the access keys from the AWS services console IAM > Users > Security credentials.
-export NESTEDOPENSHIFTSTACK_STACKNAME=XXXXXXXXXXXXXXXXXXXXX
-export VPC_STACKNAME=XXXXXXXXXXXXXXXXXXXXX
-export AWS_ACCESS_KEY_ID=XXXXXXXXXXXXXXXXXXXXX
-export AWS_SECRET_ACCESS_KEY=XXXXXXXXXXXXXXXXXXXXX
-# run the config script
-./configureAWSOpenShift.sh
-```
-
-The script will end with listing the private IP of the *openshift-master* servers, one of which you will need to SSH into for the next step. The command to access it is `ssh <master-ip>` with SSH agent forwarding enabled.
-
-Also verify you have access and can login to the OpenShift console. You can get the URL from the CloudFormation page of the AWS services console, see the 'Outputs' tab of the *nested* OpenShiftStack substack.
-
-![alt text](/docs/images/GetOpenShiftURL.png "Getting to OpenShift console URL")
-
-<p align="center">OpenShift deployment example with nested OpenShiftStack, VPCStack, tabs, keys and values</p>
-
-
 ### Step 2: Prepare your workspace
 
 **Important:** This and subsequent steps shall be executed on a host having the OpenShift client tools and able to reach your OpenShift cluster nodes - conveniently, this can be one of the *openshift-master* servers.
 
-> If using MiniShift, continue using your terminal.
+> If using Code Ready Containers or Developer Sandbox, continue using your terminal.
 
 * SSH into your selected host and ensure you are logged in to OpenShift. If you used Step 1 to deploy OpenShift, the requested server URL is the same as the OpenShift console URL, the username is `admin` and the password is as specified in the CloudFormation template. Otherwise use the values specific to your environment.
 
@@ -152,15 +98,11 @@ git clone https://github.com/SolaceProducts/pubsubplus-openshift-quickstart.git
 cd pubsubplus-openshift-quickstart
 ```
 
-### Step 3: (Optional: only execute for Deployment option 1) Install the Helm v2 client and server-side tools
+### Step 3: Install the Helm client and server-side tools
 
 This will deploy Helm in a dedicated "tiller-project" project. Do not use this project for your deployments.
 
-- First download the Helm v2 client. If using Windows, get the [Helm executable](https://storage.googleapis.com/kubernetes-helm/helm-v2.16.0-windows-amd64.zip ) and put it in a directory on your path.
-```bash
-  # Download Helm v2 client, latest version if needed
-  curl -sSL https://raw.githubusercontent.com/helm/helm/master/scripts/get | bash
-```
+- First download the Helm client. Follow the instructions from the [Helm website](https://helm.sh/docs/intro/install/) to get the CLI for your operating system.
 
 - Use script to install the Helm v2 client and its Tiller server-side operator.
 ```bash
@@ -183,7 +125,7 @@ oc new-project solace-pubsub    # adjust your project name as needed here and in
 
 ### Step 5: Optional: Load the event broker (Docker image) to your Docker Registry
 
-Deployment scripts will pull the Solace PubSub+ image from a [Docker registry](https://docs.Docker.com/registry/ ). There are several [options which registry to use](https://docs.openshift.com/container-platform/3.11/architecture/infrastructure_components/image_registry.html#overview ) depending on the requirements of your project, see some examples in (Part II) of this step.
+Deployment scripts will pull the Solace PubSub+ image from a [Docker registry](https://docs.Docker.com/registry/ ). There are several [options which registry to use](https://docs.openshift.com/container-platform/4.6/registry/architecture-component-imageregistry.html) depending on the requirements of your project, see some examples in (Part II) of this step.
 
 **Hint:** You may skip the rest of this step if using the free PubSub+ Standard Edition available from the [Solace public Docker Hub registry](https://hub.Docker.com/r/solace/solace-pubsub-standard/tags/ ). The Docker Registry URL to use will be `solace/solace-pubsub-standard:<TagName>`.
 
@@ -203,7 +145,7 @@ Deployment scripts will pull the Solace PubSub+ image from a [Docker registry](h
 
   Options include:
 
-  * You can choose to use [OpenShift's Docker registry.](https://docs.openshift.com/container-platform/3.10/install_config/registry/deploy_registry_existing_clusters.html ). For MiniShift a simple option is to use the [Minishift Docker daemon](//docs.okd.io/latest/minishift/using/docker-daemon.html).
+  * You can choose to use [OpenShift's Docker registry.](https://docs.openshift.com/container-platform/3.10/install_config/registry/deploy_registry_existing_clusters.html ). 
 
   * **(Optional / ECR)** You can utilize the AWS Elastic Container Registry (ECR) to host the event broker Docker image. For more information, refer to [Amazon Elastic Container Registry](https://aws.amazon.com/ecr/ ). If you are using ECR as your Docker registry then you must add the ECR login credentials (as an OpenShift secret) to your event broker HA deployment.  This project contains a helper script to execute this step:
 
@@ -229,12 +171,9 @@ Deployment scripts will pull the Solace PubSub+ image from a [Docker registry](h
 
 <br>
 
-> Note: If using MiniShift a workaround is required: running the `addECRsecret.sh` will not be enough and requires manually loading the broker image to MiniShift's Docker. (1) Follow the steps to [configure your console to reuse the Minishift Docker daemon](//docs.okd.io/3.11/minishift/using/docker-daemon.html), then (2) use the `docker pull` command to pull the target image from ECR. Ensure to use the exact same image URI as will be passed to the broker deployment in next Step 6. Finally (3) use `eval $(minishift oc-env)` to ensure the [oc binary is added to your PATH](//docs.okd.io/3.11/minishift/openshift/openshift-client-binary.html#openshift-client-binary-overview).
-
-
 For general additional information, refer to the [Using private registries](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#using-private-registries) section in the general Event Broker in Kubernetes Documentation.
 
-### Step 6-Option 1: Deploy the event broker using Helm
+### Step 6: Deploy the event broker using Helm
 
 Deploying using Helm provides more flexibility in terms of event broker deployment options, compared to those offered by the OpenShift templates provided by this project.
 
@@ -254,13 +193,6 @@ Solace PubSub+ can be vertically scaled by deploying in one of the [client conne
 
 Next an HA and a non-HA deployment examples are provided, using default parameters. For configuration options, refer to the [Solace PubSub+ Advanced Event Broker Helm Chart](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/tree/master/pubsubplus) reference.
 After initiating a deployment with one of the commands below skip to the [Validating the Deployment](#validating-the-deployment) section.
-
-- **Important**: For each new project using Helm v2, grant admin access to the server-side Tiller service from the "tiller-project" and set the TILLER_NAMESPACE environment, which is used by the Helm client to locate where Tiller has been deployed.
-```bash
-  oc policy add-role-to-user admin "system:serviceaccount:tiller-project:tiller"
-  # if not already exported, ensure Helm knows where Tiller was deployed
-  export TILLER_NAMESPACE=tiller-project
-```
 
 > Ensure each command-line session has the TILLER_NAMESPACE environment variable properly set!
 
@@ -305,52 +237,6 @@ solace
 helm install --name my-release \
   -v deployment-values.yaml \
   solacecharts/pubsubplus
-```
-
-### Step 6-Option 2: Deploy the event broker using the OpenShift templates included in this project
-
-This deployment is using OpenShift templates and don't require Helm. It assumes [Step 2](#step-2-prepare-your-workspace) and [optional step 5](#step-5-optional-load-the-event-broker-docker-image-to-your-docker-registry) have been completed.
-
-**Prerequisites:**
-1. Determine your event broker disk space requirements.  We recommend a minimum of 30 gigabytes of disk space.
-2. Define a strong password for the 'admin' user of the event broker and then base64 encode the value.  This value will be specified as a parameter when processing the event broker OpenShift template:
-```
-echo -n 'strong@dminPw!' | base64
-```
-3. Switch to the templates directory:
-```
-oc project solace-pubsub   # adjust your project name as needed
-cd ~/workspace/pubsubplus-openshift-quickstart/templates
-```
-
-**Deploy the event broker:**
-
-You can deploy the event broker in either a single-node or high-availability configuration.
-
-Note: DOCKER_REGISTRY_URL and EVENTBROKER_IMAGE_TAG default to `solace/solace-pubsub-standard` and `latest`, EVENTBROKER_STORAGE_SIZE defaults to 30Gi.
-
-The template by default provides for a small-footprint Solace PubSub+ deployment deployable in MiniShift. Adjust `export system_scaling_maxconnectioncount` in the template for higher scaling but ensure adequate resources are available to the pod(s). Refer to the [System Requirements in the Solace documentation](//docs.solace.com/Configuring-and-Managing/SW-Broker-Specific-Config/Scaling-Tier-Resources.htm).
-
-Also note that if a deployment failed and then deleted using `oc delete -f`, ensure to delete any remaining PVCs. Failing to do so and retrying using the same deployment name will result in an already used PV volume mounted and the pod(s) may not come up.
-
-* For a **Single-Node** configuration:
-  * Process the Solace 'Single Node' OpenShift template to deploy the event broker in a single-node configuration.  Specify values for the DOCKER_REGISTRY_URL, EVENTBROKER_IMAGE_TAG, EVENTBROKER_STORAGE_SIZE, and EVENTBROKER_ADMIN_PASSWORD parameters:
-```
-oc project solace-pubsub   # adjust your project name as needed
-cd  ~/workspace/pubsubplus-openshift-quickstart/templates
-oc process -f eventbroker_singlenode_template.yaml DEPLOYMENT_NAME=test-singlenode DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> EVENTBROKER_IMAGE_TAG=<replace with your Solace PubSub+ Docker image tag> EVENTBROKER_STORAGE_SIZE=30Gi EVENTBROKER_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
-# Wait until all pods running and ready
-watch oc get statefulset,service,pods,pvc,pv
-```
-
-* For a **High-Availability** configuration:
-  * Process the Solace 'HA' OpenShift template to deploy the event broker in a high-availability configuration.  Specify values for the DOCKER_REGISTRY_URL, EVENTBROKER_IMAGE_TAG, EVENTBROKER_STORAGE_SIZE, and EVENTBROKER_ADMIN_PASSWORD parameters:
-```
-oc project solace-pubsub   # adjust your project name as needed
-cd  ~/workspace/pubsubplus-openshift-quickstart/templates
-oc process -f eventbroker_ha_template.yaml DEPLOYMENT_NAME=test-ha DOCKER_REGISTRY_URL=<replace with your Docker Registry URL> EVENTBROKER_IMAGE_TAG=<replace with your Solace PubSub+ Docker image tag> EVENTBROKER_STORAGE_SIZE=30Gi EVENTBROKER_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
-# Wait until all pods running and ready
-watch oc get statefulset,service,pods,pvc,pv
 ```
   
 ## Validating the Deployment
@@ -448,17 +334,15 @@ Events:                   <none>
 
 Find the **'LoadBalancer Ingress'** value listed in the service description above.  This is the publicly accessible Solace Connection URI for messaging clients and management. In the example it is `a7d53a67e0d3911eaab100663456a67b-73396344.eu-central-1.elb.amazonaws.com`.
 
-> Note: If using MiniShift an additional step is required to expose the service: `oc get --export svc my-release-pubsubplus`. This will return a service definition with nodePort port numbers for each message router service. Use these port numbers together with MiniShift's public IP address which can be obtained from the command `minishift ip`.
-
 ### Viewing Bringup logs
 
 To see the deployment events, navigate to:
 
-* **OpenShift UI > (Your Project) > Applications > Stateful Sets > ((name)-pubsubplus) > Events**
+* **OpenShift UI > (Your Project) > Search > Stateful Sets > ((name)-pubsubplus) > Events**
 
 You can access the log stack for individual event broker pods from the OpenShift UI, by navigating to:
 
-* **OpenShift UI > (Your Project) > Applications > Stateful Sets > ((name)-pubsubplus) > Pods > ((name)-solace-(N)) > Logs**
+* **OpenShift UI > (Your Project) > Search > Stateful Sets > ((name)-pubsubplus) > Pods > ((name)-solace-(N)) > Logs**
 
 ![alt text](/docs/images/Solace-Pod-Log-Stack.png "Event Broker Pod Log Stack")
 
@@ -482,12 +366,9 @@ oc exec -it XXX-XXX-pubsubplus-X cli   # adjust pod name to your deployment
 oc exec -it XXX-XXX-pubsubplus-X bash  # adjust pod name to your deployment
 ```
 
-> Note for MiniShift: if using Windows you may get an error message: `Unable to use a TTY`. Install and preceed above commands with `winpty` until this is fixed in the MiniShift project.
-
-
 You can also gain access to the Solace CLI and container shell for individual event broker instances from the OpenShift UI.  A web-based terminal emulator is available from the OpenShift UI.  Navigate to an individual event broker Pod using the OpenShift UI:
 
-* **OpenShift UI > (Your Project) > Applications > Stateful Sets > ((name)-pubsubplus) > Pods > ((name)-pubsubplus-(N)) > Terminal**
+* **OpenShift UI > (Your Project) > Search > Stateful Sets > ((name)-pubsubplus) > Pods > ((name)-pubsubplus-(N)) > Terminal**
 
 Once you have launched the terminal emulator to the event broker pod you may access the Solace CLI by executing the following command:
 
@@ -515,18 +396,9 @@ Note: the Host will be the Solace Connection URI. It may be necessary to [open u
 
 To delete the deployment or to start over from Step 6 in a clean state:
 
-* If used (Option 1) Helm to deploy, execute: 
-
 ```
 helm list   # will list the releases (deployments)
 helm delete XXX-XXX  # will delete instances related to your deployment - "my-release" in the example above
-```
-
-* If used (Option 2) OpenShift templates to deploy, use:
-
-```
-cd ~/workspace/pubsubplus-openshift-quickstart/templates
-oc process -f <template-used> DEPLOYMENT_NAME=<deploymentname> | oc delete -f -
 ```
 
 **Note:** Above will not delete dynamic Persistent Volumes (PVs) and related Persistent Volume Claims (PVCs). If recreating the deployment with same name and keeping the original PVCs, the original volumes get mounted with existing configuration. Deleting the PVCs will also delete the PVs:
@@ -538,7 +410,7 @@ oc get pvc
 oc delete pvc <pvc-name>
 ```
 
-To remove the project or to start over from Step 4 in a clean state, delete the project using the OpenShift console or the command line. For more details, refer to the [OpenShift Projects](https://docs.openshift.com/enterprise/3.0/dev_guide/projects.html ) documentation.
+To remove the project or to start over from Step 4 in a clean state, delete the project using the OpenShift console or the command line. For more details, refer to the [OpenShift Projects](https://docs.openshift.com/container-platform/4.6/applications/projects/working-with-projects.html ) documentation.
 
 ```
 oc delete project solace-pubsub   # adjust your project name as needed
