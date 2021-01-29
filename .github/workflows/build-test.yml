@@ -19,6 +19,8 @@ jobs:
         echo "TESTGCPMACHINE=openshift4x-test" >> $GITHUB_ENV # must exist
         echo "TESTRUNBRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
         #
+        sudo gem update --system 3.0.6
+        sudo gem install yaml-lint
 
     - name: Checkout
       uses: actions/checkout@v2
