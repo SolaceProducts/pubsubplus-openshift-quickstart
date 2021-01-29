@@ -1,0 +1,55 @@
+name: build
+
+# Controls when the action will run.
+on:
+  # pull_request:
+
+  push:
+
+jobs:
+  deploy:
+    name: K8s QuickStart CI test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+    - name: Set env and tools
+      run: |
+        echo "TESTUSER=vagrant" >> $GITHUB_ENV # must exist
+        echo "TESTGCPMACHINE=openshift4x-test" >> $GITHUB_ENV # must exist
+        echo "TESTRUNBRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
+        #
+
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@master
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        export_default_credentials: true
+
+    - name: Linting yaml files
+      run: |
+        yaml-lint -n templates/*.yaml
+
+    - name: Prep target runner VM
+      run: |
+        if gcloud compute instances describe ${TESTGCPMACHINE} --project "capable-stream-180018" --zone "us-east4-a" | grep status | grep RUNNING ; then echo "Test machine is already running, likely in use. Unable to continue this test run, exiting"; exit; fi
+        gcloud compute instances start ${TESTGCPMACHINE} --project "capable-stream-180018" --zone "us-east4-a"
+        rm ~/.ssh/google_compute_* || echo "GCP certs were clean"
+        gcloud compute --project "capable-stream-180018" ssh --zone "us-east4-a" --force-key-file-overwrite --quiet "${TESTUSER}@${TESTGCPMACHINE}" --quiet --command "rm -f /opt/scripts/*; rm -f /opt/templates/*" # cleanup remote directories
+        gcloud compute --project "capable-stream-180018" scp --zone "us-east4-a" --quiet templates/* "${TESTUSER}@${TESTGCPMACHINE}:/opt/templates" # Copy templates to remote
+        gcloud compute --project "capable-stream-180018" scp --zone "us-east4-a" --quiet ci/* "${TESTUSER}@${TESTGCPMACHINE}:/opt/scripts" # Copy scripts to remote
+
+    - name: Deploy HA broker and test
+      run: |
+        shopt -s expand_aliases
+        alias remote_command='gcloud compute --project "capable-stream-180018" ssh --zone "us-east4-a" "${TESTUSER}@${TESTGCPMACHINE}" --quiet --command'
+        remote_command "chmod +x /opt/scripts/*" # ensure crc known start state
+
+    - name: Cleanup
+      if: ${{ always() }}
+      run: |
+        gcloud compute instances stop ${TESTGCPMACHINE} --project "capable-stream-180018" --zone "us-east4-a"
