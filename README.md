@@ -1,6 +1,6 @@
 # Deploying a Solace PubSub+ Software Event Broker onto an OpenShift 3.11 platform
 
-**NOTE: This version of the quick start supporting OpenShift 3.11 has now been archived and no longer maintained. The latest version of the quick start supports OpenShift 4.**
+**NOTE: This version of the quick start supporting OpenShift 3.11 has now been archived and no longer maintained. The [latest version](https://github.com/SolaceProducts/pubsubplus-openshift-quickstart) of this quick start supports OpenShift 4.**
 
 
 The [Solace PubSub+ Platform](https://solace.com/products/platform/)'s [software event broker](https://solace.com/products/event-broker/software/) efficiently streams event-driven information between applications, IoT devices and user interfaces running in the cloud, on-premises, and hybrid environments using open APIs and protocols like AMQP, JMS, MQTT, REST and WebSocket. It can be installed into a variety of public and private clouds, PaaS, and on-premises environments, and brokers in multiple locations can be linked together in an [event mesh](https://solace.com/what-is-an-event-mesh/) to dynamically share events across the distributed enterprise.
