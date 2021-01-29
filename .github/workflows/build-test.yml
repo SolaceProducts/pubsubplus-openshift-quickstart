@@ -42,7 +42,7 @@ jobs:
     - name: Prep target runner VM
       run: |
         if gcloud compute instances describe ${TESTGCPMACHINE} --project "capable-stream-180018" --zone "us-east4-a" | grep status | grep RUNNING ; then
-          echo "Test machine is already running, likely in use. Unable to continue this test run, exiting"; echo "RUNCONFLICT=true" >> $GITHUB_ENV; exit
+          echo "Test machine is already running, likely in use. Unable to continue this test run, exiting"; echo "RUNCONFLICT=true" >> $GITHUB_ENV; exit 1
         fi
         gcloud compute instances start ${TESTGCPMACHINE} --project "capable-stream-180018" --zone "us-east4-a"
         rm ~/.ssh/google_compute_* || echo "GCP certs were clean"
@@ -52,7 +52,6 @@ jobs:
 
     - name: Setup CodeReady Containers
       run: |
-        if [[ ${RUNCONFLICT} = true ]]; then exit 1; fi # Do not continue in this case
         shopt -s expand_aliases; alias remote_command=${REMOTE_COMMAND}
         remote_command "chmod +x /opt/scripts/*" # ensure crc known start state
         remote_command "/opt/scripts/shutdownCrc" || echo "crc was already stopped" # ensure crc known start state
