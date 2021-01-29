@@ -1,6 +1,6 @@
 # Deploying a Solace PubSub+ Software Event Broker onto an OpenShift 3.11 platform
 
-**NOTE: This version of the quick start supporting OpenShift 3.11 has now been archived and no longer maintained. The [latest version](https://github.com/SolaceProducts/pubsubplus-openshift-quickstart) of this quick start supports OpenShift 4.**
+**NOTE: This version of the quick start supporting OpenShift 3.11 is an archive and no longer maintained. The [latest version](https://github.com/SolaceProducts/pubsubplus-openshift-quickstart) of this quick start supports OpenShift 4.**
 
 
 This is detailed documentation of deploying Solace PubSub+ Software Event Broker onto an OpenShift 3.11 platform including steps to set up a Red Hat OpenShift Container Platform platform on AWS.
