@@ -50,6 +50,33 @@ jobs:
         shopt -s expand_aliases
         alias remote_command='gcloud compute --project "capable-stream-180018" ssh --zone "us-east4-a" "${TESTUSER}@${TESTGCPMACHINE}" --quiet --command'
         remote_command "chmod +x /opt/scripts/*" # ensure crc known start state
+        remote_command "/opt/scripts/shutdownCrc" || echo "crc was already stopped" # ensure crc known start state
+        remote_command "/opt/scripts/startCrc" # start crc
+        # First test helm install
+        remote_command "/opt/scripts/helmInstallBroker helmtest "
+        remote_command "/opt/scripts/testBroker helmtest my-release-pubsubplus-dev" | tee out.txt
+        grep "aurelia" out.txt # web portal access
+        grep "<redundancy-status>Up</redundancy-status>" out.txt
+        grep "<oper-status>Up</oper-status>" out.txt
+        grep 100000 out.txt # smf messaging
+        remote_command "/opt/scripts/helmDeleteBroker helmtest"
+        rm -f out.txt
+        # Next test template non-HA install
+        remote_command "/opt/scripts/templateInstallBroker templatenonha /opt/templates/eventbroker_singlenode_template.yaml"
+        remote_command "/opt/scripts/testBroker templatenonha my-release-pubsubplus" | tee out.txt
+        grep "aurelia" out.txt # web portal access
+        grep 100000 out.txt # smf messaging
+        remote_command "/opt/scripts/templateDeleteBroker templatenonha /opt/templates/eventbroker_singlenode_template.yaml"
+        rm -f out.txt
+        # Next test template HA install
+        remote_command "/opt/scripts/templateInstallBroker templateha /opt/templates/eventbroker_ha_template.yaml"
+        remote_command "/opt/scripts/testBroker templateha my-release-pubsubplus" | tee out.txt
+        grep "aurelia" out.txt # web portal access
+        grep "<redundancy-status>Up</redundancy-status>" out.txt
+        grep "<oper-status>Up</oper-status>" out.txt
+        grep 100000 out.txt # smf messaging
+        remote_command "/opt/scripts/templateDeleteBroker templateha /opt/templates/eventbroker_ha_template.yaml"
+        remote_command "/opt/scripts/shutdownCrc"
 
     - name: Cleanup
       if: ${{ always() }}
