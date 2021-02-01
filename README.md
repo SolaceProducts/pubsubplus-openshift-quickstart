@@ -29,7 +29,15 @@ For other event broker configurations or sizes, refer to the [PubSub+ Software E
 
 ### 1. Get an OpenShift environment
 
-There are [multiple ways](https://www.openshift.com/try ) to get to an OpenShift 4 platform. The [detailed Event Broker on OpenShift Documentation](/docs/PubSubPlusOpenShiftDeployment.md#step-1-optional--aws-deploy-openshift-container-platform-onto-aws-using-the-redhat-openshift-aws-quickstart-project) describes how to set up a self-managed 60-day trial Red Hat OpenShift Container Platform on AWS. Another recommended option for developers is to use [CodeReady Containers](https://developers.redhat.com/products/codeready-containers/overview).
+There are [multiple ways](https://docs.openshift.com/index.html ) to get to an OpenShift 4.6 platform, including [Code Ready Containers](https://developers.redhat.com/products/codeready-containers/overview). The [detailed Event Broker on OpenShift Documentation](/docs/PubSubPlusOpenShiftDeployment.md#step-1-optional--aws-deploy-openshift-container-platform-onto-aws-using-the-redhat-openshift-aws-quickstart-project) describes how to set up a production-ready Red Hat OpenShift Container Platform platform on AWS.
+
+The easiest way to get an OpenShift cluster up and running is through the [Developer Sandbox](https://developers.redhat.com/developer-sandbox) program. You can sign up for a free 14 days trial.
+
+
+There are [multiple ways](https://www.openshift.com/try ) to get to an OpenShift 4 platform, including:
+* The [detailed Event Broker on OpenShift Documentation](/docs/PubSubPlusOpenShiftDeployment.md#step-1-optional--aws-deploy-openshift-container-platform-onto-aws-using-the-redhat-openshift-aws-quickstart-project) describes how to set up production-ready Red Hat OpenShift Container Platform platform on AWS
+* An option for developers is to locally deploy an all-in-one environment using [CodeReady Containers](https://developers.redhat.com/products/codeready-containers/overview)
+* An easy way to get an OpenShift cluster up and running is through the [Developer Sandbox](https://developers.redhat.com/developer-sandbox) program. You can sign up for a free 14 days trial.
 
 Assuming you have access to an OpenShift 4 platform, login as `kubeadmin` using the `oc login -u kubeadmin` command.
 
@@ -85,8 +93,6 @@ c) Create a Solace PubSub+ HA deployment, supporting 100 connections scaling usi
   helm install my-release solacecharts/pubsubplus-ha \
     --set securityContext.enabled=false
 ```
-</p>
-</details>
 
 The above options will start the deployment and write related information and notes to the console.
 

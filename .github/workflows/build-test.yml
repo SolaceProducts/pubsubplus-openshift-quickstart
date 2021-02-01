@@ -16,7 +16,7 @@ jobs:
     - name: Set env and tools
       run: |
         echo "TESTUSER=vagrant" >> $GITHUB_ENV # must exist
-        echo "TESTGCPMACHINE=openshift4x-test" >> $GITHUB_ENV # must exist
+        echo "TESTGCPMACHINE=openshift4-dev-test" >> $GITHUB_ENV # must exist
         echo "TESTRUNBRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
         # Next command is commonly used to execute commands on the remote machine
         remote_command='gcloud compute --project "capable-stream-180018" ssh --zone "us-east4-a" "${TESTUSER}@${TESTGCPMACHINE}" --quiet --command'
