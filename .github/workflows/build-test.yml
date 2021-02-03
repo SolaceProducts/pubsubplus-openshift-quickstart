@@ -60,7 +60,7 @@ jobs:
     - name: Deploy HA broker and test, using Helm install
       run: |
         shopt -s expand_aliases; alias remote_command=${REMOTE_COMMAND}
-        remote_command "/opt/scripts/helmInstallBroker helmtest "
+        remote_command "/opt/scripts/helmInstallBroker helmtest"
         remote_command "/opt/scripts/testBroker helmtest my-release-pubsubplus-dev" | tee out.txt
         grep "aurelia" out.txt # web portal access
         grep "<redundancy-status>Up</redundancy-status>" out.txt
@@ -93,9 +93,9 @@ jobs:
     - name: Cleanup
       if: ${{ always() }}
       run: |
+        shopt -s expand_aliases; alias remote_command=${REMOTE_COMMAND}
         # Only touch the remote VM if not used by someone else
         if [[ ${RUNCONFLICT} != true ]]; then
-          shopt -s expand_aliases; alias remote_command=${REMOTE_COMMAND}
           remote_command "/opt/scripts/shutdownCrc"
           gcloud compute instances stop ${TESTGCPMACHINE} --project "capable-stream-180018" --zone "us-east4-a"
         fi
