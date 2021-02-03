@@ -41,9 +41,9 @@ jobs:
 
     - name: Prep target runner VM
       run: |
-        if gcloud compute instances describe ${TESTGCPMACHINE} --project "capable-stream-180018" --zone "us-east4-a" | grep status | grep RUNNING ; then
-          echo "Test machine is already running, likely in use. Unable to continue this test run, exiting"; echo "RUNCONFLICT=true" >> $GITHUB_ENV; exit 1
-        fi
+        #if gcloud compute instances describe ${TESTGCPMACHINE} --project "capable-stream-180018" --zone "us-east4-a" | grep status | grep RUNNING ; then
+        #  echo "Test machine is already running, likely in use. Unable to continue this test run, exiting"; echo "RUNCONFLICT=true" >> $GITHUB_ENV; exit 1
+        #fi
         gcloud compute instances start ${TESTGCPMACHINE} --project "capable-stream-180018" --zone "us-east4-a"
         rm ~/.ssh/google_compute_* || echo "GCP certs were clean"
         gcloud compute --project "capable-stream-180018" ssh --zone "us-east4-a" --force-key-file-overwrite --quiet "${TESTUSER}@${TESTGCPMACHINE}" --quiet --command "rm -f /opt/scripts/*; rm -f /opt/templates/*" # cleanup remote directories
