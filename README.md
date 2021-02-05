@@ -1,6 +1,6 @@
-# Deploying a Solace PubSub+ Software Event Broker onto an OpenShift 4 platform
+# Deploying a Solace PubSub+ Software Event Broker onto an OpenShift 4 Platform
 
-The [Solace PubSub+ Platform](https://solace.com/products/platform/)'s [software event broker](https://solace.com/products/event-broker/software/) efficiently streams event-driven information between applications, IoT devices and user interfaces running in the cloud, on-premises, and hybrid environments using open APIs and protocols like AMQP, JMS, MQTT, REST and WebSocket. It can be installed into a variety of public and private clouds, PaaS, and on-premises environments, and brokers in multiple locations can be linked together in an [event mesh](https://solace.com/what-is-an-event-mesh/) to dynamically share events across the distributed enterprise.
+Solace [PubSub+ Platform](https://solace.com/products/platform/) is a complete event streaming and management platform for the real-time enterprise. The [PubSub+ software event broker](https://solace.com/products/event-broker/software/) efficiently streams event-driven information between applications, IoT devices, and user interfaces running in the cloud, on-premises, and in hybrid environments using open APIs and protocols like AMQP, JMS, MQTT, REST and WebSocket. It can be installed into a variety of public and private clouds, PaaS, and on-premises environments. Event brokers in multiple locations can be linked together in an [event mesh](https://solace.com/what-is-an-event-mesh/) to dynamically share events across the distributed enterprise.
 
 ## Overview
 
@@ -8,103 +8,108 @@ This project is a best practice template intended for development and demo purpo
 
 This document provides a quick getting started guide to install a Solace PubSub+ Software Event Broker in various configurations onto an OpenShift 4 platform. For OpenShift 3.11, refer to the [archived version of this quick start](https://github.com/SolaceProducts/pubsubplus-openshift-quickstart/tree/v1.1.1).
 
-Detailed documentation is provided in the [Solace PubSub+ on OpenShift Documentation](/docs/PubSubPlusOpenShiftDeployment.md). There is also a general [Solace PubSub+ on Kubernetes Documentation](//github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md) available, which the OpenShift deployment  builds upon.
+For detailed instructions, see [Deploying a Solace PubSub+ Software Event Broker onto an OpenShift 4 platform](/docs/PubSubPlusOpenShiftDeployment.md). There is also a general quick start for [Solace PubSub+ on Kubernetes](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md) available, which the OpenShift deployment builds upon.
 
-The PubSub+ deployment does not require any special OpenShift Security Context, the default "restricted" SCC can be used.
+The PubSub+ deployment does not require any special OpenShift Security Context; the default `restricted` SCC can be used.
 
-We recommend using the Helm tool for convenience. An alternative method [using OpenShift templates](/docs/PubSubPlusOpenShiftDeployment.md#step-6-option-2-deploy-the-event-broker-using-the-openshift-templates-included-in-this-project) is also available.
+We recommend using the Helm tool for convenience. An alternative method [using OpenShift templates](/docs/PubSubPlusOpenShiftDeployment.md#step-4-option-2-deploy-using-openshift-templates) is also available.
 
-## How to deploy Solace PubSub+ Software Event Broker
+## Deploying PubSub+ Software Event Broker
 
-The event broker can be deployed in either a 3-node High-Availability (HA) group, or as a single-node standalone deployment. For simple test environments that need only to validate application functionality, a single instance will suffice. Note that in production, or any environment where message loss cannot be tolerated, an HA deployment is required.
+The event broker can be deployed in either a three-node High-Availability (HA) group, or as a single-node standalone deployment. For simple test environments that need only to validate application functionality, a single instance will suffice. Note that in production, or any environment where message loss cannot be tolerated, an HA deployment is required.
 
-In this quick start we go through the steps to set up an event broker using [Solace PubSub+ Helm charts](//hub.helm.sh/charts/solace).
+In this quick start we go through the steps to set up an event broker using [Solace PubSub+ Helm charts](https://artifacthub.io/packages/search?page=1&repo=solace).
 
 There are three Helm chart variants available with default small-size configurations:
-1.	`pubsubplus-dev` - minimum footprint PubSub+ for Developers (standalone)
-2.	`pubsubplus` - PubSub+ standalone, supporting 100 connections
-3.	`pubsubplus-ha` - PubSub+ HA, supporting 100 connections
+- `pubsubplus-dev`—deploys a minimum footprint software event broker for developers (standalone)
+- `pubsubplus`—deploys a standalone software event broker that supports 100 connections
+- `pubsubplus-ha`—deploys three software event brokers in an HA group that supports 100 connections
 
-For other event broker configurations or sizes, refer to the [PubSub+ Software Event Broker Helm Chart documentation](/pubsubplus/README.md).
+For other event broker configurations or sizes, refer to the [PubSub+ Software Event Broker Helm Chart](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/pubsubplus/README.md) documentation.
 
-### 1. Get an OpenShift environment
+### Step 1: Get an OpenShift Environment
 
-There are [multiple ways](https://docs.openshift.com/index.html ) to get to an OpenShift 4.6 platform, including [Code Ready Containers](https://developers.redhat.com/products/codeready-containers/overview). The [detailed Event Broker on OpenShift Documentation](/docs/PubSubPlusOpenShiftDeployment.md#step-1-optional--aws-deploy-openshift-container-platform-onto-aws-using-the-redhat-openshift-aws-quickstart-project) describes how to set up a production-ready Red Hat OpenShift Container Platform platform on AWS.
+There are [multiple ways](https://www.openshift.com/try ) to get to an OpenShift 4 platform:
+- The detailed [Event Broker on OpenShift](/docs/PubSubPlusOpenShiftDeployment.md#step-1-optional--aws-deploy-a-self-managed-openshift-container-platform-onto-aws) documentation describes how to set up production-ready Red Hat OpenShift Container Platform platform on AWS.
+- An option for developers is to locally deploy an all-in-one environment using [CodeReady Containers](https://developers.redhat.com/products/codeready-containers/overview).
+- An easy way to get an OpenShift cluster up and running is through the [Developer Sandbox](https://developers.redhat.com/developer-sandbox) program. You can sign up for a free 14-day trial.
 
-The easiest way to get an OpenShift cluster up and running is through the [Developer Sandbox](https://developers.redhat.com/developer-sandbox) program. You can sign up for a free 14 days trial.
+Assuming you have access to an OpenShift 4 platform, log in as `kubeadmin` using the `oc login -u kubeadmin` command.
 
+Ensure your OpenShift environment is ready:
 
-There are [multiple ways](https://www.openshift.com/try ) to get to an OpenShift 4 platform, including:
-* The [detailed Event Broker on OpenShift Documentation](/docs/PubSubPlusOpenShiftDeployment.md#step-1-optional--aws-deploy-openshift-container-platform-onto-aws-using-the-redhat-openshift-aws-quickstart-project) describes how to set up production-ready Red Hat OpenShift Container Platform platform on AWS
-* An option for developers is to locally deploy an all-in-one environment using [CodeReady Containers](https://developers.redhat.com/products/codeready-containers/overview)
-* An easy way to get an OpenShift cluster up and running is through the [Developer Sandbox](https://developers.redhat.com/developer-sandbox) program. You can sign up for a free 14 days trial.
-
-Assuming you have access to an OpenShift 4 platform, login as `kubeadmin` using the `oc login -u kubeadmin` command.
-
-Check to ensure your OpenShift environment is ready:
 ```bash
-# This shall return current user
+# This command returns the current user
 oc whoami
 ```
 
-### 2. Install and configure Helm
+### Step 2: Install and Configure Helm
 
-- Use the [instructions from Helm](//github.com/helm/helm#install) or if using Linux simply run:
+Follow the [instructions from Helm](//github.com/helm/helm#install), or if you're using Linux, simply run:
 ```bash
-  curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
 ```
 
-Helm is configured properly if the command `helm version` returns no error.
+Helm is configured properly if the `helm version` command returns no error.
 
 
-### 3. Install Solace PubSub+ Software Event Broker with default configuration
+### Step 3: Install the Software Event Broker with the Default Configuration
 
-- Add the Solace Helm charts to your local Helm repo:
-```bash
-  helm repo add solacecharts https://solaceproducts.github.io/pubsubplus-kubernetes-quickstart/helm-charts
-```
+1. Add the Solace Helm charts to your local Helm repo:
+    ```bash
+    helm repo add solacecharts https://solaceproducts.github.io/pubsubplus-kubernetes-quickstart/helm-charts
+    ```
 
-- Create a new project or switch to your existing project (do not use the `default` project as it's loose permissions doesn't reflect a typical OpenShift environment)
-```bash
-  oc new-project solace-pubsub
-```
+2. Create a new project or switch to your existing project (do not use the `default` project as its loose permissions don't reflect a typical OpenShift environment)
+    ```bash
+    oc new-project solace-pubsub
+    ```
 
-- By default the public [latest Docker image of PubSub+ Standard Edition](https://hub.Docker.com/r/solace/solace-pubsub-standard/tags/) available from the DockerHub registry will be used. If using a different image, add the `image.repository=<your-image-location>,image.tag=<your-image-tag>` values to the `--set` commands below, comma-separated. Optionally also add `image.pullSecretName=<your-image-repo-pull-secret>` if required by the image repository.
+    By default the latest public [Docker image](https://hub.Docker.com/r/solace/solace-pubsub-standard/tags/) of PubSub+ Standard Edition available from the DockerHub registry is used. To use a different image, add the following values (comma-separated) to the `--set` commands in Step 3 below:
 
-- Use one of the chart variants to create a deployment. For configuration options and delete instructions, refer to the [PubSub+ Software Event Broker Helm Chart documentation](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/tree/master/pubsubplus#configuration).
+    ```bash
+    image.repository=<your-image-location>,image.tag=<your-image-tag>
+    ```
 
-a) Create a Solace PubSub+ minimum deployment for development purposes using `pubsubplus-dev`. It requires a minimum of 1 CPU and 3.4 GiB of memory be available to the PubSub+ event broker pod.
-```bash
-  # Deploy PubSub+ Standard edition, minimum footprint developer version
-  helm install my-release solacecharts/pubsubplus-dev \
-    --set securityContext.enabled=false
-```
+    If it is required by the image repository, you can also add optionally add the following:
+    ```bash
+    image.pullSecretName=<your-image-repo-pull-secret>
+    ```
 
-b) Create a Solace PubSub+ standalone deployment, supporting 100 connections scaling using `pubsubplus`. A minimum of 2 CPUs and 3.4 GiB of memory must be available to the PubSub+ pod.
-```bash
-  # Deploy PubSub+ Standard edition, standalone
-  helm install my-release solacecharts/pubsubplus \
-    --set securityContext.enabled=false
-```
+3. Use one of the following Helm chart variants to create a deployment (for configuration options and deletion instructions, refer to the [PubSub+ Software Event Broker Helm Chart](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/tree/master/pubsubplus#configuration) documentation):
 
-c) Create a Solace PubSub+ HA deployment, supporting 100 connections scaling using `pubsubplus-ha`. The minimum resource requirements are 2 CPU and 3.4 GiB of memory available to each of the three event broker pods.
-```bash
-  # Deploy PubSub+ Standard edition, HA
-  helm install my-release solacecharts/pubsubplus-ha \
-    --set securityContext.enabled=false
-```
+    - Create a Solace PubSub+ minimum deployment for development purposes using `pubsubplus-dev`. This variant requires a minimum of 1 CPU and 3.4 GiB of memory to be available to the PubSub+ event broker pod.
+    ```bash
+    # Deploy PubSub+ Standard edition, minimum footprint developer version
+    helm install my-release solacecharts/pubsubplus-dev \
+      --set securityContext.enabled=false
+    ```
 
-The above options will start the deployment and write related information and notes to the console.
+    - Create a Solace PubSub+ standalone deployment that supports 100 connections using `pubsubplus`. A minimum of 2 CPUs and 3.4 GiB of memory must be available to the PubSub+ pod.
+    ```bash
+    # Deploy PubSub+ Standard edition, standalone
+    helm install my-release solacecharts/pubsubplus \
+      --set securityContext.enabled=false
+    ```
 
-Broker services are exposed by default through a Load Balancer that is specific to your OpenShift platform. For details check the `Services access` section of the notes.
+    - Create a Solace PubSub+ HA deployment that supports 100 connections using `pubsubplus-ha`. This deployment requires that at least 2 CPUs and 3.4 GiB of memory are available to *each* of the three event broker pods.
+    ```bash
+    # Deploy PubSub+ Standard edition, HA
+    helm install my-release solacecharts/pubsubplus-ha \
+      --set securityContext.enabled=false
+    ```
 
-Wait for the deployment to complete following the instructions, then you can [validate the deployment and try the management and messaging services](/docs/PubSubPlusOpenShiftDeployment.md#validating-the-deployment).
+    All of the Helm options above start the deployment and write related information and notes to the console.
+
+    Broker services are exposed by default through a Load Balancer that is specific to your OpenShift platform. For details, see the `Services access` section of the notes written to the console.
+
+4. Wait for the deployment to complete, following any instructions that are written to the console. You can now [validate the deployment and try the management and messaging services](/docs/PubSubPlusOpenShiftDeployment.md#validating-the-deployment).
  
-> Note: there is no Load Balancer support if using CodeReady Containers and services shall be accessed through NodePorts instead. Check the results of `oc get svc my-release-pubsubplus`. This will return the ephemeral nodePort port numbers for each message router service. Use these port numbers together with CodeReady Containers' public IP address which can be obtained from the command `crc ip`.
+> **Note**: There is no Load Balancer support with CodeReady Containers. Services are accessed through NodePorts instead. Check the results of the `oc get svc my-release-pubsubplus` command. This command returns the ephemeral NodePort port numbers for each message router service. Use these port numbers together with CodeReady Containers' public IP addresses, which can be obtained by running the `crc ip` command.
 
-If any issues, refer to the [Troubleshooting](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#troubleshooting) section of the general PubSub+ Kubernetes Documentation - substitute any `kubectl` commands with `oc` commands.
+If you have any problems, refer to the [Troubleshooting](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#troubleshooting) section of the general PubSub+ Kubernetes Documentation for help. Substitute any `kubectl` commands with `oc` commands.
 
-If you need to start over, follow the [steps to delete the current deployment](/docs/PubSubPlusOpenShiftDeployment.md#deleting-the-pubsub-event-broker-deployment).
+If you need to start over, follow the steps to [delete the current deployment](/docs/PubSubPlusOpenShiftDeployment.md#deleting-a-deployment).
 
 
 ## Contributing
@@ -113,7 +118,7 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduc
 
 ## Authors
 
-See the list of [contributors](//github.com/SolaceProducts/solace-kubernetes-quickstart/graphs/contributors) who participated in this project.
+See the list of [contributors](//github.com/SolaceProducts/pubsubplus-openshift-quickstart/graphs/contributors) who participated in this project.
 
 ## License
 
@@ -123,6 +128,6 @@ This project is licensed under the Apache License, Version 2.0. - See the [LICEN
 
 For more information about Solace technology in general please visit these resources:
 
-- The Solace Developer Portal website at: [solace.dev](//solace.dev/)
+- The Solace Developer Portal website at [solace.dev](//solace.dev/)
 - Understanding [Solace technology](//solace.com/products/platform/)
-- Ask the [Solace community](//dev.solace.com/community/).
+- Ask the [Solace community](//dev.solace.com/community/)
