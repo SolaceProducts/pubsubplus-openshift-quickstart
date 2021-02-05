@@ -1,5 +1,6 @@
 # Params: $1=OpenShift project to create $2=template with full path
 eval $(crc oc-env)
+sudo sed -i 's/nameserver.*$/nameserver 1.1.1.1/g' /etc/resolv.conf
 while ! oc login -u kubeadmin -p `cat /opt/passw` https://api.crc.testing:6443 ; do sleep 1 ; done
 oc new-project $1
 sed -i 's@cpu: "2"@cpu: "1"@g' $2 # reduce CPU requirements for the test deployment

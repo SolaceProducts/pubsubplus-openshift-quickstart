@@ -1,5 +1,6 @@
 # Params: $1=Existing OpenShift project $2=Broker service name
 eval $(crc oc-env)
+sudo sed -i 's/nameserver.*$/nameserver 1.1.1.1/g' /etc/resolv.conf
 while ! oc login -u kubeadmin -p `cat /opt/passw` https://api.crc.testing:6443 ; do sleep 1 ; done
 oc project $1
 export IP=`oc get svc $2 -o yaml | grep clusterIP | awk -F': ' '{print $NF}'`

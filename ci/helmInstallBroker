@@ -1,5 +1,6 @@
 # Params: $1=OpenShift project to create
 eval $(crc oc-env)
+sudo sed -i 's/nameserver.*$/nameserver 1.1.1.1/g' /etc/resolv.conf
 while ! oc login -u kubeadmin -p `cat /opt/passw` https://api.crc.testing:6443 ; do sleep 1 ; done
 oc new-project $1
 curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
