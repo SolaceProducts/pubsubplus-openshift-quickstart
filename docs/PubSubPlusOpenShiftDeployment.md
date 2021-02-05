@@ -15,7 +15,7 @@ For the Red Hat OpenShift Container Platform, we use a self-managed 60-day evalu
 
 This repository expands on the [Solace Kubernetes Quickstart](//github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/README.md ) to provide an example of how to deploy Solace PubSub+ in an HA configuration on the OpenShift Container Platform running in AWS.
 
-The event broker deployment does not require any special OpenShift Security Context; the default ["restricted" SCC](https://docs.openshift.com/container-platform/4.6/authentication/managing-security-context-constraints.html ) can be used.
+The event broker deployment does not require any special OpenShift Security Context; the default ["restricted" SCC](https://docs.openshift.com/container-platform/latest/authentication/managing-security-context-constraints.html ) can be used.
 
 
 ### Related Information
@@ -104,7 +104,7 @@ To deploy the container platform in AWS, do the following:
     tar -xvf openshift-install-linux.tar.gz    # Adjust the filename if needed
     rm openshift-install-linux.tar.gz
     ```
-5. Run the utility to create an install configuration. Provide the necessary information at the prompts, including the Pull Secret from the RedHat instructions page. This will create the file `install-config.yaml` with the [installation configuration parameters](https://docs.openshift.com/container-platform/4.6/installing/installing_aws/installing-aws-customizations.html#installation-aws-config-yaml_installing-aws-customizations), most importantly the configuration for the worker and master nodes.
+5. Run the utility to create an install configuration. Provide the necessary information at the prompts, including the Pull Secret from the RedHat instructions page. This will create the file `install-config.yaml` with the [installation configuration parameters](https://docs.openshift.com/container-platform/latest/installing/installing_aws/installing-aws-customizations.html#installation-aws-config-yaml_installing-aws-customizations), most importantly the configuration for the worker and master nodes.
     ```
     ./openshift-install create install-config --dir=.
     ```
@@ -133,7 +133,7 @@ To deploy the container platform in AWS, do the following:
     INFO Access the OpenShift web-console here: https://console-openshift-console.apps.iuacc.soltest.net
     INFO Login to the console with user: "kubeadmin", and password: "CKGc9-XUT6J-PDtWp-d4DSQ"
     ```
-9. [Install](https://docs.openshift.com/container-platform/4.6/installing/installing_aws/installing-aws-default.html#cli-installing-cli_installing-aws-default) the `oc` client CLI tool.
+9. [Install](https://docs.openshift.com/container-platform/latest/installing/installing_aws/installing-aws-default.html#cli-installing-cli_installing-aws-default) the `oc` client CLI tool.
 10. Verify that your cluster is working correctly by following the hints from step 8, including verifying access to the OpenShift web-console.
 
 
@@ -155,7 +155,7 @@ However, if you need to use a private image registry, such as AWS ECR, you must 
     ```
 4. Use the pull secret you just created (`<my-pullsecret>`) in the deployment section, Step 3, below.
 
-For additional information on private registries, see the [Using private registries](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#using-private-registries) section of the Solace Kubernetes Quickstart documentation.
+For additional information, see the [Using private registries](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#using-private-registries) and [Using ImagePullSecrets for signed images](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#using-imagepullsecrets-for-signed-images) sections of the Solace Kubernetes Quickstart documentation.
 
 #### Using CodeReady Containers
 If you are using CodeReady Containers, you may need to perform a workaround if the ECR login fails on the console (e.g., on Windows). In this case, do the following:
@@ -182,7 +182,7 @@ Additional information is provided in the following documents:
 
 This deployment uses PubSub+ Software Event Broker Helm charts. You can customize it by overriding the [default chart parameters](//github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/tree/master/pubsubplus#configuration).
 
-Consult the [Deployment Considerations](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#pubsub-event-broker-deployment-considerations) section of the general Event Broker in Kubernetes Documentation when planning your deployment.
+Consult the [Deployment Considerations](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#pubsub-software-event-broker-deployment-considerations) section of the general Event Broker in Kubernetes Documentation when planning your deployment.
 
 In particular, the `securityContext.enabled` parameter must be set to `false`, indicating not to use the provided pod security context but to let OpenShift set it using SecurityContextConstraints (SCC). By default OpenShift will use the "restricted" SCC.
 
@@ -207,7 +207,7 @@ The broker can be [vertically scaled](https://github.com/SolaceProducts/pubsubpl
     # One-time action: Add the PubSub+ charts to local Helm
     helm repo add solacecharts https://solaceproducts.github.io/pubsubplus-kubernetes-quickstart/helm-charts
     # Initiate the HA deployment - specify an admin password
-    helm install --name my-ha-release \
+    helm install my-ha-release \
       --set securityContext.enabled=false,solace.redundancy=true,solace.usernameAdminPassword=<broker-admin-password> \
       solacecharts/pubsubplus
     # Check the notes printed on screen
@@ -220,8 +220,8 @@ The broker can be [vertically scaled](https://github.com/SolaceProducts/pubsubpl
     # One-time action: Add the PubSub+ charts to local Helm
     helm repo add solacecharts https://solaceproducts.github.io/pubsubplus-kubernetes-quickstart/helm-charts
     # Initiate the non-HA deployment - specify an admin password
-    helm install --name my-nonha-release \
-      --set securityContext.enabled=false,solace.redundancy=true,solace.usernameAdminPassword=<broker-admin-password> \
+    helm install my-nonha-release \
+      --set securityContext.enabled=false,solace.redundancy=false,solace.usernameAdminPassword=<broker-admin-password> \
       --set image.pullSecretName=<my-pullsecret> \
       solacecharts/pubsubplus
     # Check the notes printed on screen
@@ -236,10 +236,10 @@ The broker can be [vertically scaled](https://github.com/SolaceProducts/pubsubpl
     securityContext
       enabled: false
     solace
-      redundancy: true,
+      redundancy: false,
       usernameAdminPassword: <broker-admin-password>" > deployment-values.yaml
     # Use values file
-    helm install --name my-release \
+    helm install my-release \
       -v deployment-values.yaml \
       solacecharts/pubsubplus
     ```
@@ -309,92 +309,117 @@ $ oc get statefulset,service,pods,pvc,pv --show-labels
 ```
 The output should look like the following:
 ```
-NAME                                     DESIRED   CURRENT   AGE       LABELS
-statefulset.apps/my-release-pubsubplus   3         3         2h        app.kubernetes.io/instance=my-release,app.kubernetes.io/managed-by=Tiller,app.kubernetes.io/name=pubsubplus,helm.sh/chart=pubsubplus-1.0.0
+NAME                                         READY   AGE   LABELS
+statefulset.apps/my-release-pubsubplus   3/3     23h   app.kubernetes.io/instance=my-release,app.kubernetes.io/managed-by=Helm,app.kubernetes.io/name=pubsubplus,helm.sh/chart=pubsubplus-2.4.0
 
-NAME                                      TYPE           CLUSTER-IP     EXTERNAL-IP                                                                PORT(S)                                                                                                                                                             AGE       LABELS
-service/my-release-pubsubplus             LoadBalancer   172.30.44.13   a7d53a67e0d3911eaab100663456a67b-73396344.eu-central-1.elb.amazonaws.com   22:32084/TCP,8080:31060/TCP,943:30321/TCP,55555:32434/TCP,55003:32160/TCP,55443:30635/TCP,80:30142/TCP,443:30411/TCP,5672:30595/TCP,1883:30511/TCP,9000:32277/TCP   2h        app.kubernetes.io/instance=my-release,app.kubernetes.io/managed-by=Tiller,app.kubernetes.io/name=pubsubplus,helm.sh/chart=pubsubplus-1.0.0
-service/my-release-pubsubplus-discovery   ClusterIP      None           <none>                                                                     8080/TCP,8741/TCP,8300/TCP,8301/TCP,8302/TCP                                                                                                                        2h        app.kubernetes.io/instance=my-release,app.kubernetes.io/managed-by=Tiller,app.kubernetes.io/name=pubsubplus,helm.sh/chart=pubsubplus-1.0.0
+NAME                                          TYPE           CLUSTER-IP       EXTERNAL-IP                                                                  PORT(S)                                                                                                                                                                                                                                                              AGE   LABELS
+service/my-release-pubsubplus             LoadBalancer   172.30.129.136   ac4917b2be7734df09a296f5da4dce38-1140440410.eu-central-1.elb.amazonaws.com   2222:31020/TCP,8080:30035/TCP,1943:30695/TCP,55555:30166/TCP,55003:30756/TCP,55443:32303/TCP,55556:31861/TCP,8008:31233/TCP,1443:32104/TCP,9000:30811/TCP,9443:30173/TCP,5672:31234/TCP,5671:31165/TCP,1883:32291/TCP,8883:32292/TCP,8000:32086/TCP,8443:31426/TCP   23h   app.kubernetes.io/instance=my-release,app.kubernetes.io/managed-by=Helm,app.kubernetes.io/name=pubsubplus,helm.sh/chart=pubsubplus-2.4.0
+service/my-release-pubsubplus-discovery   ClusterIP      None             <none>                                                                       8080/TCP,8741/TCP,8300/TCP,8301/TCP,8302/TCP                                                                                                                                                                                                                         23h   app.kubernetes.io/instance=my-release,app.kubernetes.io/managed-by=Helm,app.kubernetes.io/name=pubsubplus,helm.sh/chart=pubsubplus-2.4.0
 
-NAME                          READY     STATUS    RESTARTS   AGE       LABELS
-pod/my-release-pubsubplus-0   1/1       Running   0          2h        active=true,app.kubernetes.io/instance=my-release,app.kubernetes.io/name=pubsubplus,controller-revision-hash=my-release-pubsubplus-7b788f768b,statefulset.kubernetes.io/pod-name=my-release-pubsubplus-0
-pod/my-release-pubsubplus-1   1/1       Running   0          2h        active=false,app.kubernetes.io/instance=my-release,app.kubernetes.io/name=pubsubplus,controller-revision-hash=my-release-pubsubplus-7b788f768b,statefulset.kubernetes.io/pod-name=my-release-pubsubplus-1
-pod/my-release-pubsubplus-2   1/1       Running   0          2h        app.kubernetes.io/instance=my-release,app.kubernetes.io/name=pubsubplus,controller-revision-hash=my-release-pubsubplus-7b788f768b,statefulset.kubernetes.io/pod-name=my-release-pubsubplus-2
+NAME                              READY   STATUS    RESTARTS   AGE   LABELS
+pod/my-release-pubsubplus-0   1/1     Running   0          23h   active=true,app.kubernetes.io/instance=my-release,app.kubernetes.io/name=pubsubplus,controller-revision-hash=my-release-pubsubplus-68d69ffb5,statefulset.kubernetes.io/pod-name=my-release-pubsubplus-0
+pod/my-release-pubsubplus-1   1/1     Running   0          23h   active=false,app.kubernetes.io/instance=my-release,app.kubernetes.io/name=pubsubplus,controller-revision-hash=my-release-pubsubplus-68d69ffb5,statefulset.kubernetes.io/pod-name=my-release-pubsubplus-1
+pod/my-release-pubsubplus-2   1/1     Running   0          23h   app.kubernetes.io/instance=my-release,app.kubernetes.io/name=pubsubplus,controller-revision-hash=my-release-pubsubplus-68d69ffb5,statefulset.kubernetes.io/pod-name=my-release-pubsubplus-2
 
-NAME                                                 STATUS    VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE       LABELS
-persistentvolumeclaim/data-my-release-pubsubplus-0   Bound     pvc-7d596ac0-0d39-11ea-ab10-0663456a67be   30Gi       RWO            gp2            2h        app.kubernetes.io/instance=my-release,app.kubernetes.io/name=pubsubplus
-persistentvolumeclaim/data-my-release-pubsubplus-1   Bound     pvc-7d5c60e9-0d39-11ea-ab10-0663456a67be   30Gi       RWO            gp2            2h        app.kubernetes.io/instance=my-release,app.kubernetes.io/name=pubsubplus
-persistentvolumeclaim/data-my-release-pubsubplus-2   Bound     pvc-7d5f8838-0d39-11ea-ab10-0663456a67be   30Gi       RWO            gp2            2h        app.kubernetes.io/instance=my-release,app.kubernetes.io/name=pubsubplus
+NAME                                                     STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE   LABELS
+persistentvolumeclaim/data-my-release-pubsubplus-0   Bound    pvc-eb2c8a52-85d4-4bc2-a73d-884559a4e463   10Gi       RWO            gp2            23h   app.kubernetes.io/instance=my-release,app.kubernetes.io/name=pubsubplus
+persistentvolumeclaim/data-my-release-pubsubplus-1   Bound    pvc-ab428fa6-4786-4419-a814-a801a0860861   10Gi       RWO            gp2            23h   app.kubernetes.io/instance=my-release,app.kubernetes.io/name=pubsubplus
+persistentvolumeclaim/data-my-release-pubsubplus-2   Bound    pvc-3d77864d-3f90-42fe-939d-8a9324a62e20   10Gi       RWO            gp2            23h   app.kubernetes.io/instance=my-release,app.kubernetes.io/name=pubsubplus
 
-NAME                                                        CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS    CLAIM                                 STORAGECLASS   REASON    AGE       LABELS
-persistentvolume/pvc-58223d93-0b93-11ea-833a-0246f4c5a982   10Gi       RWO            Delete           Bound     openshift-infra/metrics-cassandra-1   gp2                      2d        failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1c
-persistentvolume/pvc-7d596ac0-0d39-11ea-ab10-0663456a67be   30Gi       RWO            Delete           Bound     solace-pubsub/data-my-release-pubsubplus-0    gp2                      2h        failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1c
-persistentvolume/pvc-7d5c60e9-0d39-11ea-ab10-0663456a67be   30Gi       RWO            Delete           Bound     solace-pubsub/data-my-release-pubsubplus-1    gp2                      2h        failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1a
-persistentvolume/pvc-7d5f8838-0d39-11ea-ab10-0663456a67be   30Gi       RWO            Delete           Bound     solace-pubsub/data-my-release-pubsubplus-2    gp2                      2h        failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1b
+NAME                                                        CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                                            STORAGECLASS   REASON   AGE   LABELS
+persistentvolume/pvc-3d77864d-3f90-42fe-939d-8a9324a62e20   10Gi       RWO            Delete           Bound    solace-pubsub/data-my-release-pubsubplus-2   gp2                     23h   failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1a
+persistentvolume/pvc-ab428fa6-4786-4419-a814-a801a0860861   10Gi       RWO            Delete           Bound    solace-pubsub/data-my-release-pubsubplus-1   gp2                     23h   failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1c
+persistentvolume/pvc-eb2c8a52-85d4-4bc2-a73d-884559a4e463   10Gi       RWO            Delete           Bound    solace-pubsub/data-my-release-pubsubplus-0   gp2                     23h   failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1b
+
 [ec2-user@ip-10-0-23-198 ~]$
 [ec2-user@ip-10-0-23-198 ~]$
-[ec2-user@ip-10-0-23-198 ~]$ oc describe svc
+[ec2-user@ip-10-0-23-198 ~]$ oc describe svc my-release-pubsubplus
 Name:                     my-release-pubsubplus
 Namespace:                solace-pubsub
 Labels:                   app.kubernetes.io/instance=my-release
-                          app.kubernetes.io/managed-by=Tiller
+                          app.kubernetes.io/managed-by=Helm
                           app.kubernetes.io/name=pubsubplus
-                          helm.sh/chart=pubsubplus-1.0.0
-Annotations:              <none>
+                          helm.sh/chart=pubsubplus-2.4.0
+Annotations:              meta.helm.sh/release-name: my-release
+                          meta.helm.sh/release-namespace: solace-pubsub
 Selector:                 active=true,app.kubernetes.io/instance=my-release,app.kubernetes.io/name=pubsubplus
 Type:                     LoadBalancer
-IP:                       172.30.44.13
-LoadBalancer Ingress:     a7d53a67e0d3911eaab100663456a67b-73396344.eu-central-1.elb.amazonaws.com
-Port:                     ssh  22/TCP
+IP:                       172.30.129.136
+LoadBalancer Ingress:     ac4917b2be7734df09a296f5da4dce38-1140440410.eu-central-1.elb.amazonaws.com
+Port:                     tcp-ssh  2222/TCP
 TargetPort:               2222/TCP
-NodePort:                 ssh  32084/TCP
-Endpoints:                10.131.0.17:2222
-Port:                     semp  8080/TCP
+NodePort:                 tcp-ssh  31020/TCP
+Endpoints:                10.129.2.14:2222
+Port:                     tcp-semp  8080/TCP
 TargetPort:               8080/TCP
-NodePort:                 semp  31060/TCP
-Endpoints:                10.131.0.17:8080
-Port:                     semptls  943/TCP
-TargetPort:               60943/TCP
-NodePort:                 semptls  30321/TCP
-Endpoints:                10.131.0.17:60943
-Port:                     smf  55555/TCP
+NodePort:                 tcp-semp  30035/TCP
+Endpoints:                10.129.2.14:8080
+Port:                     tls-semp  1943/TCP
+TargetPort:               1943/TCP
+NodePort:                 tls-semp  30695/TCP
+Endpoints:                10.129.2.14:1943
+Port:                     tcp-smf  55555/TCP
 TargetPort:               55555/TCP
-NodePort:                 smf  32434/TCP
-Endpoints:                10.131.0.17:55555
-Port:                     smfcomp  55003/TCP
+NodePort:                 tcp-smf  30166/TCP
+Endpoints:                10.129.2.14:55555
+Port:                     tcp-smfcomp  55003/TCP
 TargetPort:               55003/TCP
-NodePort:                 smfcomp  32160/TCP
-Endpoints:                10.131.0.17:55003
-Port:                     smftls  55443/TCP
+NodePort:                 tcp-smfcomp  30756/TCP
+Endpoints:                10.129.2.14:55003
+Port:                     tls-smf  55443/TCP
 TargetPort:               55443/TCP
-NodePort:                 smftls  30635/TCP
-Endpoints:                10.131.0.17:55443
-Port:                     web  80/TCP
-TargetPort:               60080/TCP
-NodePort:                 web  30142/TCP
-Endpoints:                10.131.0.17:60080
-Port:                     webtls  443/TCP
-TargetPort:               60443/TCP
-NodePort:                 webtls  30411/TCP
-Endpoints:                10.131.0.17:60443
-Port:                     amqp  5672/TCP
-TargetPort:               5672/TCP
-NodePort:                 amqp  30595/TCP
-Endpoints:                10.131.0.17:5672
-Port:                     mqtt  1883/TCP
-TargetPort:               1883/TCP
-NodePort:                 mqtt  30511/TCP
-Endpoints:                10.131.0.17:1883
-Port:                     rest  9000/TCP
+NodePort:                 tls-smf  32303/TCP
+Endpoints:                10.129.2.14:55443
+Port:                     tcp-smfroute  55556/TCP
+TargetPort:               55556/TCP
+NodePort:                 tcp-smfroute  31861/TCP
+Endpoints:                10.129.2.14:55556
+Port:                     tcp-web  8008/TCP
+TargetPort:               8008/TCP
+NodePort:                 tcp-web  31233/TCP
+Endpoints:                10.129.2.14:8008
+Port:                     tls-web  1443/TCP
+TargetPort:               1443/TCP
+NodePort:                 tls-web  32104/TCP
+Endpoints:                10.129.2.14:1443
+Port:                     tcp-rest  9000/TCP
 TargetPort:               9000/TCP
-NodePort:                 rest  32277/TCP
-Endpoints:                10.131.0.17:9000
+NodePort:                 tcp-rest  30811/TCP
+Endpoints:                10.129.2.14:9000
+Port:                     tls-rest  9443/TCP
+TargetPort:               9443/TCP
+NodePort:                 tls-rest  30173/TCP
+Endpoints:                10.129.2.14:9443
+Port:                     tcp-amqp  5672/TCP
+TargetPort:               5672/TCP
+NodePort:                 tcp-amqp  31234/TCP
+Endpoints:                10.129.2.14:5672
+Port:                     tls-amqp  5671/TCP
+TargetPort:               5671/TCP
+NodePort:                 tls-amqp  31165/TCP
+Endpoints:                10.129.2.14:5671
+Port:                     tcp-mqtt  1883/TCP
+TargetPort:               1883/TCP
+NodePort:                 tcp-mqtt  32291/TCP
+Endpoints:                10.129.2.14:1883
+Port:                     tls-mqtt  8883/TCP
+TargetPort:               8883/TCP
+NodePort:                 tls-mqtt  32292/TCP
+Endpoints:                10.129.2.14:8883
+Port:                     tcp-mqttweb  8000/TCP
+TargetPort:               8000/TCP
+NodePort:                 tcp-mqttweb  32086/TCP
+Endpoints:                10.129.2.14:8000
+Port:                     tls-mqttweb  8443/TCP
+TargetPort:               8443/TCP
+NodePort:                 tls-mqttweb  31426/TCP
+Endpoints:                10.129.2.14:8443
 Session Affinity:         None
 External Traffic Policy:  Cluster
 Events:                   <none>
 ```
 
-Find the **'LoadBalancer Ingress'** value listed in the service description above. This is the publicly accessible Solace Connection URI for messaging clients and management. In the example, it is `a7d53a67e0d3911eaab100663456a67b-73396344.eu-central-1.elb.amazonaws.com`.
+Find the **'LoadBalancer Ingress'** value listed in the service description above. This is the publicly accessible Solace Connection URI for messaging clients and management. In the example, it is `ac4917b2be7734df09a296f5da4dce38-1140440410.eu-central-1.elb.amazonaws.com`.
 
 > **Note**: There is no Load Balancer support with CodeReady Containers. Services are accessed through NodePorts instead. To access the brokers, use the NodePort port numbers together with the CodeReady Containers' public IP addresses, which can be obtained by running the `crc ip` command.
 
@@ -418,7 +443,7 @@ You can access the log stack for individual event broker pods from the OpenShift
 
 ## Gaining Admin and SSH Access to the Event Broker
 
-To access the event brokers, use the Solace Connection URI associated with the load balancer generated by the OpenShift template. As described in the introduction, you access the brokers through the load balancer service, which always point to the active event broker. The default port is 22 for CLI and 8080 for SEMP/[Solace PubSub+ Broker Manager](https://docs.solace.com/Solace-PubSub-Manager/PubSub-Manager-Overview.htm).
+To access the event brokers, use the Solace Connection URI associated with the load balancer generated by the OpenShift template. As described in the introduction, you access the brokers through the load balancer service, which always point to the active event broker. The default port is 2222 for CLI and 8080 for SEMP/[Solace PubSub+ Broker Manager](https://docs.solace.com/Solace-PubSub-Manager/PubSub-Manager-Overview.htm).
 
 If you deployed OpenShift in AWS, then the Solace OpenShift QuickStart will have created an EC2 Load Balancer to front the event broker / OpenShift service.  The Load Balancer public DNS name can be found in the AWS EC2 console in the 'Load Balancers' section.
 
@@ -488,7 +513,7 @@ To remove the project or to start over in a clean state, delete the project usin
 ```
 oc delete project solace-pubsub   # adjust your project name as needed
 ```
-For more details, refer to the [OpenShift Projects](https://docs.openshift.com/enterprise/3.0/dev_guide/projects.html) documentation.
+For more details, refer to the [OpenShift Projects](https://docs.openshift.com/container-platform/latest/welcome/index.html) documentation.
 
 ### Deleting the AWS OpenShift Container Platform Deployment
 
@@ -521,7 +546,7 @@ The Helm (NFS Server Provisioner)[https://github.com/helm/charts/tree/master/sta
     ```
 2. Install the NFS helm chart, which will create all dependencies:
     ```
-    helm install stable/nfs-server-provisioner --name nfs-test --set persistence.enabled=true,persistence.size=100Gi
+    helm install stable/nfs-server-provisioner nfs-test --set persistence.enabled=true,persistence.size=100Gi
     ```
 3. Ensure the "nfs-provisioner" service account got created:
     ```
