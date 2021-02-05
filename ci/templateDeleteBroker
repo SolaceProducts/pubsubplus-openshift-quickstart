@@ -2,5 +2,5 @@
 eval $(crc oc-env)
 while ! oc login -u kubeadmin -p `cat /opt/passw` https://api.crc.testing:6443 ; do sleep 1 ; done
 oc project $1
-oc process -f $2 DEPLOYMENT_NAME=my-release | oc delete -f -
+oc process -f $2 DEPLOYMENT_NAME=my-release BROKER_ADMIN_PASSWORD=YWRtaW4= | oc delete -f -
 oc delete pvc --all
