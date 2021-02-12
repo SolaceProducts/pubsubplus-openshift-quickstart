@@ -81,7 +81,7 @@ The following steps describe how to deploy an event broker onto an OpenShift env
 
 **Tip:** You can skip Step 1 if you already have your own OpenShift environment available.
 
-> Note: If you are using CodeReady Containers, follow the [getting started instructions](https://developers.redhat.com/products/codeready-containers/getting-started) to stand up a working CodeReady Containers deployment that supports Linux, MacOS, and Windows. At the `crc start` step it is helpful to: have a local `pullsecret` file created; specify CPU and memory requirements, allowing 1 CPU and 2.5 GiB memory for CRC internal purposes; specify a DNS server, for example: `crc start -p ./pullsecret -c 3 -m 8148 --nameserver 1.1.1.1`.
+> Note: If you are using CodeReady Containers, follow the [getting started instructions](https://developers.redhat.com/products/codeready-containers/getting-started) to stand up a working CodeReady Containers deployment that supports Linux, MacOS, and Windows. At the `crc start` step it is helpful to: have a local `pullsecret` file created; specify CPU and memory requirements, allowing 2 to 3 CPU and 2.5 to 7 GiB memory for CRC internal purposes (depending on your platform and CRC version); also specify a DNS server, for example: `crc start -p ./pullsecret -c 5 -m 11264 --nameserver 1.1.1.1`.
 
 ### Step 1: (Optional / AWS) Deploy a Self-Managed OpenShift Container Platform onto AWS
 
@@ -421,7 +421,7 @@ Events:                   <none>
 
 Find the **'LoadBalancer Ingress'** value listed in the service description above. This is the publicly accessible Solace Connection URI for messaging clients and management. In the example, it is `ac4917b2be7734df09a296f5da4dce38-1140440410.eu-central-1.elb.amazonaws.com`.
 
-> **Note**: There is no Load Balancer support with CodeReady Containers. Services are accessed through NodePorts instead. To access the brokers, use the NodePort port numbers together with the CodeReady Containers' public IP addresses, which can be obtained by running the `crc ip` command.
+> **Note**: There is no external Load Balancer support with CodeReady Containers. Services are accessed through NodePorts instead. To access the brokers, use the NodePort port numbers together with the CodeReady Containers' public IP addresses, which can be obtained by running the `crc ip` command.
 
 ### Viewing the Bringup Logs
 
