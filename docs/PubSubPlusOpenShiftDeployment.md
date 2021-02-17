@@ -186,7 +186,7 @@ Consult the [Deployment Considerations](https://github.com/SolaceProducts/pubsub
 
 In particular, the `securityContext.enabled` parameter must be set to `false`, indicating not to use the provided pod security context but to let OpenShift set it using SecurityContextConstraints (SCC). By default OpenShift will use the "restricted" SCC.
 
-By default the latest publicly available [Docker image](https://hub.Docker.com/r/solace/solace-pubsub-standard/tags/) of PubSub+ Standard Edition is used. Use a different image tag if required or [use an image from a different registry](#step-2-optional-use-a-private-image-registry). If you're using a different image, add the `image.repository=<your-image-location>,image.tag=<your-image-tag>` values (comma-separated) to the `--set` commands below. Also specify a pull secret if required: `image.pullSecretName=<my-pullsecret>`
+By default the latest publicly available [Docker image](https://hub.Docker.com/r/solace/solace-pubsub-standard/tags/) of PubSub+ Standard Edition is used. Use a different image tag if required or [use an image from a different registry](#step-2-optional--ecr-use-a-private-image-registry). If you're using a different image, add the `image.repository=<your-image-location>,image.tag=<your-image-tag>` values (comma-separated) to the `--set` commands below. Also specify a pull secret if required: `image.pullSecretName=<my-pullsecret>`
 
 The broker can be [vertically scaled](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#deployment-scaling ) using the `solace.size` chart parameter.
 
@@ -523,10 +523,9 @@ To delete your OpenShift Container Platform deployment that was set up at [Step 
 cd ~/workspace
 ./openshift-install help # Check options
 ./openshift-install destroy cluster
-./openshift-install destroy bootstrap
 ```
 
-You can now initiate the OpenShift stack deletion operation from the AWS CloudFormation console.
+This will remove all resources of the deployment.
 
 
 ## Experimental: Using NFS for Persistent Storage
