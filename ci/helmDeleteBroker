@@ -4,3 +4,4 @@ while ! oc login -u kubeadmin -p `cat /opt/passw` https://api.crc.testing:6443 ;
 oc project $1
 helm delete my-release
 oc delete pvc --all
+oc delete project $1

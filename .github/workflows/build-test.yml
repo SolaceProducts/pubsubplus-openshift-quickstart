@@ -7,13 +7,13 @@ on:
   push:
 
   schedule:
-  - cron: "0 5 * * *"
+  - cron: "0 * * * *"
 
 jobs:
   deploy:
     name: OpenShift QuickStart CI test
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 55
 
     steps:
     - name: Set env and tools
@@ -49,6 +49,7 @@ jobs:
         fi
         gcloud compute instances start ${TESTGCPMACHINE} --project "capable-stream-180018" --zone "us-east4-a"
         rm ~/.ssh/google_compute_* || echo "GCP certs were clean"
+        sleep 10 # wait for ssh keys to propagate
         gcloud compute --project "capable-stream-180018" ssh --zone "us-east4-a" --force-key-file-overwrite --quiet "${TESTUSER}@${TESTGCPMACHINE}" --quiet --command "rm -f /opt/scripts/*; rm -f /opt/templates/*" # cleanup remote directories
         gcloud compute --project "capable-stream-180018" scp --zone "us-east4-a" --quiet templates/* "${TESTUSER}@${TESTGCPMACHINE}:/opt/templates" # Copy templates to remote
         gcloud compute --project "capable-stream-180018" scp --zone "us-east4-a" --quiet ci/* "${TESTUSER}@${TESTGCPMACHINE}:/opt/scripts" # Copy scripts to remote
@@ -99,6 +100,6 @@ jobs:
         shopt -s expand_aliases; alias remote_command=${REMOTE_COMMAND}
         # Only touch the remote VM if not used by someone else
         if [[ ${RUNCONFLICT} != true ]]; then
-          remote_command "/opt/scripts/shutdownCrc"
+          remote_command "/opt/scripts/shutdownCrc" || echo "Issues found with remote command"
           gcloud compute instances stop ${TESTGCPMACHINE} --project "capable-stream-180018" --zone "us-east4-a"
         fi
