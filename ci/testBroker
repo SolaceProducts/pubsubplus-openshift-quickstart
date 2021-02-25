@@ -1,0 +1,17 @@
+# Params: $1=Existing OpenShift project $2=Broker service name
+eval $(crc oc-env)
+sudo sed -i 's/nameserver.*$/nameserver 1.1.1.1/g' /etc/resolv.conf
+while ! oc login -u kubeadmin -p `cat /opt/passw` https://api.crc.testing:6443 ; do sleep 1 ; done
+oc project $1
+export IP=`oc get svc $2 -o yaml | grep clusterIP | awk -F': ' '{print $NF}'`
+oc run nginx --image nginx
+while ! oc get po | grep nginx | grep Running ; do sleep 1; done
+oc exec -it nginx -- curl $IP:8080 | grep aurelia
+oc exec -it nginx -- curl -O https://sftp.solace.com/download/SDKPERF_C_LINUX64
+oc exec -it nginx -- tar -xvf SDKPERF_C_LINUX64
+sleep 15
+oc exec -it nginx -- pubSubTools/sdkperf_c -cip=$IP -mn=100000 -mr=0 -ptl=t1 -stl=t1 | grep "Total Messages"
+oc exec -it nginx -- curl -sS -u admin:admin http://$IP:8080/SEMP -d "<rpc><show><redundancy></redundancy></show></rpc>"
+oc exec -it nginx -- curl -sS -u admin:admin http://$IP:8080/SEMP -d "<rpc><show><config-sync></config-sync></show></rpc>"
+oc delete pod nginx
+

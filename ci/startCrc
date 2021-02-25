@@ -1,0 +1,8 @@
+cd /opt
+sudo systemctl stop systemd-networkd.socket systemd-networkd networkd-dispatcher systemd-networkd-wait-online
+sudo systemctl disable systemd-networkd.socket systemd-networkd networkd-dispatcher systemd-networkd-wait-online
+sudo /etc/init.d/network-manager start
+crc setup
+crc start -p /opt/pullsecret -c 7 -m 26700 --nameserver 1.1.1.1
+eval $(crc oc-env)
+while ! oc login -u kubeadmin -p `cat /opt/passw` https://api.crc.testing:6443 ; do sleep 1 ; done

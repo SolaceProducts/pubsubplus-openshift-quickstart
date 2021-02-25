@@ -1,0 +1,105 @@
+name: build
+
+# Controls when the action will run.
+on:
+  # pull_request:
+
+  push:
+
+  #schedule:
+  #- cron: "0 2 * * *"
+
+jobs:
+  deploy:
+    name: OpenShift QuickStart CI test
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+
+    steps:
+    - name: Set env and tools
+      run: |
+        echo "TESTUSER=vagrant" >> $GITHUB_ENV # must exist
+        echo "TESTGCPMACHINE=openshift4x-test" >> $GITHUB_ENV # must exist
+        echo "TESTRUNBRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
+        # Next command is commonly used to execute commands on the remote machine
+        remote_command='gcloud compute --project "capable-stream-180018" ssh --zone "us-east4-a" "${TESTUSER}@${TESTGCPMACHINE}" --quiet --command'
+        echo "REMOTE_COMMAND=${remote_command}" >> $GITHUB_ENV
+        #
+        sudo gem update --system 3.0.6
+        sudo gem install yaml-lint
+
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@master
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        export_default_credentials: true
+
+    - name: Linting yaml files
+      run: |
+        yaml-lint -n templates/*.yaml
+
+    - name: Prep target runner VM
+      run: |
+        if gcloud compute instances describe ${TESTGCPMACHINE} --project "capable-stream-180018" --zone "us-east4-a" | grep status | grep RUNNING ; then
+          echo "Test machine is already running, likely in use. Unable to continue this test run, exiting"; echo "RUNCONFLICT=true" >> $GITHUB_ENV; exit 1
+        fi
+        gcloud compute instances start ${TESTGCPMACHINE} --project "capable-stream-180018" --zone "us-east4-a"
+        rm ~/.ssh/google_compute_* || echo "GCP certs were clean"
+        sleep 10 # wait for ssh keys to propagate
+        gcloud compute --project "capable-stream-180018" ssh --zone "us-east4-a" --force-key-file-overwrite --quiet "${TESTUSER}@${TESTGCPMACHINE}" --quiet --command "rm -f /opt/scripts/*; rm -f /opt/templates/*" # cleanup remote directories
+        gcloud compute --project "capable-stream-180018" scp --zone "us-east4-a" --quiet templates/* "${TESTUSER}@${TESTGCPMACHINE}:/opt/templates" # Copy templates to remote
+        gcloud compute --project "capable-stream-180018" scp --zone "us-east4-a" --quiet ci/* "${TESTUSER}@${TESTGCPMACHINE}:/opt/scripts" # Copy scripts to remote
+
+    - name: Setup CodeReady Containers
+      run: |
+        shopt -s expand_aliases; alias remote_command=${REMOTE_COMMAND}
+        remote_command "chmod +x /opt/scripts/*" # ensure crc known start state
+        remote_command "/opt/scripts/shutdownCrc" || echo "crc was already stopped" # ensure crc known start state
+        remote_command "/opt/scripts/startCrc" # start crc
+
+    - name: Deploy HA broker and test, using Helm install
+      run: |
+        shopt -s expand_aliases; alias remote_command=${REMOTE_COMMAND}
+        remote_command "/opt/scripts/helmInstallBroker helmtest"
+        remote_command "/opt/scripts/testBroker helmtest my-release-pubsubplus-dev" | tee out.txt
+        grep "aurelia" out.txt # web portal access
+        grep "<redundancy-status>Up</redundancy-status>" out.txt
+        grep "<oper-status>Up</oper-status>" out.txt
+        grep 100000 out.txt # smf messaging
+        remote_command "/opt/scripts/helmDeleteBroker helmtest"
+        rm -f out.txt
+
+    - name: Deploy non-HA broker and test, using template install
+      run: |
+        shopt -s expand_aliases; alias remote_command=${REMOTE_COMMAND}
+        remote_command "/opt/scripts/templateInstallBroker templatenonha /opt/templates/eventbroker_singlenode_template.yaml"
+        remote_command "/opt/scripts/testBroker templatenonha my-release-pubsubplus" | tee out.txt
+        grep "aurelia" out.txt # web portal access
+        grep 100000 out.txt # smf messaging
+        remote_command "/opt/scripts/templateDeleteBroker templatenonha /opt/templates/eventbroker_singlenode_template.yaml"
+        rm -f out.txt
+
+    - name: Deploy HA broker and test, using template install
+      run: |
+        shopt -s expand_aliases; alias remote_command=${REMOTE_COMMAND}
+        remote_command "/opt/scripts/templateInstallBroker templateha /opt/templates/eventbroker_ha_template.yaml"
+        remote_command "/opt/scripts/testBroker templateha my-release-pubsubplus" | tee out.txt
+        grep "aurelia" out.txt # web portal access
+        grep "<redundancy-status>Up</redundancy-status>" out.txt
+        grep "<oper-status>Up</oper-status>" out.txt
+        grep 100000 out.txt # smf messaging
+        remote_command "/opt/scripts/templateDeleteBroker templateha /opt/templates/eventbroker_ha_template.yaml"
+
+    - name: Cleanup
+      if: ${{ always() }}
+      run: |
+        shopt -s expand_aliases; alias remote_command=${REMOTE_COMMAND}
+        # Only touch the remote VM if not used by someone else
+        if [[ ${RUNCONFLICT} != true ]]; then
+          remote_command "/opt/scripts/shutdownCrc" || echo "Issues found with remote command"
+          gcloud compute instances stop ${TESTGCPMACHINE} --project "capable-stream-180018" --zone "us-east4-a"
+        fi

@@ -16,7 +16,7 @@ objects:
       app.kubernetes.io/name: pubsubplus
   type: Opaque
   data:
-    username_admin_password: "${EVENTBROKER_ADMIN_PASSWORD}"
+    username_admin_password: "${BROKER_ADMIN_PASSWORD}"
 
 - kind: ConfigMap
   apiVersion: v1
@@ -27,37 +27,78 @@ objects:
       app.kubernetes.io/name: pubsubplus
   data:
     init.sh: |-
-      # export username_admin_passwordfilepath=/mnt/disks/secrets/username_admin_password
-        export username_admin_password=`cat /mnt/disks/secrets/username_admin_password`
-        export username_admin_globalaccesslevel=admin
-        export service_ssh_port='2222'
-        export service_webtransport_port='8008'
-        export service_webtransport_tlsport='1443'
-        export service_semp_tlsport='1943'
-        export logging_debug_output=all
-        export system_scaling_maxconnectioncount="100"
-
-    setup-config-sync.sh: |-
-        #!/bin/bash
-        exit 0
-
+      export username_admin_passwordfilepath="/mnt/disks/secrets/username_admin_password"
+      export username_admin_globalaccesslevel=admin
+      export service_ssh_port='2222'
+      export service_webtransport_port='8008'
+      export service_webtransport_tlsport='1443'
+      export service_semp_tlsport='1943'
+      export logging_debug_output=all
+      export system_scaling_maxconnectioncount="100"
+      # Uncomment if using TLS configuration
+      # cat /mnt/disks/certs/server/tls.key /mnt/disks/certs/server/tls.crt > /dev/shm/server.cert
+      # export tls_servercertificate_filepath="/dev/shm/server.cert"
+    startup-broker.sh: |-
+      #!/bin/bash
+      APP=`basename "$0"`
+      IFS='-' read -ra host_array <<< $(hostname)
+      node_ordinal=${host_array[-1]}
+      echo "`date` INFO: ${APP}-Node ordinal: ${node_ordinal}"
+      echo "`date` INFO: ${APP}-Waiting for management API to become available"
+      password=`cat /mnt/disks/secrets/username_admin_password`
+      loop_guard=60
+      pause=10
+      count=0
+      while [ ${count} -lt ${loop_guard} ]; do
+        if /mnt/disks/solace/semp_query.sh -n admin -p ${password} -u http://localhost:8080 -t ; then
+          break
+        fi
+        run_time=$((${count} * ${pause}))
+        ((count++))
+        echo "`date` INFO: ${APP}-Waited ${run_time} seconds, Management API not yet accessible"
+        sleep ${pause}
+      done
+      if [ ${count} -eq ${loop_guard} ]; then
+        echo "`date` ERROR: ${APP}-Solace Management API never came up"  >&2
+        exit 1
+      fi
+      # Uncomment if using TLS configuration
+      # rm /dev/shm/server.cert # remove as soon as possible
+      # cert_results=$(curl --write-out '%{http_code}' --silent --output /dev/null -k -X PATCH -u admin:${password} https://localhost:1943/SEMP/v2/config/ \
+      #   -H "content-type: application/json" \
+      #   -d "{\"tlsServerCertContent\":\"$(cat /mnt/disks/certs/server/tls.key /mnt/disks/certs/server/tls.crt | awk '{printf "%s\\n", $0}')\"}")
+      # if [ "${cert_results}" != "200" ]; then
+      #   echo "`date` ERROR: ${APP}-Unable to set the server certificate, exiting"  >&2
+      #   exit 1
+      # fi
+      # echo "`date` INFO: ${APP}-Server certificate has been configured"
+      echo "`date` INFO: ${APP}-PubSub+ Event Broker bringup is complete for this node."
+      exit 0
 
     readiness_check.sh: |-
       #!/bin/bash
+      APP=`basename "$0"`
       LOG_FILE=/usr/sw/var/k8s_readiness_check.log # STDOUT/STDERR goes to k8s event logs but gets cleaned out eventually. This will also persist it.
       tail -n 1000 ${LOG_FILE} > ${LOG_FILE}.tmp; mv -f ${LOG_FILE}.tmp ${LOG_FILE} || :  # Limit logs size
-      exec > >(tee -a ${LOG_FILE}) 2>&1
+      exec > >(tee -a ${LOG_FILE}) 2>&1 # Setup logging
+      FINAL_ACTIVITY_LOGGED_TRACKING_FILE=/tmp/final_activity_state_logged
+
+      # Function to read Kubernetes metadata labels
+      get_label () {
+        # Params: $1 label name
+        echo $(cat /etc/podinfo/labels | awk -F= '$1=="'${1}'"{print $2}' | xargs);
+      }
 
       # Function to set Kubernetes metadata labels
       set_label () {
+        # Params: $1 label name, $2 label set value
         #Prevent overdriving Kubernetes infra, don't set activity state to same as previous state
-        previous_state=`cat $3`
+        previous_state=$(get_label "active")
         if [ "${2}" = "${previous_state}" ]; then
-          #echo "`date` INFO: ${APP}-Current and Previous state match (${2}), not updating label"
+          #echo "`date` INFO: ${APP}-Current and Previous state match (${2}), not updating pod label"
           :
         else
-          echo "`date` INFO: ${APP}-Updating label from `cat ${3}` to ${2}"
-          echo ${2} > ${3}
+          echo "`date` INFO: ${APP}-Updating pod label using K8s API from ${previous_state} to ${2}"
           echo "[{\"op\": \"add\", \"path\": \"/metadata/labels/${1}\", \"value\": \"${2}\" }]" > /tmp/patch_label.json
           K8S=https://kubernetes.default.svc.cluster.local:$KUBERNETES_SERVICE_PORT
           KUBE_TOKEN=$(</var/run/secrets/kubernetes.io/serviceaccount/token)
@@ -67,45 +108,41 @@ objects:
               --request PATCH --data "$(cat /tmp/patch_label.json)" \
               -H "Authorization: Bearer $KUBE_TOKEN" -H "Content-Type:application/json-patch+json" \
               $K8S/api/v1/namespaces/$NAMESPACE/pods/$HOSTNAME ; then
-            # Fall back to alternative method to update label
+            # Label update didn't work this way, fall back to alternative legacy method to update label
             if ! curl -sSk --output /dev/null -H "Authorization: Bearer $KUBE_TOKEN" --request PATCH --data "$(cat /tmp/patch_label.json)" \
               -H "Content-Type:application/json-patch+json" \
               https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_PORT_443_TCP_PORT/api/v1/namespaces/$STATEFULSET_NAMESPACE/pods/$HOSTNAME ; then
               echo "`date` ERROR: ${APP}-Unable to update pod label, check access from pod to K8s API or RBAC authorization" >&2
-              exit 1
+              rm -f ${FINAL_ACTIVITY_LOGGED_TRACKING_FILE}; exit 1
             fi
-            echo "`date` INFO: ${APP}-Failed to update label from ${3} to ${2}, retrying"
           fi
         fi
       }
-      # note that there are no re-tries here, if check fails then return not ready.
-      APP=`basename "$0"`
-      state_file=/tmp/activity_state
-      if [ ! -f ${state_file} ]; then  # State file not found, creating
-        echo "unknown" > ${state_file}
-      fi
+
+      # Main logic: note that there are no re-tries here, if check fails then return not ready.
       # nonHA config
       health_result=`curl -s -o /dev/null -w "%{http_code}"  http://localhost:5550/health-check/guaranteed-active`
-      
       case "${health_result}" in
         "200")
-          if [[ $(cat $state_file) = "false" ]]; then echo "`date` INFO: ${APP}-nonHA Event Broker health check reported 200, message spool is up"; fi
-          set_label "active" "true" $state_file
+          if [ ! -f ${FINAL_ACTIVITY_LOGGED_TRACKING_FILE} ]; then
+            echo "`date` INFO: ${APP}-nonHA Event Broker health check reported 200, message spool is up"
+            touch ${FINAL_ACTIVITY_LOGGED_TRACKING_FILE}
+          fi
+          set_label "active" "true"
           exit 0
           ;;
         "503")
-          if [[ $(cat $state_file) = "true" ]]; then echo "`date` INFO: ${APP}-nonHA Event Broker health check reported 503, message spool is down"; fi
-          set_label "active" "false" $state_file
+          if [[ $(get_label "active") = "true" ]]; then echo "`date` INFO: ${APP}-nonHA Event Broker health check reported 503, message spool is down"; fi
+          set_label "active" "false"
           # Fail readiness check
-          exit 1
+          rm -f ${FINAL_ACTIVITY_LOGGED_TRACKING_FILE}; exit 1
           ;;
         *)
           echo "`date` WARN: ${APP}-nonHA Event Broker health check reported ${health_result}"
-          set_label "active" "false" $state_file
+          set_label "active" "false"
           # Fail readiness check
-          exit 1
+          rm -f ${FINAL_ACTIVITY_LOGGED_TRACKING_FILE}; exit 1
       esac
-
     semp_query.sh: |-
         #!/bin/bash
         APP=`basename "$0"`
@@ -117,13 +154,14 @@ objects:
         query=""
         url=""
         value_search=""
+        test_connection_only=false
         script_name=$0
         verbose=0
-        while getopts "c:n:p:q:u:v:" opt; do
+        while getopts "c:n:p:q:u:v:t" opt; do
             case "$opt" in
             c)  count_search=$OPTARG
                 ;;
-            n)  name=$OPTARG
+            n)  username=$OPTARG
                 ;;
             p)  password=$OPTARG
                 ;;
@@ -133,23 +171,28 @@ objects:
                 ;;
             v)  value_search=$OPTARG
                 ;;
+            t)  test_connection_only=true
+                ;;
             esac
         done
         shift $((OPTIND-1))
         [ "$1" = "--" ] && shift
         verbose=1
-        #echo "`date` INFO: ${APP}-${script_name}: count_search=${count_search} ,name=${name} ,password=xxx query=${query} \
+        #echo "`date` INFO: ${APP}-${script_name}: count_search=${count_search} ,username=${username} ,password=xxx query=${query} \
         #            ,url=${url} ,value_search=${value_search} ,Leftovers: $@" >&2
-        if [[ ${url} = "" || ${name} = "" || ${password} = "" || ${query} = "" ]]; then
-          echo "`date` ERROR: ${APP}-${script_name}: url, name, password and query are madatory fields" >&2
+        if [[ ${url} = "" || ${username} = "" || ${password} = "" ]]; then
+          echo "`date` ERROR: ${APP}-${script_name}: url, username, password are madatory fields" >&2
           echo  '<returnInfo><errorInfo>missing parameter</errorInfo></returnInfo>'
           exit 1
         fi
-        if [ `curl --write-out '%{http_code}' --silent --output /dev/null -u ${name}:${password} ${url} -d "<rpc><show><version/></show></rpc>"` != "200" ] ; then
+        if [ "`curl --write-out '%{http_code}' --silent --output /dev/null -u ${username}:${password} ${url}`" != "200" ] ; then
           echo  "<returnInfo><errorInfo>management host is not responding</errorInfo></returnInfo>"
           exit 1
         fi
-        query_response=`curl -sS -u ${name}:${password} ${url} -d "${query}"`
+        if [ "$test_connection_only" = true ] ; then
+          exit 0      # done here, connection is up
+        fi
+        query_response=`curl -sS -u ${username}:${password} ${url}/SEMP -d "${query}"`
         # Validate first char of response is "<", otherwise no hope of being valid xml
         if [[ ${query_response:0:1} != "<" ]] ; then
           echo  "<returnInfo><errorInfo>no valid xml returned</errorInfo></returnInfo>"
@@ -174,6 +217,7 @@ objects:
             echo  "<returnInfo><errorInfo></errorInfo><countSearchResult>${count_result}</countSearchResult></returnInfo>"
             exit 0
         fi
+
 
 # Uncomment if using provider-specific StorageClass
 # Also uncomment further down at volumeClaimTemplates
@@ -227,47 +271,71 @@ objects:
     - port: 2222
       targetPort: 2222
       protocol: TCP
-      name: ssh
+      name: tcp-ssh
     - port: 8080
       targetPort: 8080
       protocol: TCP
-      name: semp
+      name: tcp-semp
     - port: 1943
       targetPort: 1943
       protocol: TCP
-      name: semptls
+      name: tls-semp
     - port: 55555
       targetPort: 55555
       protocol: TCP
-      name: smf
+      name: tcp-smf
     - port: 55003
       targetPort: 55003
       protocol: TCP
-      name: smfcomp
+      name: tcp-smfcomp
     - port: 55443
       targetPort: 55443
       protocol: TCP
-      name: smftls
+      name: tls-smf
+    - port: 55556
+      targetPort: 55556
+      protocol: TCP
+      name: tcp-smfroute
     - port: 8008
       targetPort: 8008
       protocol: TCP
-      name: web
+      name: tcp-web
     - port: 1443
       targetPort: 1443
       protocol: TCP
-      name: webtls
-    - port: 5672
-      targetPort: 5672
-      protocol: TCP
-      name: amqp
-    - port: 1883
-      targetPort: 1883
-      protocol: TCP
-      name: mqtt
+      name: tls-web
     - port: 9000
       targetPort: 9000
       protocol: TCP
-      name: rest
+      name: tcp-rest
+    - port: 9443
+      targetPort: 9443
+      protocol: TCP
+      name: tls-rest
+    - port: 5672
+      targetPort: 5672
+      protocol: TCP
+      name: tcp-amqp
+    - port: 5671
+      targetPort: 5671
+      protocol: TCP
+      name: tls-amqp
+    - port: 1883
+      targetPort: 1883
+      protocol: TCP
+      name: tcp-mqtt
+    - port: 8883
+      targetPort: 8883
+      protocol: TCP
+      name: tls-mqtt
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: tcp-mqttweb
+    - port: 8443
+      targetPort: 8443
+      protocol: TCP
+      name: tls-mqttweb
     selector:
       app.kubernetes.io/name: pubsubplus
       app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
@@ -296,11 +364,13 @@ objects:
           app.kubernetes.io/name: pubsubplus
           app.kubernetes.io/instance: "${DEPLOYMENT_NAME}"
       spec:
+        imagePullSecrets:
+        - name: ${BROKER_IMAGE_REGISTRY_PULLSECRET}
         serviceAccountName: "${DEPLOYMENT_NAME}-pubsubplus-sa"
         terminationGracePeriodSeconds: 1200
         containers:
         - name: pubsubplus
-          image: "${DOCKER_REGISTRY_URL}:${EVENTBROKER_IMAGE_TAG}"
+          image: "${BROKER_IMAGE_REGISTRY_URL}:${BROKER_IMAGE_TAG}"
           imagePullPolicy: IfNotPresent
           resources:
             requests:
@@ -329,16 +399,19 @@ objects:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
+          - name: TZ
+            value: :/usr/share/zoneinfo/UTC
+          - name: UMASK
+            value: "0022"
           command:
            - bash
            - "-ec"
            - |
              source /mnt/disks/solace/init.sh
              # not using postinstall hooks because of order dependencies
-             # launch config check then PubSub+ so VCMR can provide return code
-             nohup /mnt/disks/solace/setup-config-sync.sh &
+             # launch config check - readiness check script will be launched by readinessProbe
+             nohup /mnt/disks/solace/startup-broker.sh &
              /usr/sbin/boot.sh
-
           lifecycle:
             preStop:
               exec:
@@ -347,14 +420,20 @@ objects:
                  - "-ec"
                  - |
                    while ! pgrep solacedaemon ; do sleep 1; done
-                   killall solacedaemon; 
+                   killall solacedaemon;
                    while [ ! -d /usr/sw/var/db.upgrade ]; do sleep 1; done;
           volumeMounts:
+          - name: podinfo
+            mountPath: /etc/podinfo
           - name: config-map
             mountPath: /mnt/disks/solace
           - name: secrets
             mountPath: /mnt/disks/secrets
             readOnly: true
+          # Uncomment if using TLS configuration
+          # - name: server-certs
+          #   mountPath: /mnt/disks/certs/server
+          #   readOnly: true
           - name: dshm
             mountPath: /dev/shm
           - name: data
@@ -392,17 +471,35 @@ objects:
             protocol: TCP
           - containerPort: 55443
             protocol: TCP
+          - containerPort: 55556
+            protocol: TCP
           - containerPort: 8008
             protocol: TCP
           - containerPort: 1443
             protocol: TCP
+          - containerPort: 9000
+            protocol: TCP
+          - containerPort: 9443
+            protocol: TCP
           - containerPort: 5672
+            protocol: TCP
+          - containerPort: 5671
             protocol: TCP
           - containerPort: 1883
             protocol: TCP
-          - containerPort: 9000
+          - containerPort: 8883
+            protocol: TCP
+          - containerPort: 8000
+            protocol: TCP
+          - containerPort: 8443
             protocol: TCP
         volumes:
+          - name: podinfo
+            downwardAPI:
+              items:
+                - path: "labels"
+                  fieldRef:
+                    fieldPath: metadata.labels
           - name: config-map
             configMap:
               name: "${DEPLOYMENT_NAME}-pubsubplus"
@@ -411,6 +508,11 @@ objects:
             secret:
               secretName: "${DEPLOYMENT_NAME}-pubsubplus-secrets"
               defaultMode: 0400
+          # Uncomment if using TLS configuration
+          # - name: server-certs
+          #   secret:
+          #     secretName: "${BROKER_TLS_CERT_SECRET}"
+          #     defaultMode: 0400
           - name: dshm
             emptyDir:
               medium: Memory
@@ -427,7 +529,7 @@ objects:
         accessModes: [ "ReadWriteOnce" ]
         resources:
           requests:
-            storage: "${EVENTBROKER_STORAGE_SIZE}"
+            storage: "${BROKER_STORAGE_SIZE}"
 
 parameters:
   - name: DEPLOYMENT_NAME
@@ -437,23 +539,33 @@ parameters:
     from: '[A-Z0-9]{8}'
     value: example
     required: true
-  - name: DOCKER_REGISTRY_URL
-    displayName: Docker Registry URL
-    description: The Docker registry URL for the registry containing the PubSub+ Event Broker docker image
+  - name: BROKER_IMAGE_REGISTRY_URL
+    displayName: Image Registry URL
+    description: The image registry URL for the registry containing the PubSub+ Event Broker docker image
     value: solace/solace-pubsub-standard
     required: true
-  - name: EVENTBROKER_IMAGE_TAG
+  - name: BROKER_IMAGE_REGISTRY_PULLSECRET
+    displayName: Image Registry Pull Secret
+    description: The pull secret to be used to obtain the PubSub+ Event Broker docker image
+    value:
+    required: false
+  - name: BROKER_IMAGE_TAG
     displayName: PubSub+ Event Broker Docker Image Tag
     description: The Docker image tag for the PubSub+ Event Broker docker image from your Docker registry
     value: latest
     required: true
-  - name: EVENTBROKER_ADMIN_PASSWORD
+  - name: BROKER_ADMIN_PASSWORD
     displayName: Base64 encoded password for PubSub+ username 'admin'
     description: The Event Broker 'admin' user's password (base64 encoded).  This PubSub+ OpenShift template will create an administrative user with username 'admin' with specified password.
-    value: "cEBzc3cwcmQ=" # password 'p@ssw0rd'
     required: true
-  - name: EVENTBROKER_STORAGE_SIZE
+  - name: BROKER_STORAGE_SIZE
     displayName: PubSub+ Event Broker Persistent Storage Disk Size
     description: The size in gigabytes for a Event Broker Pod's persistent volume (with suffix 'Gi'), example 30Gi for 30 gigabytes
     value: 30Gi
     required: true
+  # Uncomment if using TLS configuration
+  # - name: BROKER_TLS_CERT_SECRET
+  #   displayName: Certificate Secret for Broker TLS Config
+  #   description: The server key and certificate for the event broker packaged in a Kubernetes secret
+  #   value:
+  #   required: true

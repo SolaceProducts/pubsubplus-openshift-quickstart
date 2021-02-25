@@ -1,0 +1,7 @@
+# Params: $1=Existing OpenShift project
+eval $(crc oc-env)
+while ! oc login -u kubeadmin -p `cat /opt/passw` https://api.crc.testing:6443 ; do sleep 1 ; done
+oc project $1
+helm delete my-release
+oc delete pvc --all
+oc delete project $1
