@@ -6,8 +6,8 @@ on:
 
   push:
 
-  schedule:
-  - cron: "0 * * * *"
+  #schedule:
+  #- cron: "0 2 * * *"
 
 jobs:
   deploy:
