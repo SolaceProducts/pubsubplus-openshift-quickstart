@@ -95,8 +95,7 @@ This step requires the following:
 
 To deploy the container platform in AWS, do the following:
 1. If you haven't already, log in to your RedHat account.
-2. On the [**Create an OpenShift cluster**](https://cloud.redhat.com/openshift/create) page, under **Run it yourself**, select **AWS**. 
-3. On the [**Install OpenShift Container Platform 4**](https://cloud.redhat.com/openshift/install#public-cloud ) page, select **Installer-provisioned infrastructure**. A page is displayed that allows you to download the the required binaries and documentation.
+2. On the [**Create an OpenShift cluster**](https://cloud.redhat.com/openshift/create) page, under **Run it yourself**, select **AWS** and then **Installer-provisioned infrastructure**. A page is displayed that allows you to download the the required binaries and documentation.
 3. Select your OS, and then make a note of the URL of the "Download installer" button.
 4. On your host, in the command console, run the following commands to download and expand the OpenShift installer:
     ```
