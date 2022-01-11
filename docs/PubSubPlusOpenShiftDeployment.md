@@ -9,7 +9,7 @@ This repository provides an example of how to deploy the Solace PubSub+ Software
 ## Overview
 There are [multiple ways](https://www.openshift.com/try ) to get to an OpenShift platform. This example uses the Red Hat OpenShift Container Platform for deploying an HA group of software event brokers, but the concepts are transferable to other compatible platforms. We also provide tips for how to set up a simple single-node deployment using [CodeReady Containers](https://developers.redhat.com/products/codeready-containers/overview ) (the equivalent of MiniShift for OpenShift 4) for development, testing, or proof of concept purposes.
 
-The supported Solace PubSub+ Software Event Broker version is 9.7 or later.
+The supported Solace PubSub+ Software Event Broker version is 9.10 or later.
 
 For the Red Hat OpenShift Container Platform, we use a self-managed 60-day evaluation subscription of [RedHat OpenShift cluster in AWS](https://cloud.redhat.com/openshift/install#public-cloud ) in a highly redundant configuration, spanning three zones.
 
@@ -179,13 +179,13 @@ Additional information is provided in the following documents:
 - [Solace PubSub+ on Kubernetes Deployment Guide](//github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md)
 - [Kubernetes Deployment Quick Start Guide](//github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/README.md)
 
-This deployment uses PubSub+ Software Event Broker Helm charts. You can customize it by overriding the [default chart parameters](//github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/tree/master/pubsubplus#configuration).
+This deployment uses PubSub+ Software Event Broker Helm charts for OpenShift. You can customize it by overriding the [default chart parameters](//github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/tree/master/pubsubplus#configuration).
 
 Consult the [Deployment Considerations](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#pubsub-software-event-broker-deployment-considerations) section of the general Event Broker in Kubernetes Documentation when planning your deployment.
 
-In particular, the `securityContext.enabled` parameter must be set to `false`, indicating not to use the provided pod security context but to let OpenShift set it using SecurityContextConstraints (SCC). By default OpenShift will use the "restricted" SCC.
-
-By default the latest publicly available [Docker image](https://hub.Docker.com/r/solace/solace-pubsub-standard/tags/) of PubSub+ Standard Edition is used. Use a different image tag if required or [use an image from a different registry](#step-2-optional--ecr-use-a-private-image-registry). If you're using a different image, add the `image.repository=<your-image-location>,image.tag=<your-image-tag>` values (comma-separated) to the `--set` commands below. Also specify a pull secret if required: `image.pullSecretName=<my-pullsecret>`
+PubSub+ Software Event Broker Helm charts for OpenShift differ from the general PubSub+ Helm charts:
+* The `securityContext.enabled` parameter is set to `false` by default, indicating not to use the provided pod security context but to let OpenShift set it using SecurityContextConstraints (SCC). By default OpenShift will use the "restricted" SCC.
+* By default the latest publicly available [Red Hat certified image](https://hub.Docker.com/r/solace/solace-pubsub-standard/tags/) of PubSub+ Standard Edition is used from `registry.connect.redhat.com`. Use a different image tag if required or [use an image from a different registry](#step-2-optional--ecr-use-a-private-image-registry). If you're using a different image, add the `image.repository=<your-image-location>,image.tag=<your-image-tag>` values (comma-separated) to the `--set` commands below. Also specify a pull secret if required: `image.pullSecretName=<my-pullsecret>`
 
 The broker can be [vertically scaled](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#deployment-scaling ) using the `solace.size` chart parameter.
 
@@ -204,11 +204,11 @@ The broker can be [vertically scaled](https://github.com/SolaceProducts/pubsubpl
     ##### For an _HA_ Deployment:
     ```bash
     # One-time action: Add the PubSub+ charts to local Helm
-    helm repo add solacecharts https://solaceproducts.github.io/pubsubplus-kubernetes-quickstart/helm-charts
+    helm repo add openshift-helm-charts https://charts.openshift.io/
     # Initiate the HA deployment - specify an admin password
     helm install my-ha-release \
-      --set securityContext.enabled=false,solace.redundancy=true,solace.usernameAdminPassword=<broker-admin-password> \
-      solacecharts/pubsubplus
+      --set solace.redundancy=true,solace.usernameAdminPassword=<broker-admin-password> \
+      openshift-helm-charts/pubsubplus-openshift
     # Check the notes printed on screen
     # Wait until all pods are running, ready, and the active event broker pod label is "active=true" 
     oc get pods --show-labels -w
@@ -217,12 +217,12 @@ The broker can be [vertically scaled](https://github.com/SolaceProducts/pubsubpl
     ##### For a Single-Node, _Non-HA_ Deployment (Using a _Pull_ _Secret_):
     ```bash
     # One-time action: Add the PubSub+ charts to local Helm
-    helm repo add solacecharts https://solaceproducts.github.io/pubsubplus-kubernetes-quickstart/helm-charts
+    helm repo add openshift-helm-charts https://charts.openshift.io/
     # Initiate the non-HA deployment - specify an admin password
     helm install my-nonha-release \
-      --set securityContext.enabled=false,solace.redundancy=false,solace.usernameAdminPassword=<broker-admin-password> \
+      --set solace.redundancy=false,solace.usernameAdminPassword=<broker-admin-password> \
       --set image.pullSecretName=<my-pullsecret> \
-      solacecharts/pubsubplus
+      openshift-helm-charts/pubsubplus-openshift
     # Check the notes printed on screen
     # Wait until the event broker pod is running, ready, and the pod label is "active=true" 
     oc get pods --show-labels -w
@@ -232,15 +232,13 @@ The broker can be [vertically scaled](https://github.com/SolaceProducts/pubsubpl
     ```yaml
     # Create example values file - specify an admin password
     echo "
-    securityContext
-      enabled: false
     solace
       redundancy: false,
       usernameAdminPassword: <broker-admin-password>" > deployment-values.yaml
     # Use values file
     helm install my-release \
       -v deployment-values.yaml \
-      solacecharts/pubsubplus
+      openshift-helm-charts/pubsubplus-openshift
     ```
 
 ### Step 3, Option 2: Deploy Using OpenShift Templates
