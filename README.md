@@ -30,6 +30,12 @@ There are three Helm chart variants available with default small-size configurat
 
 For other event broker configurations or sizes, refer to the [PubSub+ Software Event Broker Helm Chart](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/pubsubplus/README.md) documentation.
 
+You can install Helm charts on an OpenShift Container Platform cluster using the following methods:
+* The CLI
+* The Developer perspective of the OpenShift web console
+
+## Installing from CLI
+
 ### Step 1: Get an OpenShift Environment
 
 There are [multiple ways](https://www.openshift.com/try ) to get to an OpenShift 4 platform:
@@ -107,7 +113,13 @@ Helm is configured properly if the `helm version` command returns no error.
 
 4. Wait for the deployment to complete, following any instructions that are written to the console. You can now [validate the deployment and try the management and messaging services](/docs/PubSubPlusOpenShiftDeployment.md#validating-the-deployment).
  
-> **Note**: There is no external Load Balancer support with CodeReady Containers. Services are accessed through NodePorts instead. Check the results of the `oc get svc my-release-pubsubplus` command. This command returns the ephemeral NodePort port numbers for each message router service. Use these port numbers together with CodeReady Containers' public IP addresses, which can be obtained by running the `crc ip` command.
+    > Note: There is no external Load Balancer support with CodeReady Containers. Services are accessed through NodePorts instead. Check the results of the `oc get svc my-release-pubsubplus` command. This command returns the ephemeral NodePort port numbers for each message router service. Use these port numbers together with CodeReady Containers' public IP addresses, which can be obtained by running the `crc ip` command.
+
+## Installing from the Developer perspective
+
+Follow the [OpenShift documentation](https://docs.openshift.com/container-platform/latest/applications/working_with_helm_charts/configuring-custom-helm-chart-repositories.html#odc-installing-helm-charts-using-developer-perspective_configuring-custom-helm-chart-repositories) to install one of the `pubsubplus-openshift` Helm chart variants available from the Developer catalog.
+
+## Troubleshooting
 
 If you have any problems, refer to the [Troubleshooting](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#troubleshooting) section of the general PubSub+ Kubernetes Documentation for help. Substitute any `kubectl` commands with `oc` commands.
 
