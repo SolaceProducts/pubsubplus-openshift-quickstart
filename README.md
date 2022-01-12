@@ -81,19 +81,19 @@ Helm is configured properly if the `helm version` command returns no error.
 
 3. Use one of the following Helm chart variants to create a deployment (for configuration options and deletion instructions, refer to the [PubSub+ Software Event Broker Helm Chart](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/tree/master/pubsubplus#configuration) documentation):
 
-    - Create a Solace PubSub+ minimum deployment for development purposes using `pubsubplus-dev`. This variant requires a minimum of 1 CPU and 3.4 GiB of memory to be available to the PubSub+ event broker pod.
+    - Create a Solace PubSub+ minimum deployment for development purposes using `pubsubplus-openshift-dev`. This variant requires a minimum of 1 CPU and 3.4 GiB of memory to be available to the PubSub+ event broker pod.
     ```bash
     # Deploy PubSub+ Standard edition, minimum footprint developer version
     helm install my-release openshift-helm-charts/pubsubplus-openshift-dev
     ```
 
-    - Create a Solace PubSub+ standalone deployment that supports 100 connections using `pubsubplus`. A minimum of 2 CPUs and 3.4 GiB of memory must be available to the PubSub+ pod.
+    - Create a Solace PubSub+ standalone deployment that supports 100 connections using `pubsubplus-openshift`. A minimum of 2 CPUs and 3.4 GiB of memory must be available to the PubSub+ pod.
     ```bash
     # Deploy PubSub+ Standard edition, standalone
     helm install my-release openshift-helm-charts/pubsubplus-openshift
     ```
 
-    - Create a Solace PubSub+ HA deployment that supports 100 connections using `pubsubplus-ha`. This deployment requires that at least 2 CPUs and 3.4 GiB of memory are available to *each* of the three event broker pods.
+    - Create a Solace PubSub+ HA deployment that supports 100 connections using `pubsubplus-openshift-ha`. This deployment requires that at least 2 CPUs and 3.4 GiB of memory are available to *each* of the three event broker pods.
     ```bash
     # Deploy PubSub+ Standard edition, HA
     helm install openshift-helm-charts/pubsubplus-openshift-ha
