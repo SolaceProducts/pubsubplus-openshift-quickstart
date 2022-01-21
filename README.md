@@ -15,7 +15,15 @@ For detailed instructions, see [Deploying a Solace PubSub+ Software Event Broker
 
 The PubSub+ deployment does not require any special OpenShift Security Context; the default `restricted` SCC can be used.
 
-We recommend using the Helm tool for convenience. An alternative method [using OpenShift templates](/docs/PubSubPlusOpenShiftDeployment.md#step-4-option-2-deploy-using-openshift-templates) is also available.
+We recommend using the PubSub+ Helm chart for convenience. An alternative method [using OpenShift templates](/docs/PubSubPlusOpenShiftDeployment.md#step-4-option-2-deploy-using-openshift-templates) is also available.
+
+## Pre-requisite: Access to OpenShift Platform
+
+There are [multiple ways](https://www.openshift.com/try ) to get to an OpenShift 4 platform:
+- The detailed [Event Broker on OpenShift](/docs/PubSubPlusOpenShiftDeployment.md#step-1-optional--aws-deploy-a-self-managed-openshift-container-platform-onto-aws) documentation describes how to set up production-ready Red Hat OpenShift Container Platform platform on AWS.
+- An option for developers is to locally deploy an all-in-one environment using [CodeReady Containers](https://developers.redhat.com/products/codeready-containers/overview).
+- An easy way to get an OpenShift cluster up and running is through the [Developer Sandbox](https://developers.redhat.com/developer-sandbox) program. You can sign up for a free 14-day trial.
+
 
 ## Deploying PubSub+ Software Event Broker
 
@@ -31,17 +39,23 @@ There are three Helm chart variants available with default small-size configurat
 For other event broker configurations or sizes, refer to the [PubSub+ Software Event Broker Helm Chart](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/pubsubplus/README.md) documentation.
 
 You can install Helm charts on an OpenShift Container Platform cluster using the following methods:
+* The Developer-perspective of the OpenShift Web-Console; or
 * The CLI
-* The Developer perspective of the OpenShift web console
+
+## Installing from the OpenShift Web-Console Developer-perspective
+
+This simple method uses the OpenShift Web-Console graphical interface:
+
+* In a browser open the OpenShift Web-Console, Developer-perspective
+* Find and select the required PubSub+ Helm chart variant from the catalog, then click on "Install".
+* Provide a unique Release Name. It is recommended not to reuse the chart name that is offered by default.
+* If required, provide additional configurations. For options, consult the README link at the top of the page. Note that currently the "Form view" offers all the possible fields and the "YAML view" shows only those that have a current configuration value. 
+
+Additional information is available from the [OpenShift documentation](https://docs.openshift.com/container-platform/latest/applications/working_with_helm_charts/configuring-custom-helm-chart-repositories.html#odc-installing-helm-charts-using-developer-perspective_configuring-custom-helm-chart-repositories).
 
 ## Installing from CLI
 
-### Step 1: Get an OpenShift Environment
-
-There are [multiple ways](https://www.openshift.com/try ) to get to an OpenShift 4 platform:
-- The detailed [Event Broker on OpenShift](/docs/PubSubPlusOpenShiftDeployment.md#step-1-optional--aws-deploy-a-self-managed-openshift-container-platform-onto-aws) documentation describes how to set up production-ready Red Hat OpenShift Container Platform platform on AWS.
-- An option for developers is to locally deploy an all-in-one environment using [CodeReady Containers](https://developers.redhat.com/products/codeready-containers/overview).
-- An easy way to get an OpenShift cluster up and running is through the [Developer Sandbox](https://developers.redhat.com/developer-sandbox) program. You can sign up for a free 14-day trial.
+### Step 1: Ensure command-line console access to your OpenShift environment
 
 Assuming you have access to an OpenShift 4 platform, log in as `kubeadmin` using the `oc login -u kubeadmin` command.
 
@@ -88,22 +102,22 @@ Helm is configured properly if the `helm version` command returns no error.
 3. Use one of the following Helm chart variants to create a deployment (for configuration options and deletion instructions, refer to the [PubSub+ Software Event Broker Helm Chart](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/tree/master/pubsubplus#configuration) documentation):
 
     - Create a Solace PubSub+ minimum deployment for development purposes using `pubsubplus-openshift-dev`. This variant requires a minimum of 1 CPU and 3.4 GiB of memory to be available to the PubSub+ event broker pod.
-    ```bash
-    # Deploy PubSub+ Standard edition, minimum footprint developer version
-    helm install my-release openshift-helm-charts/pubsubplus-openshift-dev
-    ```
+      ```bash
+      # Deploy PubSub+ Standard edition, minimum footprint developer version
+      helm install my-release openshift-helm-charts/pubsubplus-openshift-dev
+      ```
 
     - Create a Solace PubSub+ standalone deployment that supports 100 connections using `pubsubplus-openshift`. A minimum of 2 CPUs and 3.4 GiB of memory must be available to the PubSub+ pod.
-    ```bash
-    # Deploy PubSub+ Standard edition, standalone
-    helm install my-release openshift-helm-charts/pubsubplus-openshift
-    ```
+      ```bash
+      # Deploy PubSub+ Standard edition, standalone
+      helm install my-release openshift-helm-charts/pubsubplus-openshift
+      ```
 
     - Create a Solace PubSub+ HA deployment that supports 100 connections using `pubsubplus-openshift-ha`. This deployment requires that at least 2 CPUs and 3.4 GiB of memory are available to *each* of the three event broker pods.
-    ```bash
-    # Deploy PubSub+ Standard edition, HA
-    helm install openshift-helm-charts/pubsubplus-openshift-ha
-    ```
+      ```bash
+      # Deploy PubSub+ Standard edition, HA
+      helm install openshift-helm-charts/pubsubplus-openshift-ha
+      ```
 
     All of the Helm options above start the deployment and write related information and notes to the console.
 
@@ -114,10 +128,6 @@ Helm is configured properly if the `helm version` command returns no error.
 4. Wait for the deployment to complete, following any instructions that are written to the console. You can now [validate the deployment and try the management and messaging services](/docs/PubSubPlusOpenShiftDeployment.md#validating-the-deployment).
  
     > Note: There is no external Load Balancer support with CodeReady Containers. Services are accessed through NodePorts instead. Check the results of the `oc get svc my-release-pubsubplus` command. This command returns the ephemeral NodePort port numbers for each message router service. Use these port numbers together with CodeReady Containers' public IP addresses, which can be obtained by running the `crc ip` command.
-
-## Installing from the Developer perspective
-
-Follow the [OpenShift documentation](https://docs.openshift.com/container-platform/latest/applications/working_with_helm_charts/configuring-custom-helm-chart-repositories.html#odc-installing-helm-charts-using-developer-perspective_configuring-custom-helm-chart-repositories) to install one of the `pubsubplus-openshift` Helm chart variants available from the Developer catalog.
 
 ## Troubleshooting
 
