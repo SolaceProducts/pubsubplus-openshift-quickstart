@@ -39,21 +39,21 @@ There are three Helm chart variants available with default small-size configurat
 For other event broker configurations or sizes, refer to the [PubSub+ Software Event Broker Helm Chart](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/pubsubplus/README.md) documentation.
 
 You can install Helm charts on an OpenShift Container Platform cluster using the following methods:
-* The Developer-perspective of the OpenShift Web-Console; or
+* The Developer perspective of the OpenShift Web Console; or
 * The CLI
 
-## Installing from the OpenShift Web-Console Developer-perspective
+## Option 1: Installing from the OpenShift Web Console, Developer perspective
 
-This simple method uses the OpenShift Web-Console graphical interface:
+This simple method uses the OpenShift Web Console graphical interface:
 
-* In a browser open the OpenShift Web-Console, Developer-perspective
+* In a browser open the OpenShift Web Console, Developer perspective.
 * Find and select the required PubSub+ Helm chart variant from the catalog, then click on "Install".
 * Provide a unique Release Name. It is recommended not to reuse the chart name that is offered by default.
 * If required, provide additional configurations. For options, consult the README link at the top of the page. Note that currently the "Form view" offers all the possible fields and the "YAML view" shows only those that have a current configuration value. 
 
-Additional information is available from the [OpenShift documentation](https://docs.openshift.com/container-platform/latest/applications/working_with_helm_charts/configuring-custom-helm-chart-repositories.html#odc-installing-helm-charts-using-developer-perspective_configuring-custom-helm-chart-repositories).
+Additional information is available from the [OpenShift documentation](https://docs.openshift.com/container-platform/latest/applications/working_with_helm_charts/configuring-custom-helm-chart-repositories.html#odc-installing-helm-charts-using-Developer perspective_configuring-custom-helm-chart-repositories).
 
-## Installing from CLI
+## Option 2: Installing from CLI
 
 ### Step 1: Ensure command-line console access to your OpenShift environment
 
