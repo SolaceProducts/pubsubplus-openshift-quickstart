@@ -48,7 +48,7 @@ This simple method uses the OpenShift Web Console graphical interface:
 
 * In a browser open the OpenShift Web Console, Developer perspective.
 * Find and select the required PubSub+ Helm chart variant from the catalog, then click on "Install".
-* Provide a unique Release Name. It is recommended to change the chart name that is offered by default. The maximum length of the Release Name should be 28 characters.
+* Provide a unique Release Name. It is recommended to change the name that is offered by default. The maximum length of the Release Name should be 28 characters.
 * If required, provide additional chart configurations. For options, consult the README link at the top of the page. Note that currently the "Form view" offers all the possible fields and the "YAML view" shows only those that have a current configuration value. It may be necessary to refresh the browser to display the latest in "YAML view".
 
 Additional information is available from the [OpenShift documentation](https://docs.openshift.com/container-platform/latest/applications/working_with_helm_charts/configuring-custom-helm-chart-repositories.html#odc-installing-helm-charts-using-Developer perspective_configuring-custom-helm-chart-repositories).
