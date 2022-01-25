@@ -827,7 +827,7 @@ parameters:
   - name: BROKER_IMAGE_REGISTRY_URL
     displayName: Image Registry URL
     description: The image registry URL for the registry containing the PubSub+ Event Broker docker image
-    value: solace/solace-pubsub-standard
+    value: registry.connect.redhat.com/solace/pubsubplus-standard
     required: true
   - name: BROKER_IMAGE_REGISTRY_PULLSECRET
     displayName: Image Registry Pull Secret

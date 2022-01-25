@@ -138,7 +138,7 @@ To deploy the container platform in AWS, do the following:
 
 ### Step 2: (Optional / ECR) Use a Private Image Registry
 
-By default, the deployment scripts pull the Solace PubSub+ image from [Docker Hub](https://hub.docker.com/r/solace/solace-pubsub-standard/tags?page=1&ordering=last_updated). If the OpenShift worker nodes have Internet access, no further configuration is required.
+By default, the deployment scripts pull the Solace PubSub+ image from the [Red Hat containerized products catalog](https://catalog.redhat.com/software/container-stacks/search?q=solace). If the OpenShift worker nodes have Internet access, no further configuration is required.
 
 However, if you need to use a private image registry, such as AWS ECR, you must supply a pull secret to enable access to the registry. The steps that follow show how to use AWS ECR for the broker image.
 
@@ -185,7 +185,7 @@ Consult the [Deployment Considerations](https://github.com/SolaceProducts/pubsub
 
 PubSub+ Software Event Broker Helm charts for OpenShift differ from the general PubSub+ Helm charts:
 * The `securityContext.enabled` parameter is set to `false` by default, indicating not to use the provided pod security context but to let OpenShift set it using SecurityContextConstraints (SCC). By default OpenShift will use the "restricted" SCC.
-* By default the latest publicly available [Red Hat certified image](https://hub.Docker.com/r/solace/solace-pubsub-standard/tags/) of PubSub+ Standard Edition is used from `registry.connect.redhat.com`. Use a different image tag if required or [use an image from a different registry](#step-2-optional--ecr-use-a-private-image-registry). If you're using a different image, add the `image.repository=<your-image-location>,image.tag=<your-image-tag>` values (comma-separated) to the `--set` commands below. Also specify a pull secret if required: `image.pullSecretName=<my-pullsecret>`
+* By default the latest [Red Hat certified image](https://catalog.redhat.com/software/container-stacks/search?q=solace) of PubSub+ Standard Edition is used from `registry.connect.redhat.com`. Use a different image tag if required or [use an image from a different registry](#step-2-optional--ecr-use-a-private-image-registry). If you're using a different image, add the `image.repository=<your-image-location>,image.tag=<your-image-tag>` values (comma-separated) to the `--set` commands below. Also specify a pull secret if required: `image.pullSecretName=<my-pullsecret>`
 
 The broker can be [vertically scaled](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#deployment-scaling ) using the `solace.size` chart parameter.
 
@@ -197,7 +197,7 @@ The broker can be [vertically scaled](https://github.com/SolaceProducts/pubsubpl
      Helm is configured properly if the command `helm version` returns no error.
 2. Create a new project or switch to your existing project (do not use the `default` project as its loose permissions don't reflect a typical OpenShift environment):
     ```
-    oc new-project solace-pubsub    # adjust your project name as needed here and in subsequent commands
+    oc new-project solace-pubsubplus  # adjust your project name as needed here and in subsequent commands
     ```
 3. Follow one of the examples below to deploy your cluster.
 
@@ -261,7 +261,7 @@ This option use an OpenShift template and doesn't require Helm. This option assu
     You will use this value as a parameter when you process the event broker OpenShift template.
 2. Create a new project or switch to your existing project (do not use the `default` project as its loose permissions don't reflect a typical OpenShift environment):
     ```
-    oc new-project solace-pubsub    # adjust your project name as needed here and in subsequent commands
+    oc new-project solace-pubsubplus    # adjust your project name as needed here and in subsequent commands
     ```
 3. Follow one of the examples below to deploy your cluster.
 
@@ -280,7 +280,7 @@ This option use an OpenShift template and doesn't require Helm. This option assu
     ##### For an _HA_ Deployment:
     In this example, we specify values for all parameters.
 
-    The `BROKER_IMAGE_REGISTRY_URL` and `BROKER_IMAGE_TAG` parameters default to **solace/solace-pubsub-standard** and **latest**, respectively.
+    The `BROKER_IMAGE_REGISTRY_URL` and `BROKER_IMAGE_TAG` parameters default to **registry.connect.redhat.com/solace/pubsubplus-standard** and **latest**, respectively.
 
     ```
     oc process -f https://raw.githubusercontent.com/SolaceProducts/pubsubplus-openshift-quickstart/master/templates/eventbroker_ha_template.yaml \
@@ -324,21 +324,21 @@ persistentvolumeclaim/data-my-release-pubsubplus-1   Bound    pvc-ab428fa6-4786-
 persistentvolumeclaim/data-my-release-pubsubplus-2   Bound    pvc-3d77864d-3f90-42fe-939d-8a9324a62e20   10Gi       RWO            gp2            23h   app.kubernetes.io/instance=my-release,app.kubernetes.io/name=pubsubplus
 
 NAME                                                        CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                                            STORAGECLASS   REASON   AGE   LABELS
-persistentvolume/pvc-3d77864d-3f90-42fe-939d-8a9324a62e20   10Gi       RWO            Delete           Bound    solace-pubsub/data-my-release-pubsubplus-2   gp2                     23h   failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1a
-persistentvolume/pvc-ab428fa6-4786-4419-a814-a801a0860861   10Gi       RWO            Delete           Bound    solace-pubsub/data-my-release-pubsubplus-1   gp2                     23h   failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1c
-persistentvolume/pvc-eb2c8a52-85d4-4bc2-a73d-884559a4e463   10Gi       RWO            Delete           Bound    solace-pubsub/data-my-release-pubsubplus-0   gp2                     23h   failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1b
+persistentvolume/pvc-3d77864d-3f90-42fe-939d-8a9324a62e20   10Gi       RWO            Delete           Bound    solace-pubsubplus/data-my-release-pubsubplus-2   gp2                     23h   failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1a
+persistentvolume/pvc-ab428fa6-4786-4419-a814-a801a0860861   10Gi       RWO            Delete           Bound    solace-pubsubplus/data-my-release-pubsubplus-1   gp2                     23h   failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1c
+persistentvolume/pvc-eb2c8a52-85d4-4bc2-a73d-884559a4e463   10Gi       RWO            Delete           Bound    solace-pubsubplus/data-my-release-pubsubplus-0   gp2                     23h   failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1b
 
 [ec2-user@ip-10-0-23-198 ~]$
 [ec2-user@ip-10-0-23-198 ~]$
 [ec2-user@ip-10-0-23-198 ~]$ oc describe svc my-release-pubsubplus
 Name:                     my-release-pubsubplus
-Namespace:                solace-pubsub
+Namespace:                solace-pubsubplus
 Labels:                   app.kubernetes.io/instance=my-release
                           app.kubernetes.io/managed-by=Helm
                           app.kubernetes.io/name=pubsubplus
                           helm.sh/chart=pubsubplus-2.4.0
 Annotations:              meta.helm.sh/release-name: my-release
-                          meta.helm.sh/release-namespace: solace-pubsub
+                          meta.helm.sh/release-namespace: solace-pubsubplus
 Selector:                 active=true,app.kubernetes.io/instance=my-release,app.kubernetes.io/name=pubsubplus
 Type:                     LoadBalancer
 IP:                       172.30.129.136
@@ -508,7 +508,7 @@ oc delete pvc <pvc-name>
 
 To remove the project or to start over in a clean state, delete the project using the OpenShift console or the command line: 
 ```
-oc delete project solace-pubsub   # adjust your project name as needed
+oc delete project solace-pubsubplus   # adjust your project name as needed
 ```
 For more details, refer to the [OpenShift Projects](https://docs.openshift.com/container-platform/latest/welcome/index.html) documentation.
 
