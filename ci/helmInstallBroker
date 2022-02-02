@@ -4,9 +4,9 @@ sudo sed -i 's/nameserver.*$/nameserver 1.1.1.1/g' /etc/resolv.conf
 while ! oc login -u kubeadmin -p `cat /opt/passw` https://api.crc.testing:6443 ; do sleep 1 ; done
 oc new-project $1
 curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
-helm repo add solacecharts https://solaceproducts.github.io/pubsubplus-kubernetes-quickstart/helm-charts
+helm repo add solacecharts-openshift-dev https://solacedev.github.io/pubsubplus-kubernetes-quickstart/helm-charts-openshift
 helm repo update
-helm install my-release solacecharts/pubsubplus-dev --set solace.redundancy=true,securityContext.enabled=false,solace.usernameAdminPassword=admin
-while ! oc get pods --show-labels | grep my-release-pubsubplus-dev | grep "active=true" ; do sleep 1; done
+helm install my-release solacecharts-openshift-dev/pubsubplus-openshift-dev --set solace.redundancy=true,solace.usernameAdminPassword=admin
+while ! oc get pods --show-labels | grep my-release-pubsubplus-openshift-dev | grep "active=true" ; do sleep 1; done
 oc get pods --show-labels
 oc get svc
