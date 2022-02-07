@@ -375,10 +375,10 @@ objects:
           resources:
             requests:
               cpu: "2"
-              memory: 3.4Gi
+              memory: 4025Mi
             limits:
               cpu: "2"
-              memory: 3.4Gi
+              memory: 4025Mi
           livenessProbe:
             tcpSocket:
               port: 8080
@@ -404,24 +404,24 @@ objects:
           - name: UMASK
             value: "0022"
           command:
-           - bash
-           - "-ec"
-           - |
-             source /mnt/disks/solace/init.sh
-             # not using postinstall hooks because of order dependencies
-             # launch config check - readiness check script will be launched by readinessProbe
-             nohup /mnt/disks/solace/startup-broker.sh &
-             /usr/sbin/boot.sh
+          - bash
+          - "-ec"
+          - |
+            source /mnt/disks/solace/init.sh
+            # not using postinstall hooks because of order dependencies
+            # launch config check - readiness check script will be launched by readinessProbe
+            nohup /mnt/disks/solace/startup-broker.sh &
+            /usr/sbin/boot.sh
           lifecycle:
             preStop:
               exec:
                 command:
-                 - bash
-                 - "-ec"
-                 - |
-                   while ! pgrep solacedaemon ; do sleep 1; done
-                   killall solacedaemon;
-                   while [ ! -d /usr/sw/var/db.upgrade ]; do sleep 1; done;
+                - bash
+                - "-ec"
+                - |
+                  while ! pgrep solacedaemon ; do sleep 1; done
+                  killall solacedaemon;
+                  while [ ! -d /usr/sw/var/db.upgrade ]; do sleep 1; done;
           volumeMounts:
           - name: podinfo
             mountPath: /etc/podinfo
