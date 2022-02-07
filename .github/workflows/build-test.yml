@@ -65,7 +65,7 @@ jobs:
       run: |
         shopt -s expand_aliases; alias remote_command=${REMOTE_COMMAND}
         remote_command "/opt/scripts/helmInstallBroker helmtest"
-        remote_command "/opt/scripts/testBroker helmtest my-release-pubsubplus-dev" | tee out.txt
+        remote_command "/opt/scripts/testBroker helmtest my-release-pubsubplus-openshift-dev" | tee out.txt
         grep "aurelia" out.txt # web portal access
         grep "<redundancy-status>Up</redundancy-status>" out.txt
         grep "<oper-status>Up</oper-status>" out.txt

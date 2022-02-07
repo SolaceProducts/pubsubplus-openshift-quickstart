@@ -1,8 +1,11 @@
+loginctl enable-linger $USER
+export XDG_RUNTIME_DIR=/run/user/$(id -u)
 cd /opt
 sudo systemctl stop systemd-networkd.socket systemd-networkd networkd-dispatcher systemd-networkd-wait-online
 sudo systemctl disable systemd-networkd.socket systemd-networkd networkd-dispatcher systemd-networkd-wait-online
 sudo /etc/init.d/network-manager start
 crc setup
-crc start -p /opt/pullsecret -c 7 -m 26700 --nameserver 1.1.1.1
+crc start -p /opt/pullsecret -c 7 -m 26700 --nameserver 1.1.1.1 | tee out
+cat out | grep kubeadmin -A 1 | grep Password | cut -d ":" -f 2 | xargs > /opt/passw
 eval $(crc oc-env)
 while ! oc login -u kubeadmin -p `cat /opt/passw` https://api.crc.testing:6443 ; do sleep 1 ; done
