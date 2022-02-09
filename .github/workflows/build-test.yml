@@ -79,8 +79,8 @@ jobs:
         remote_command "/opt/scripts/templateInstallBroker templateha /opt/templates/eventbroker_ha_template.yaml"
         remote_command "/opt/scripts/testBroker templateha my-release-pubsubplus" | tee out.txt
         grep "aurelia" out.txt # web portal access
-        grep "<redundancy-status>Up</redundancy-status>" out.txt
-        grep "<oper-status>Up</oper-status>" out.txt
+        #grep "<redundancy-status>Up</redundancy-status>" out.txt
+        #grep "<oper-status>Up</oper-status>" out.txt
         grep 100000 out.txt # smf messaging
         remote_command "/opt/scripts/templateDeleteBroker templateha /opt/templates/eventbroker_ha_template.yaml"
 
