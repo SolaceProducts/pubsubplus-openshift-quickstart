@@ -70,8 +70,9 @@ The Kubernetes `Helm` tool allows great flexibility, allowing the process of eve
 
 #### OpenShift Templates
 
-You can directly use the OpenShift templates included in this project, without any additional tools, to deploy the event broker in a limited number of configurations. Follow the instructions for deploying using OpenShift templates in [Step 3, Option 2](#step-3-option-2-deploy-using-openshift-templates), below.
+> Deprecation warning: deploying using OpenShift Templates is being phased out and the templates in this quickstart will be no longer maintained. The recommended deployment method is to use Helm. If Helm cannot be used then refer to the [PubSub+ Kubernetes documentation](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#alternative-deployment-with-generating-templates-for-the-kubernetes-kubectl-tool) to generate deployment manifests.
 
+You can directly use the OpenShift templates included in this project, without any additional tools, to deploy the event broker in a limited number of configurations. Follow the instructions for deploying using OpenShift templates in [Step 3, Option 2](#step-3-option-2-deploy-using-openshift-templates), below.
 
 ## Deploying Solace PubSub+ onto OpenShift / AWS
 
@@ -208,7 +209,7 @@ The broker can be [vertically scaled](https://github.com/SolaceProducts/pubsubpl
     # Initiate the HA deployment - specify an admin password
     helm install my-ha-release \
       --set solace.redundancy=true,solace.usernameAdminPassword=<broker-admin-password> \
-      openshift-helm-charts/pubsubplus-openshift
+      openshift-helm-charts/solace-pubsubplus-openshift
     # Check the notes printed on screen
     # Wait until all pods are running, ready, and the active event broker pod label is "active=true" 
     oc get pods --show-labels -w
@@ -222,7 +223,7 @@ The broker can be [vertically scaled](https://github.com/SolaceProducts/pubsubpl
     helm install my-nonha-release \
       --set solace.redundancy=false,solace.usernameAdminPassword=<broker-admin-password> \
       --set image.pullSecretName=<my-pullsecret> \
-      openshift-helm-charts/pubsubplus-openshift
+      openshift-helm-charts/solace-pubsubplus-openshift
     # Check the notes printed on screen
     # Wait until the event broker pod is running, ready, and the pod label is "active=true" 
     oc get pods --show-labels -w
@@ -238,7 +239,7 @@ The broker can be [vertically scaled](https://github.com/SolaceProducts/pubsubpl
     # Use values file
     helm install my-release \
       -v deployment-values.yaml \
-      openshift-helm-charts/pubsubplus-openshift
+      openshift-helm-charts/solace-pubsubplus-openshift
     ```
 
 ### Step 3, Option 2: Deploy Using OpenShift Templates
