@@ -32,14 +32,21 @@ You might also be interested in one of the following:
 - [Deployment Tools](#deployment-tools)
     - [Helm Charts](#helm-charts)
     - [OpenShift Templates](#openshift-templates)
-- [Deploying Solace PubSub+ onto OpenShift / AWS](#deploying-solace-pubsub-onto-openshift--aws)
-    - [Step 1: (Optional / AWS) Deploy a Self-Managed OpenShift Container Platform onto AWS](#step-1-optional--aws-deploy-a-self-managed-openshift-container-platform-onto-aws)
-    - [Step 2: (Optional / ECR) Use a Private Image Registry](#step-2-optional--ECR-use-a-private-image-registry)
+- [Deploying Solace PubSub+ onto OpenShift / AWS](#deploying-solace-pubsub-onto-openshift-aws)
+    - [Step 1: (Optional / AWS) Deploy a Self-Managed OpenShift Container Platform onto AWS](#step-1-optional-aws-deploy-a-self-managed-openshift-container-platform-onto-aws)
+    - [Step 2: (Optional / ECR) Use a Private Image Registry](#step-2-optional-ECR-use-a-private-image-registry)
     - [Step 3, Option 1: Deploy Using Helm](#step-3-option-1-deploy-using-helm)
     - [Step 3, Option 2: Deploy Using OpenShift Templates](#step-3-option-2-deploy-using-openshift-templates)
 - [Validating the Deployment](#validating-the-deployment)
     - [Viewing the Bringup logs](#viewing-the-bringup-logs)
 - [Gaining Admin and SSH Access to the Event Broker](#gaining-admin-and-ssh-access-to-the-event-broker)
+- [Exposing PubSub+ Services](#exposing-pubsub-services)
+    - [Routes](#routes)
+        - [HTTP, no TLS](#http-no-tls)
+        - [HTTPS with TLS terminate at ingress](#https-with-tls-terminate-at-ingress)
+        - [HTTPS with TLS re-encrypt at ingress](#https-with-tls-re-encrypt-at-ingress)
+        - [General TCP over TLS with passthrough to broker](#general-tcp-over-tls-with-passthrough-to-broker)
+- [Testing PubSub+ Services](#testing-pubsub-services)
 - [Testing Data Access to the Event Broker](#testing-data-access-to-the-event-broker)
 - [Deleting a Deployment](#deleting-a-deployment)
     - [Delete the PubSub+ Deployment](#delete-the-pubsub-deployment)
@@ -478,7 +485,7 @@ The principles of exposing services described in the [PubSub+ in Kubernetes docu
 
 ### Routes
 
- OpenShift has a default production-ready [ingress controller setup based on HAProxy](https://docs.openshift.com/container-platform/latest/networking/understanding-networking.html#nw-ne-openshift-ingress_understanding-networking). Using Routes is the recommended OpenShift-native way to configure Ingress. Refer to the OpenShift documentation for [more information on Ingress vs. Routes](https://docs.openshift.com/container-platform/latest/networking/understanding-networking.html#nw-ne-openshift-ingress_understanding-networking) and [how to configure Routes](https://docs.openshift.com/container-platform/latest/networking/routes/route-configuration.html).
+ OpenShift has a default production-ready [ingress controller setup based on HAProxy](https://docs.openshift.com/container-platform/latest/networking/understanding-networking.html#nw-ne-openshift-ingress_understanding-networking). Using Routes is the recommended OpenShift-native way to configure Ingress. Refer to the OpenShift documentation for [more information on Ingress and Routes](https://docs.openshift.com/container-platform/latest/networking/understanding-networking.html#nw-ne-openshift-ingress_understanding-networking) and [how to configure Routes](https://docs.openshift.com/container-platform/latest/networking/routes/route-configuration.html).
 
  The same [table provided for Ingress in the Kubernetes quickstart](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/IngressScalingStorageEnhencements/docs/PubSubPlusK8SDeployment.md#using-ingress-to-access-event-broker-services) applies to PubSub+ services vs. route types: HTTP-type broker services can be exposed with TLS edge-terminated or re-encrypt, or without TLS. General TCP services can be exposed using TLS-passthrough to the broker Pods.
 
@@ -487,31 +494,31 @@ The principles of exposing services described in the [PubSub+ in Kubernetes docu
 The followings provide examples for each router type. Replace `<my-pubsubplus-service>` with the name of the service of your deployment. The port name must match the `service.ports` name in the PubSub+ `values.yaml` file.
 Additional services can be exposed by additional route for each.
 
-#### HTTP, no TLS
+##### HTTP, no TLS
 
 This will create an HTTP route to the REST service at path `/mytest`:
 ```bash
 oc expose svc <my-pubsubplus-service> --port tcp-rest \
     --name my-broker-rest-service --path /mytest
 # Query the route to get the generated host for accessing the service
-oc get route my-broker-rest-service
+oc get route my-broker-rest-service -o template --template='{{.spec.host}}'
 ```
 External requests shall be targeted to the host at the HTTP port (80) and the specified path.
 
-#### HTTPS with TLS terminate at ingress
+##### HTTPS with TLS terminate at ingress
 
 Terminating TLS at the router is called "edge" in OpenShift. The target port is the backend broker's non-TLS service port.
 ```bash
 oc create route edge my-broker-rest-service-tls-edge \
     --service <my-pubsubplus-service> \
     --port tcp-rest \
-    --path /mytest
+    --path /mytest    # path is optional and shall not be used for SEMP service
 # Query the route to get the generated host for accessing the service
-oc get route my-broker-rest-service-tls-edge
+oc get route my-broker-rest-service-tls-edge -o template --template='{{.spec.host}}'
 ```
 External requests shall be targeted to the host at the TLS port (443) and the specified path.
 
-> Note: above will use OpenShift's generated TLS certificate which is self-signed by default and includes a wildcard hostname in the CN field. To use user-defined TLS certificates instead, refer to the [OpenShift documentation](https://docs.openshift.com/container-platform/latest/networking/routes/secured-routes.html#nw-ingress-creating-an-edge-route-with-a-custom-certificate_secured-routes)
+> Note: above will use OpenShift's generated TLS certificate which is self-signed by default and includes a wildcard hostname in the CN field. To use user-defined TLS certificates with more control instead, refer to the [OpenShift documentation](https://docs.openshift.com/container-platform/latest/networking/routes/secured-routes.html#nw-ingress-creating-an-edge-route-with-a-custom-certificate_secured-routes)
 
 ##### HTTPS with TLS re-encrypt at ingress
 
@@ -523,13 +530,14 @@ oc create route reencrypt my-broker-rest-service-tls-reencrypt \
     --dest-ca-cert my-pubsubplus-ca.crt
     --path /mytest
 # Query the route to get the generated host for accessing the service
-oc get route my-broker-rest-service-tls-reencrypt
+oc get route my-broker-rest-service-tls-reencrypt -o template --template='{{.spec.host}}'
 ```
 The TLS certificate note in the previous section is also applicable here.
 
 ##### General TCP over TLS with passthrough to broker
 
 Passthrough requires TLS-certificate configured on the backend PubSub+ broker that validates all virtual host names for the services exposed, in the CN and/or SAN fields.
+
 ```bash
 oc create route passthrough my-broker-rest-service-tls-passthrough \
     --service <my-pubsubplus-service> \
@@ -537,6 +545,8 @@ oc create route passthrough my-broker-rest-service-tls-passthrough \
     --hostname smf.mybroker.com
 ```
 Here the example PubSub+ SMF messaging service can be accessed at `tcps://smf.mybroker.com:443`. Also, `smf.mybroker.com` must resolve to the router's external IP as discussed above and the broker certificate shall include `*.mybroker.com` in the CN and/or SAN fields.
+
+The API client must support and use the SNI extension of the TLS handshake to provide the hostname to the OpenShift router for routing the request to the right backend broker.
 
 ## Testing PubSub+ Services
 
