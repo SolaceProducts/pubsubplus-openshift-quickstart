@@ -117,7 +117,7 @@ Helm is configured properly if the `helm version` command returns no error.
     - Create a Solace PubSub+ HA deployment that supports 100 connections using `solace-pubsubplus-openshift-ha`. This deployment requires that at least 2 CPUs and 3.4 GiB of memory are available to *each* of the three event broker pods.
       ```bash
       # Deploy PubSub+ Standard edition, HA
-      helm install openshift-helm-charts/solace-pubsubplus-openshift-ha
+      helm install my-release openshift-helm-charts/solace-pubsubplus-openshift-ha
       ```
 
     All of the Helm options above start the deployment and write related information and notes to the console.

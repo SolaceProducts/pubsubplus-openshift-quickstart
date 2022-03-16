@@ -184,6 +184,8 @@ This deployment uses PubSub+ Software Event Broker Helm charts for OpenShift. Yo
 
 Consult the [Deployment Considerations](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#pubsub-software-event-broker-deployment-considerations) section of the general Event Broker in Kubernetes Documentation when planning your deployment.
 
+To use broker TLS ports, you'll need to [configure certificates on the broker](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#enabling-use-of-tls-to-access-broker-services) or add [OpenShift's service CA bundle to the PubSub+ service](https://docs.openshift.com/container-platform/latest/security/certificates/service-serving-certificate.html#add-service-certificate-apiservice_service-serving-certificate).
+
 PubSub+ Software Event Broker Helm charts for OpenShift differ from the general PubSub+ Helm charts:
 * The `securityContext.enabled` parameter is set to `false` by default, indicating not to use the provided pod security context but to let OpenShift set it using SecurityContextConstraints (SCC). By default OpenShift will use the "restricted" SCC.
 * By default the latest [Red Hat certified image](https://catalog.redhat.com/software/container-stacks/search?q=solace) of PubSub+ Standard Edition is used from `registry.connect.redhat.com`. Use a different image tag if required or [use an image from a different registry](#step-2-optional--ecr-use-a-private-image-registry). If you're using a different image, add the `image.repository=<your-image-location>,image.tag=<your-image-tag>` values (comma-separated) to the `--set` commands below. Also specify a pull secret if required: `image.pullSecretName=<my-pullsecret>`
@@ -468,7 +470,75 @@ Once you have launched the terminal emulator to the event broker pod you can acc
 
 See the [Solace Kubernetes Quickstart README](//github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#gaining-admin-access-to-the-event-broker ) for more details, including admin and SSH access to the individual event brokers.
 
-## Testing Data Access to the Event Broker
+## Exposing PubSub+ Services
+
+The principles of exposing services described in the [PubSub+ in Kubernetes documentation](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/IngressScalingStorageEnhencements/docs/PubSubPlusK8SDeployment.md#exposing-the-pubsub-software-event-broker-services) apply:
+* LoadBalancer is the default service type and can be used to externally expose all broker services. This is an option for OpenShift as well and will not be further discussed here.
+* Ingress and its equivalent, OpenShift Routes, can be used to expose specific services.
+
+### Routes
+
+ OpenShift has a default production-ready [ingress controller setup based on HAProxy](https://docs.openshift.com/container-platform/latest/networking/understanding-networking.html#nw-ne-openshift-ingress_understanding-networking). Using Routes is the recommended OpenShift-native way to configure Ingress. Refer to the OpenShift documentation for [more information on Ingress vs. Routes](https://docs.openshift.com/container-platform/latest/networking/understanding-networking.html#nw-ne-openshift-ingress_understanding-networking) and [how to configure Routes](https://docs.openshift.com/container-platform/latest/networking/routes/route-configuration.html).
+
+ The same [table provided for Ingress in the Kubernetes quickstart](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/IngressScalingStorageEnhencements/docs/PubSubPlusK8SDeployment.md#using-ingress-to-access-event-broker-services) applies to PubSub+ services vs. route types: HTTP-type broker services can be exposed with TLS edge-terminated or re-encrypt, or without TLS. General TCP services can be exposed using TLS-passthrough to the broker Pods.
+
+ The controller's external (router default) IP address can be determined from looking up the external-IP of the `router-default` service, by running `oc get svc -n openshift-ingress`. OpenShift can automatically assign DNS-resolvable unique host names and TLS-certificates when using Routes (except for TLS-passthrough). It is also possible to assign to the services user-defined host names, for which the user must ensure they DNS-resolve to the router IP, and related TLS-certificates include those hostnames in the CN and/or SAN fields. Note: if an PubSub+ service client requires hostnames provided in the SAN field then user-defined TLS certificates must be used as OpenShift-generated certificates only use CN).
+
+The followings provide examples for each router type. Replace `<my-pubsubplus-service>` with the name of the service of your deployment. The port name must match the `service.ports` name in the PubSub+ `values.yaml` file.
+Additional services can be exposed by additional route for each.
+
+#### HTTP, no TLS
+
+This will create an HTTP route to the REST service at path `/mytest`:
+```bash
+oc expose svc <my-pubsubplus-service> --port tcp-rest \
+    --name my-broker-rest-service --path /mytest
+# Query the route to get the generated host for accessing the service
+oc get route my-broker-rest-service
+```
+External requests shall be targeted to the host at the HTTP port (80) and the specified path.
+
+#### HTTPS with TLS terminate at ingress
+
+Terminating TLS at the router is called "edge" in OpenShift. The target port is the backend broker's non-TLS service port.
+```bash
+oc create route edge my-broker-rest-service-tls-edge \
+    --service <my-pubsubplus-service> \
+    --port tcp-rest \
+    --path /mytest
+# Query the route to get the generated host for accessing the service
+oc get route my-broker-rest-service-tls-edge
+```
+External requests shall be targeted to the host at the TLS port (443) and the specified path.
+
+> Note: above will use OpenShift's generated TLS certificate which is self-signed by default and includes a wildcard hostname in the CN field. To use user-defined TLS certificates instead, refer to the [OpenShift documentation](https://docs.openshift.com/container-platform/latest/networking/routes/secured-routes.html#nw-ingress-creating-an-edge-route-with-a-custom-certificate_secured-routes)
+
+##### HTTPS with TLS re-encrypt at ingress
+
+Re-encrypt requires TLS configured at the backend PubSub+ broker. The target port is now the broker's TLS service port. The broker's CA certificate must be provided in the `--dest-ca-cert` parameter, so the router can trust the broker.
+```bash
+oc create route reencrypt my-broker-rest-service-tls-reencrypt \
+    --service <my-pubsubplus-service> \
+    --port tls-rest \
+    --dest-ca-cert my-pubsubplus-ca.crt
+    --path /mytest
+# Query the route to get the generated host for accessing the service
+oc get route my-broker-rest-service-tls-reencrypt
+```
+The TLS certificate note in the previous section is also applicable here.
+
+##### General TCP over TLS with passthrough to broker
+
+Passthrough requires TLS-certificate configured on the backend PubSub+ broker that validates all virtual host names for the services exposed, in the CN and/or SAN fields.
+```bash
+oc create route passthrough my-broker-rest-service-tls-passthrough \
+    --service <my-pubsubplus-service> \
+    --port tls-smf \
+    --hostname smf.mybroker.com
+```
+Here the example PubSub+ SMF messaging service can be accessed at `tcps://smf.mybroker.com:443`. Also, `smf.mybroker.com` must resolve to the router's external IP as discussed above and the broker certificate shall include `*.mybroker.com` in the CN and/or SAN fields.
+
+## Testing PubSub+ Services
 
 A simple option for testing data traffic though the newly created event broker instance is the [SDKPerf tool](https://docs.solace.com/SDKPerf/SDKPerf.htm). Another option to quickly check messaging is [Try Me!](https://docs.solace.com/Solace-PubSub-Manager/PubSub-Manager-Overview.htm#Test-Messages), which is integrated into the [Solace PubSub+ Broker Manager](https://docs.solace.com/Solace-PubSub-Manager/PubSub-Manager-Overview.htm).
 
