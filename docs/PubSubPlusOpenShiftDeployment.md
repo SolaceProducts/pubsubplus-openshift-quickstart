@@ -479,7 +479,7 @@ See the [Solace Kubernetes Quickstart README](//github.com/SolaceProducts/pubsub
 
 ## Exposing PubSub+ Services
 
-The principles of exposing services described in the [PubSub+ in Kubernetes documentation](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/IngressScalingStorageEnhencements/docs/PubSubPlusK8SDeployment.md#exposing-the-pubsub-software-event-broker-services) apply:
+The principles of exposing services described in the [PubSub+ in Kubernetes documentation](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#exposing-the-pubsub-software-event-broker-services) apply:
 * LoadBalancer is the default service type and can be used to externally expose all broker services. This is an option for OpenShift as well and will not be further discussed here.
 * Ingress and its equivalent, OpenShift Routes, can be used to expose specific services.
 
@@ -487,7 +487,7 @@ The principles of exposing services described in the [PubSub+ in Kubernetes docu
 
  OpenShift has a default production-ready [ingress controller setup based on HAProxy](https://docs.openshift.com/container-platform/latest/networking/understanding-networking.html#nw-ne-openshift-ingress_understanding-networking). Using Routes is the recommended OpenShift-native way to configure Ingress. Refer to the OpenShift documentation for [more information on Ingress and Routes](https://docs.openshift.com/container-platform/latest/networking/understanding-networking.html#nw-ne-openshift-ingress_understanding-networking) and [how to configure Routes](https://docs.openshift.com/container-platform/latest/networking/routes/route-configuration.html).
 
- The same [table provided for Ingress in the Kubernetes quickstart](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/IngressScalingStorageEnhencements/docs/PubSubPlusK8SDeployment.md#using-ingress-to-access-event-broker-services) applies to PubSub+ services vs. route types: HTTP-type broker services can be exposed with TLS edge-terminated or re-encrypt, or without TLS. General TCP services can be exposed using TLS-passthrough to the broker Pods.
+ The same [table provided for Ingress in the Kubernetes quickstart](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#using-ingress-to-access-event-broker-services) applies to PubSub+ services vs. route types: HTTP-type broker services can be exposed with TLS edge-terminated or re-encrypt, or without TLS. General TCP services can be exposed using TLS-passthrough to the broker Pods.
 
  The controller's external (router default) IP address can be determined from looking up the external-IP of the `router-default` service, by running `oc get svc -n openshift-ingress`. OpenShift can automatically assign DNS-resolvable unique host names and TLS-certificates when using Routes (except for TLS-passthrough). It is also possible to assign to the services user-defined host names, for which the user must ensure they DNS-resolve to the router IP, and related TLS-certificates include those hostnames in the CN and/or SAN fields. Note: if an PubSub+ service client requires hostnames provided in the SAN field then user-defined TLS certificates must be used as OpenShift-generated certificates only use CN).
 
