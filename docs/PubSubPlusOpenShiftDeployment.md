@@ -489,17 +489,17 @@ The principles of exposing services described in the [PubSub+ in Kubernetes docu
 
  The same [table provided for Ingress in the Kubernetes quickstart](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#using-ingress-to-access-event-broker-services) applies to PubSub+ services vs. route types: HTTP-type broker services can be exposed with TLS edge-terminated or re-encrypt, or without TLS. General TCP services can be exposed using TLS-passthrough to the broker Pods.
 
- The controller's external (router default) IP address can be determined from looking up the external-IP of the `router-default` service, by running `oc get svc -n openshift-ingress`. OpenShift can automatically assign DNS-resolvable unique host names and TLS-certificates when using Routes (except for TLS-passthrough). It is also possible to assign to the services user-defined host names, for which the user must ensure they DNS-resolve to the router IP, and related TLS-certificates include those hostnames in the CN and/or SAN fields. Note: if an PubSub+ service client requires hostnames provided in the SAN field then user-defined TLS certificates must be used as OpenShift-generated certificates only use CN).
+ The controller's external (router default) IP address can be determined from looking up the external-IP of the `router-default` service, by running `oc get svc -n openshift-ingress`. OpenShift can automatically assign DNS-resolvable unique host names and TLS-certificates when using Routes (except for TLS-passthrough). It is also possible to assign to the services user-defined host names, for which the user must ensure they DNS-resolve to the router IP, and related TLS-certificates include those hostnames in the CN and/or SAN fields. Note: if a PubSub+ service client requires hostnames provided in the SAN field then user-defined TLS certificates must be used as OpenShift-generated certificates only use CN.
 
 The followings provide examples for each router type. Replace `<my-pubsubplus-service>` with the name of the service of your deployment. The port name must match the `service.ports` name in the PubSub+ `values.yaml` file.
 Additional services can be exposed by additional route for each.
 
 ##### HTTP, no TLS
 
-This will create an HTTP route to the REST service at path `/mytest`:
+This will create an HTTP route to the REST service at path `/`:
 ```bash
 oc expose svc <my-pubsubplus-service> --port tcp-rest \
-    --name my-broker-rest-service --path /mytest
+    --name my-broker-rest-service --path /
 # Query the route to get the generated host for accessing the service
 oc get route my-broker-rest-service -o template --template='{{.spec.host}}'
 ```
@@ -512,7 +512,7 @@ Terminating TLS at the router is called "edge" in OpenShift. The target port is 
 oc create route edge my-broker-rest-service-tls-edge \
     --service <my-pubsubplus-service> \
     --port tcp-rest \
-    --path /mytest    # path is optional and shall not be used for SEMP service
+    --path /    # path is optional and shall not be used for SEMP service
 # Query the route to get the generated host for accessing the service
 oc get route my-broker-rest-service-tls-edge -o template --template='{{.spec.host}}'
 ```
@@ -527,8 +527,8 @@ Re-encrypt requires TLS configured at the backend PubSub+ broker. The target por
 oc create route reencrypt my-broker-rest-service-tls-reencrypt \
     --service <my-pubsubplus-service> \
     --port tls-rest \
-    --dest-ca-cert my-pubsubplus-ca.crt
-    --path /mytest
+    --dest-ca-cert my-pubsubplus-ca.crt \
+    --path /
 # Query the route to get the generated host for accessing the service
 oc get route my-broker-rest-service-tls-reencrypt -o template --template='{{.spec.host}}'
 ```
@@ -539,7 +539,7 @@ The TLS certificate note in the previous section is also applicable here.
 Passthrough requires TLS-certificate configured on the backend PubSub+ broker that validates all virtual host names for the services exposed, in the CN and/or SAN fields.
 
 ```bash
-oc create route passthrough my-broker-rest-service-tls-passthrough \
+oc create route passthrough my-broker-smf-service-tls-passthrough \
     --service <my-pubsubplus-service> \
     --port tls-smf \
     --hostname smf.mybroker.com
