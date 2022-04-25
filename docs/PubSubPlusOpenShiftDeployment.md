@@ -242,12 +242,12 @@ The broker can be [vertically scaled](https://github.com/SolaceProducts/pubsubpl
     ```yaml
     # Create example values file - specify an admin password
     echo "
-    solace
+    solace:
       redundancy: false,
       usernameAdminPassword: <broker-admin-password>" > deployment-values.yaml
     # Use values file
     helm install my-release \
-      -v deployment-values.yaml \
+      -f deployment-values.yaml \
       openshift-helm-charts/solace-pubsubplus-openshift
     ```
 
