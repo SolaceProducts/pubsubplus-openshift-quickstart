@@ -85,12 +85,10 @@ Helm is configured properly if the `helm version` command returns no error.
     helm repo add openshift-helm-charts https://charts.openshift.io/
     ```
 
-2. Create a new project or switch to your existing project:
+2. Create a new project or switch to your existing project. **Important:** do not use the `default` project as its loose permissions don't reflect a typical OpenShift environment.
     ```bash
     oc new-project solace-pubsubplus
     ```
-    **Important:** do not use the `default` project as its loose permissions don't reflect a typical OpenShift environment
-
 
     By default the latest [Red Hat certified image](https://catalog.redhat.com/software/container-stacks/search?q=solace) of PubSub+ Standard Edition available from `registry.connect.redhat.com` is used. To use a different image, add the following values (comma-separated) to the `--set` commands in Step 3 below:
 
