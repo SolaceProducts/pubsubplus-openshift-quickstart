@@ -48,6 +48,7 @@ You can install Helm charts on an OpenShift Container Platform cluster using the
 This simple method uses the OpenShift Web Console graphical interface:
 
 * In a browser open the OpenShift Web Console, Developer perspective.
+* Ensure not to use the `default` project, create a new project if required.
 * Find and select the required PubSub+ Helm chart variant from the catalog, then click on "Install".
 * Provide a unique Release Name. It is recommended to change the name that is offered by default. The maximum length of the Release Name should be 28 characters.
 * If required, provide additional chart configurations. For options, consult the README link at the top of the page. Note that currently the "Form view" offers all the possible fields and the "YAML view" shows only those that have a current configuration value. It may be necessary to refresh the browser to display the latest in "YAML view".
@@ -84,10 +85,11 @@ Helm is configured properly if the `helm version` command returns no error.
     helm repo add openshift-helm-charts https://charts.openshift.io/
     ```
 
-2. Create a new project or switch to your existing project (do not use the `default` project as its loose permissions don't reflect a typical OpenShift environment)
+2. Create a new project or switch to your existing project:
     ```bash
     oc new-project solace-pubsubplus
     ```
+> **Important:** do not use the `default` project as its loose permissions don't reflect a typical OpenShift environment
 
     By default the latest [Red Hat certified image](https://catalog.redhat.com/software/container-stacks/search?q=solace) of PubSub+ Standard Edition available from `registry.connect.redhat.com` is used. To use a different image, add the following values (comma-separated) to the `--set` commands in Step 3 below:
 
