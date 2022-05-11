@@ -17,13 +17,14 @@ The PubSub+ deployment does not require any special OpenShift Security Context; 
 
 We recommend using the PubSub+ Helm chart for convenience. An alternative method [using OpenShift templates](/docs/PubSubPlusOpenShiftDeployment.md#step-4-option-2-deploy-using-openshift-templates) is also available.
 
+> Deprecation warning: deploying using OpenShift Templates is being phased out and the templates in this quickstart will be no longer maintained. The recommended deployment method is to use Helm. If Helm cannot be used then refer to the [PubSub+ Kubernetes documentation](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#alternative-deployment-with-generating-templates-for-the-kubernetes-kubectl-tool) to generate deployment manifests.
+
 ## Pre-requisite: Access to OpenShift Platform
 
 There are [multiple ways](https://www.openshift.com/try ) to get to an OpenShift 4 platform:
 - The detailed [Event Broker on OpenShift](/docs/PubSubPlusOpenShiftDeployment.md#step-1-optional--aws-deploy-a-self-managed-openshift-container-platform-onto-aws) documentation describes how to set up production-ready Red Hat OpenShift Container Platform platform on AWS.
 - An option for developers is to locally deploy an all-in-one environment using [CodeReady Containers](https://developers.redhat.com/products/codeready-containers/overview).
 - An easy way to get an OpenShift cluster up and running is through the [Developer Sandbox](https://developers.redhat.com/developer-sandbox) program. You can sign up for a free 14-day trial.
-
 
 ## Deploying PubSub+ Software Event Broker
 
@@ -32,9 +33,9 @@ The event broker can be deployed in either a three-node High-Availability (HA) g
 In this quick start we go through the steps to set up an event broker using [Solace PubSub+ Helm charts](https://artifacthub.io/packages/search?page=1&repo=solace).
 
 There are three Helm chart variants available with default small-size configurations:
-- `pubsubplus-openshift-dev` - deploys a minimum footprint software event broker for developers (standalone)
-- `pubsubplus-openshift` - deploys a standalone software event broker that supports 100 connections
-- `pubsubplus-openshift-ha` - deploys three software event brokers in an HA group that supports 100 connections
+- `solace-pubsubplus-openshift-dev` - deploys a minimum footprint software event broker for developers (standalone)
+- `solace-pubsubplus-openshift` - deploys a standalone software event broker that supports 100 connections
+- `solace-pubsubplus-openshift-ha` - deploys three software event brokers in an HA group that supports 100 connections
 
 For other event broker configurations or sizes, refer to the [PubSub+ Software Event Broker Helm Chart](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/pubsubplus/README.md) documentation.
 
@@ -47,6 +48,7 @@ You can install Helm charts on an OpenShift Container Platform cluster using the
 This simple method uses the OpenShift Web Console graphical interface:
 
 * In a browser open the OpenShift Web Console, Developer perspective.
+* Ensure not to use the `default` project, create a new project if required.
 * Find and select the required PubSub+ Helm chart variant from the catalog, then click on "Install".
 * Provide a unique Release Name. It is recommended to change the name that is offered by default. The maximum length of the Release Name should be 28 characters.
 * If required, provide additional chart configurations. For options, consult the README link at the top of the page. Note that currently the "Form view" offers all the possible fields and the "YAML view" shows only those that have a current configuration value. It may be necessary to refresh the browser to display the latest in "YAML view".
@@ -83,7 +85,7 @@ Helm is configured properly if the `helm version` command returns no error.
     helm repo add openshift-helm-charts https://charts.openshift.io/
     ```
 
-2. Create a new project or switch to your existing project (do not use the `default` project as its loose permissions don't reflect a typical OpenShift environment)
+2. Create a new project or switch to your existing project. **Important:** do not use the `default` project as its loose permissions don't reflect a typical OpenShift environment.
     ```bash
     oc new-project solace-pubsubplus
     ```
@@ -101,29 +103,29 @@ Helm is configured properly if the `helm version` command returns no error.
 
 3. Use one of the following Helm chart variants to create a deployment (for configuration options and deletion instructions, refer to the [PubSub+ Software Event Broker Helm Chart](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/tree/master/pubsubplus#configuration) documentation):
 
-    - Create a Solace PubSub+ minimum deployment for development purposes using `pubsubplus-openshift-dev`. This variant requires a minimum of 1 CPU and 3.4 GiB of memory to be available to the PubSub+ event broker pod.
+    - Create a Solace PubSub+ minimum deployment for development purposes using `solace-pubsubplus-openshift-dev`. This variant requires a minimum of 1 CPU and 3.4 GiB of memory to be available to the PubSub+ event broker pod.
       ```bash
       # Deploy PubSub+ Standard edition, minimum footprint developer version
-      helm install my-release openshift-helm-charts/pubsubplus-openshift-dev
+      helm install my-release openshift-helm-charts/solace-pubsubplus-openshift-dev
       ```
 
-    - Create a Solace PubSub+ standalone deployment that supports 100 connections using `pubsubplus-openshift`. A minimum of 2 CPUs and 3.4 GiB of memory must be available to the PubSub+ pod.
+    - Create a Solace PubSub+ standalone deployment that supports 100 connections using `solace-pubsubplus-openshift`. A minimum of 2 CPUs and 3.4 GiB of memory must be available to the PubSub+ pod.
       ```bash
       # Deploy PubSub+ Standard edition, standalone
-      helm install my-release openshift-helm-charts/pubsubplus-openshift
+      helm install my-release openshift-helm-charts/solace-pubsubplus-openshift
       ```
 
-    - Create a Solace PubSub+ HA deployment that supports 100 connections using `pubsubplus-openshift-ha`. This deployment requires that at least 2 CPUs and 3.4 GiB of memory are available to *each* of the three event broker pods.
+    - Create a Solace PubSub+ HA deployment that supports 100 connections using `solace-pubsubplus-openshift-ha`. This deployment requires that at least 2 CPUs and 3.4 GiB of memory are available to *each* of the three event broker pods.
       ```bash
       # Deploy PubSub+ Standard edition, HA
-      helm install openshift-helm-charts/pubsubplus-openshift-ha
+      helm install my-release openshift-helm-charts/solace-pubsubplus-openshift-ha
       ```
 
     All of the Helm options above start the deployment and write related information and notes to the console.
 
     Broker services are exposed by default through a Load Balancer that is specific to your OpenShift platform. For details, see the `Services access` section of the notes written to the console.
 
-    > Note: the `pubsubplus-openshift` Helm charts differ from the general `pubsubplus` charts in that the `securityContext.enabled` Helm parameter value is `false` by default, which is required for OpenShift.
+    > Note: the `solace-pubsubplus-openshift` Helm charts differ from the general `pubsubplus` charts in that the `securityContext.enabled` Helm parameter value is `false` by default, which is required for OpenShift.
 
 4. Wait for the deployment to complete, following any instructions that are written to the console. You can now [validate the deployment and try the management and messaging services](/docs/PubSubPlusOpenShiftDeployment.md#validating-the-deployment).
  

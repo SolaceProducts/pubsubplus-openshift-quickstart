@@ -32,14 +32,21 @@ You might also be interested in one of the following:
 - [Deployment Tools](#deployment-tools)
     - [Helm Charts](#helm-charts)
     - [OpenShift Templates](#openshift-templates)
-- [Deploying Solace PubSub+ onto OpenShift / AWS](#deploying-solace-pubsub-onto-openshift--aws)
-    - [Step 1: (Optional / AWS) Deploy a Self-Managed OpenShift Container Platform onto AWS](#step-1-optional--aws-deploy-a-self-managed-openshift-container-platform-onto-aws)
-    - [Step 2: (Optional / ECR) Use a Private Image Registry](#step-2-optional--ECR-use-a-private-image-registry)
+- [Deploying Solace PubSub+ onto OpenShift / AWS](#deploying-solace-pubsub-onto-openshift-aws)
+    - [Step 1: (Optional / AWS) Deploy a Self-Managed OpenShift Container Platform onto AWS](#step-1-optional-aws-deploy-a-self-managed-openshift-container-platform-onto-aws)
+    - [Step 2: (Optional / ECR) Use a Private Image Registry](#step-2-optional-ECR-use-a-private-image-registry)
     - [Step 3, Option 1: Deploy Using Helm](#step-3-option-1-deploy-using-helm)
     - [Step 3, Option 2: Deploy Using OpenShift Templates](#step-3-option-2-deploy-using-openshift-templates)
 - [Validating the Deployment](#validating-the-deployment)
     - [Viewing the Bringup logs](#viewing-the-bringup-logs)
 - [Gaining Admin and SSH Access to the Event Broker](#gaining-admin-and-ssh-access-to-the-event-broker)
+- [Exposing PubSub+ Services](#exposing-pubsub-services)
+    - [Routes](#routes)
+        - [HTTP, no TLS](#http-no-tls)
+        - [HTTPS with TLS terminate at ingress](#https-with-tls-terminate-at-ingress)
+        - [HTTPS with TLS re-encrypt at ingress](#https-with-tls-re-encrypt-at-ingress)
+        - [General TCP over TLS with passthrough to broker](#general-tcp-over-tls-with-passthrough-to-broker)
+- [Testing PubSub+ Services](#testing-pubsub-services)
 - [Testing Data Access to the Event Broker](#testing-data-access-to-the-event-broker)
 - [Deleting a Deployment](#deleting-a-deployment)
     - [Delete the PubSub+ Deployment](#delete-the-pubsub-deployment)
@@ -70,8 +77,9 @@ The Kubernetes `Helm` tool allows great flexibility, allowing the process of eve
 
 #### OpenShift Templates
 
-You can directly use the OpenShift templates included in this project, without any additional tools, to deploy the event broker in a limited number of configurations. Follow the instructions for deploying using OpenShift templates in [Step 3, Option 2](#step-3-option-2-deploy-using-openshift-templates), below.
+> Deprecation warning: deploying using OpenShift Templates is being phased out and the templates in this quickstart will be no longer maintained. The recommended deployment method is to use Helm. If Helm cannot be used then refer to the [PubSub+ Kubernetes documentation](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#alternative-deployment-with-generating-templates-for-the-kubernetes-kubectl-tool) to generate deployment manifests.
 
+You can directly use the OpenShift templates included in this project, without any additional tools, to deploy the event broker in a limited number of configurations. Follow the instructions for deploying using OpenShift templates in [Step 3, Option 2](#step-3-option-2-deploy-using-openshift-templates), below.
 
 ## Deploying Solace PubSub+ onto OpenShift / AWS
 
@@ -183,9 +191,11 @@ This deployment uses PubSub+ Software Event Broker Helm charts for OpenShift. Yo
 
 Consult the [Deployment Considerations](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#pubsub-software-event-broker-deployment-considerations) section of the general Event Broker in Kubernetes Documentation when planning your deployment.
 
+To use broker TLS ports, you'll need to [configure certificates on the broker](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#enabling-use-of-tls-to-access-broker-services) or add [OpenShift's service CA bundle to the PubSub+ service](https://docs.openshift.com/container-platform/latest/security/certificates/service-serving-certificate.html#add-service-certificate-apiservice_service-serving-certificate).
+
 PubSub+ Software Event Broker Helm charts for OpenShift differ from the general PubSub+ Helm charts:
 * The `securityContext.enabled` parameter is set to `false` by default, indicating not to use the provided pod security context but to let OpenShift set it using SecurityContextConstraints (SCC). By default OpenShift will use the "restricted" SCC.
-* By default the latest [Red Hat certified image](https://catalog.redhat.com/software/container-stacks/search?q=solace) of PubSub+ Standard Edition is used from `registry.connect.redhat.com`. Use a different image tag if required or [use an image from a different registry](#step-2-optional--ecr-use-a-private-image-registry). If you're using a different image, add the `image.repository=<your-image-location>,image.tag=<your-image-tag>` values (comma-separated) to the `--set` commands below. Also specify a pull secret if required: `image.pullSecretName=<my-pullsecret>`
+* By default the latest [Red Hat certified image](https://catalog.redhat.com/software/container-stacks/search?q=solace) of PubSub+ Standard Edition is used from `registry.connect.redhat.com`. Use a different image tag if required or [use an image from a different registry](#step-2-optional--ecr-use-a-private-image-registry). If you're using a different image, add the `image.repository=<your-image-location>,image.tag=<your-image-tag>` values (comma-separated) to the `--set` commands below. Also specify a pull secret if required: `image.pullSecretName=<my-pullsecret>`. Consult the [Red Hat Knowledgebase](https://access.redhat.com/RegistryAuthentication#registry-service-accounts-for-shared-environments-4) if you run into issues with pulling the PubSub+ image.
 
 The broker can be [vertically scaled](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#deployment-scaling ) using the `solace.size` chart parameter.
 
@@ -208,7 +218,7 @@ The broker can be [vertically scaled](https://github.com/SolaceProducts/pubsubpl
     # Initiate the HA deployment - specify an admin password
     helm install my-ha-release \
       --set solace.redundancy=true,solace.usernameAdminPassword=<broker-admin-password> \
-      openshift-helm-charts/pubsubplus-openshift
+      openshift-helm-charts/solace-pubsubplus-openshift
     # Check the notes printed on screen
     # Wait until all pods are running, ready, and the active event broker pod label is "active=true" 
     oc get pods --show-labels -w
@@ -222,7 +232,7 @@ The broker can be [vertically scaled](https://github.com/SolaceProducts/pubsubpl
     helm install my-nonha-release \
       --set solace.redundancy=false,solace.usernameAdminPassword=<broker-admin-password> \
       --set image.pullSecretName=<my-pullsecret> \
-      openshift-helm-charts/pubsubplus-openshift
+      openshift-helm-charts/solace-pubsubplus-openshift
     # Check the notes printed on screen
     # Wait until the event broker pod is running, ready, and the pod label is "active=true" 
     oc get pods --show-labels -w
@@ -232,13 +242,13 @@ The broker can be [vertically scaled](https://github.com/SolaceProducts/pubsubpl
     ```yaml
     # Create example values file - specify an admin password
     echo "
-    solace
+    solace:
       redundancy: false,
       usernameAdminPassword: <broker-admin-password>" > deployment-values.yaml
     # Use values file
     helm install my-release \
-      -v deployment-values.yaml \
-      openshift-helm-charts/pubsubplus-openshift
+      -f deployment-values.yaml \
+      openshift-helm-charts/solace-pubsubplus-openshift
     ```
 
 ### Step 3, Option 2: Deploy Using OpenShift Templates
@@ -467,7 +477,78 @@ Once you have launched the terminal emulator to the event broker pod you can acc
 
 See the [Solace Kubernetes Quickstart README](//github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#gaining-admin-access-to-the-event-broker ) for more details, including admin and SSH access to the individual event brokers.
 
-## Testing Data Access to the Event Broker
+## Exposing PubSub+ Services
+
+The principles of exposing services described in the [PubSub+ in Kubernetes documentation](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#exposing-the-pubsub-software-event-broker-services) apply:
+* LoadBalancer is the default service type and can be used to externally expose all broker services. This is an option for OpenShift as well and will not be further discussed here.
+* Ingress and its equivalent, OpenShift Routes, can be used to expose specific services.
+
+### Routes
+
+ OpenShift has a default production-ready [ingress controller setup based on HAProxy](https://docs.openshift.com/container-platform/latest/networking/understanding-networking.html#nw-ne-openshift-ingress_understanding-networking). Using Routes is the recommended OpenShift-native way to configure Ingress. Refer to the OpenShift documentation for [more information on Ingress and Routes](https://docs.openshift.com/container-platform/latest/networking/understanding-networking.html#nw-ne-openshift-ingress_understanding-networking) and [how to configure Routes](https://docs.openshift.com/container-platform/latest/networking/routes/route-configuration.html).
+
+ The same [table provided for Ingress in the Kubernetes quickstart](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#using-ingress-to-access-event-broker-services) applies to PubSub+ services vs. route types: HTTP-type broker services can be exposed with TLS edge-terminated or re-encrypt, or without TLS. General TCP services can be exposed using TLS-passthrough to the broker Pods.
+
+ The controller's external (router default) IP address can be determined from looking up the external-IP of the `router-default` service, by running `oc get svc -n openshift-ingress`. OpenShift can automatically assign DNS-resolvable unique host names and TLS-certificates when using Routes (except for TLS-passthrough). It is also possible to assign to the services user-defined host names, for which the user must ensure they DNS-resolve to the router IP, and related TLS-certificates include those hostnames in the CN and/or SAN fields. Note: if a PubSub+ service client requires hostnames provided in the SAN field then user-defined TLS certificates must be used as OpenShift-generated certificates only use CN.
+
+The followings provide examples for each router type. Replace `<my-pubsubplus-service>` with the name of the service of your deployment. The port name must match the `service.ports` name in the PubSub+ `values.yaml` file.
+Additional services can be exposed by additional route for each.
+
+##### HTTP, no TLS
+
+This will create an HTTP route to the REST service at path `/`:
+```bash
+oc expose svc <my-pubsubplus-service> --port tcp-rest \
+    --name my-broker-rest-service --path /
+# Query the route to get the generated host for accessing the service
+oc get route my-broker-rest-service -o template --template='{{.spec.host}}'
+```
+External requests shall be targeted to the host at the HTTP port (80) and the specified path.
+
+##### HTTPS with TLS terminate at ingress
+
+Terminating TLS at the router is called "edge" in OpenShift. The target port is the backend broker's non-TLS service port.
+```bash
+oc create route edge my-broker-rest-service-tls-edge \
+    --service <my-pubsubplus-service> \
+    --port tcp-rest \
+    --path /    # path is optional and shall not be used for SEMP service
+# Query the route to get the generated host for accessing the service
+oc get route my-broker-rest-service-tls-edge -o template --template='{{.spec.host}}'
+```
+External requests shall be targeted to the host at the TLS port (443) and the specified path.
+
+> Note: above will use OpenShift's generated TLS certificate which is self-signed by default and includes a wildcard hostname in the CN field. To use user-defined TLS certificates with more control instead, refer to the [OpenShift documentation](https://docs.openshift.com/container-platform/latest/networking/routes/secured-routes.html#nw-ingress-creating-an-edge-route-with-a-custom-certificate_secured-routes)
+
+##### HTTPS with TLS re-encrypt at ingress
+
+Re-encrypt requires TLS configured at the backend PubSub+ broker. The target port is now the broker's TLS service port. The broker's CA certificate must be provided in the `--dest-ca-cert` parameter, so the router can trust the broker.
+```bash
+oc create route reencrypt my-broker-rest-service-tls-reencrypt \
+    --service <my-pubsubplus-service> \
+    --port tls-rest \
+    --dest-ca-cert my-pubsubplus-ca.crt \
+    --path /
+# Query the route to get the generated host for accessing the service
+oc get route my-broker-rest-service-tls-reencrypt -o template --template='{{.spec.host}}'
+```
+The TLS certificate note in the previous section is also applicable here.
+
+##### General TCP over TLS with passthrough to broker
+
+Passthrough requires TLS-certificate configured on the backend PubSub+ broker that validates all virtual host names for the services exposed, in the CN and/or SAN fields.
+
+```bash
+oc create route passthrough my-broker-smf-service-tls-passthrough \
+    --service <my-pubsubplus-service> \
+    --port tls-smf \
+    --hostname smf.mybroker.com
+```
+Here the example PubSub+ SMF messaging service can be accessed at `tcps://smf.mybroker.com:443`. Also, `smf.mybroker.com` must resolve to the router's external IP as discussed above and the broker certificate shall include `*.mybroker.com` in the CN and/or SAN fields.
+
+The API client must support and use the SNI extension of the TLS handshake to provide the hostname to the OpenShift router for routing the request to the right backend broker.
+
+## Testing PubSub+ Services
 
 A simple option for testing data traffic though the newly created event broker instance is the [SDKPerf tool](https://docs.solace.com/SDKPerf/SDKPerf.htm). Another option to quickly check messaging is [Try Me!](https://docs.solace.com/Solace-PubSub-Manager/PubSub-Manager-Overview.htm#Test-Messages), which is integrated into the [Solace PubSub+ Broker Manager](https://docs.solace.com/Solace-PubSub-Manager/PubSub-Manager-Overview.htm).
 
