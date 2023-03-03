@@ -1,59 +1,31 @@
-# Deploying a Solace PubSub+ Software Event Broker onto an OpenShift 4 Platform
+# Deploying a Solace PubSub+ Software Event Broker using Operator onto an OpenShift 4 Platform
 
-Solace PubSub+ Software Event Broker meets the needs of big data, cloud migration, and Internet-of-Things initiatives, and enables microservices and event-driven architecture. Capabilities include topic-based publish/subscribe, request/reply, message queues/queueing, and data streaming for IoT devices and mobile/web apps. The event broker supports open APIs and standard protocols including AMQP, JMS, MQTT, REST, and WebSocket. As well, it can be deployed in on-premises datacenters, natively within private and public clouds, and across complex hybrid cloud environments.
+This document provides OpenShift-specific information for deploying the [Solace PubSub+ Software Event Broker](https://solace.com/products/event-broker/software/) on OpenShift, using the Solace PubSub+ Event Broker Operator (Operator). It complements and should be used together with the [PubSub+ Operator User Guide on general Kubernetes](https://github.com/SolaceDev/pubsubplus-kubernetes-operator/blob/v1.0.0/docs/EventBrokerOperatorUserGuide.md).
 
-This repository provides an example of how to deploy the Solace PubSub+ Software Event Broker onto an OpenShift 4 platform, including the steps to set up a Red Hat OpenShift Container Platform platform on AWS.
-
-
-
-## Overview
-There are [multiple ways](https://www.openshift.com/try ) to get to an OpenShift platform. This example uses the Red Hat OpenShift Container Platform for deploying an HA group of software event brokers, but the concepts are transferable to other compatible platforms. We also provide tips for how to set up a simple single-node deployment using [CodeReady Containers](https://developers.redhat.com/products/codeready-containers/overview ) (the equivalent of MiniShift for OpenShift 4) for development, testing, or proof of concept purposes.
-
-The supported Solace PubSub+ Software Event Broker version is 9.10 or later.
-
-For the Red Hat OpenShift Container Platform, we use a self-managed 60-day evaluation subscription of [RedHat OpenShift cluster in AWS](https://cloud.redhat.com/openshift/install#public-cloud ) in a highly redundant configuration, spanning three zones.
-
-This repository expands on the [Solace Kubernetes Quickstart](//github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/README.md ) to provide an example of how to deploy Solace PubSub+ in an HA configuration on the OpenShift Container Platform running in AWS.
-
-The event broker deployment does not require any special OpenShift Security Context; the default ["restricted" SCC](https://docs.openshift.com/container-platform/latest/authentication/managing-security-context-constraints.html ) can be used.
-
-
-### Related Information
-
-You might also be interested in one of the following: 
-- For a hands-on quick start using an existing OpenShift platform, refer to the [Quick Start guide](/README.md).
-- For considerations about deploying in a general Kubernetes environment, refer to the [Solace PubSub+ on Kubernetes Documentation](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md)
-- For the `pubsubplus` Helm chart configuration options, refer to the [PubSub+ Software Event Broker Helm Chart Reference](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/tree/master/pubsubplus#configuration).
-- For OpenShift 3.11, refer to the [archived version of this project](https://github.com/SolaceProducts/pubsubplus-openshift-quickstart/tree/v1.1.1).
-
-
-## Table of Contents
-- [Production Deployment Architecture](#production-deployment-architecture)
-- [Deployment Tools](#deployment-tools)
-    - [Helm Charts](#helm-charts)
-    - [OpenShift Templates](#openshift-templates)
-- [Deploying Solace PubSub+ onto OpenShift / AWS](#deploying-solace-pubsub-onto-openshift-aws)
-    - [Step 1: (Optional / AWS) Deploy a Self-Managed OpenShift Container Platform onto AWS](#step-1-optional-aws-deploy-a-self-managed-openshift-container-platform-onto-aws)
-    - [Step 2: (Optional / ECR) Use a Private Image Registry](#step-2-optional-ECR-use-a-private-image-registry)
-    - [Step 3, Option 1: Deploy Using Helm](#step-3-option-1-deploy-using-helm)
-    - [Step 3, Option 2: Deploy Using OpenShift Templates](#step-3-option-2-deploy-using-openshift-templates)
-- [Validating the Deployment](#validating-the-deployment)
-    - [Viewing the Bringup logs](#viewing-the-bringup-logs)
-- [Gaining Admin and SSH Access to the Event Broker](#gaining-admin-and-ssh-access-to-the-event-broker)
-- [Exposing PubSub+ Services](#exposing-pubsub-services)
-    - [Routes](#routes)
+Contents:
+- [Deploying a Solace PubSub+ Software Event Broker using Operator onto an OpenShift 4 Platform](#deploying-a-solace-pubsub-software-event-broker-using-operator-onto-an-openshift-4-platform)
+  - [Production Deployment Architecture](#production-deployment-architecture)
+  - [OpenShift Platform Setup Examples](#openshift-platform-setup-examples)
+    - [Deploy a Production-ready OpenShift Container Platform onto AWS](#deploy-a-production-ready-openshift-container-platform-onto-aws)
+      - [Deleting the AWS OpenShift Container Platform Deployment](#deleting-the-aws-openshift-container-platform-deployment)
+    - [Deploy CodeReady Containers for OpenShift](#deploy-codeready-containers-for-openshift)
+    - [Using a Private Image Registry for broker and Prometheus exporter images](#using-a-private-image-registry-for-broker-and-prometheus-exporter-images)
+      - [Using AWS ECR with CodeReady Containers](#using-aws-ecr-with-codeready-containers)
+  - [Deployment considerations](#deployment-considerations)
+    - [Broker Spec defaults in OpenShift](#broker-spec-defaults-in-openshift)
+    - [Accessing Broker Services](#accessing-broker-services)
+      - [Routes](#routes)
         - [HTTP, no TLS](#http-no-tls)
         - [HTTPS with TLS terminate at ingress](#https-with-tls-terminate-at-ingress)
         - [HTTPS with TLS re-encrypt at ingress](#https-with-tls-re-encrypt-at-ingress)
         - [General TCP over TLS with passthrough to broker](#general-tcp-over-tls-with-passthrough-to-broker)
-- [Testing PubSub+ Services](#testing-pubsub-services)
-- [Testing Data Access to the Event Broker](#testing-data-access-to-the-event-broker)
-- [Deleting a Deployment](#deleting-a-deployment)
-    - [Delete the PubSub+ Deployment](#delete-the-pubsub-deployment)
-    - [Delete the AWS OpenShift Container Platform Deployment](#deleting-the-aws-openshift-container-platform-deployment)
-- [Experimental: Using NFS for Persistent Storage](#experimental-using-nfs-for-persistent-storage)
-- [Resources](#resources)
-
+    - [Security Considerations](#security-considerations)
+    - [Helm-based Deployment](#helm-based-deployment)
+  - [Exposing Metrics to Prometheus](#exposing-metrics-to-prometheus)
+  - [Broker Deployment in OpenShift using the Operator](#broker-deployment-in-openshift-using-the-operator)
+    - [Quick Start](#quick-start)
+- [Additional Resources](#additional-resources)
+- [Appendix: Using NFS for Persistent Storage](#appendix-using-nfs-for-persistent-storage)
 
 ## Production Deployment Architecture
 
@@ -67,39 +39,27 @@ The key parts to note in the diagram above are:
 - the OpenShift master nodes(s)
 - the CLI console that hosts the `oc` OpenShift CLI utility client
 
-## Deployment Tools
+## OpenShift Platform Setup Examples
 
-There are two options for tooling to use to deploy the Kubernetes cluster: Helm charts and OpenShift templates.
+You can skip this section if you already have your own OpenShift environment available.
 
-#### Helm Charts
+There are [multiple ways](https://www.openshift.com/try ) to get to an OpenShift platform. We provide a distibuted Production-ready example that uses the Red Hat OpenShift Container Platform for deploying an HA group of software event brokers, but the concepts are transferable to other compatible platforms.
 
-The Kubernetes `Helm` tool allows great flexibility, allowing the process of event broker deployment to be automated through a wide range of configuration options including in-service rolling upgrade of the event broker. This example refers to the [Solace Kubernetes QuickStart project](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/tree/master ) for the Helm setting to use to deploy the event broker onto your OpenShift environment.
+We also give tips for how to set up a simple single-node deployment using [CodeReady Containers](https://developers.redhat.com/products/codeready-containers/overview ) (the equivalent of MiniShift for OpenShift 4) for development, testing, or proof of concept purposes.
 
-#### OpenShift Templates
+The last sub-section describes how to use a private image registry,such as AWS ECR, together with OpenShift.
 
-> Deprecation warning: deploying using OpenShift Templates is being phased out and the templates in this quickstart will be no longer maintained. The recommended deployment method is to use Helm. If Helm cannot be used then refer to the [PubSub+ Kubernetes documentation](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#alternative-deployment-with-generating-templates-for-the-kubernetes-kubectl-tool) to generate deployment manifests.
+### Deploy a Production-ready OpenShift Container Platform onto AWS
 
-You can directly use the OpenShift templates included in this project, without any additional tools, to deploy the event broker in a limited number of configurations. Follow the instructions for deploying using OpenShift templates in [Step 3, Option 2](#step-3-option-2-deploy-using-openshift-templates), below.
-
-## Deploying Solace PubSub+ onto OpenShift / AWS
-
-The following steps describe how to deploy an event broker onto an OpenShift environment. Optional steps are provided for:
-- setting up a self-managed Red Hat OpenShift Container Platform on Amazon AWS infrastructure (marked as *Optional / AWS*) 
-- using AWS Elastic Container Registry to host the Solace PubSub+ Docker image (marked as *Optional / ECR*).
-
-**Tip:** You can skip Step 1 if you already have your own OpenShift environment available.
-
-> Note: If you are using CodeReady Containers, follow the [getting started instructions](https://developers.redhat.com/products/codeready-containers/getting-started) to stand up a working CodeReady Containers deployment that supports Linux, MacOS, and Windows. At the `crc start` step it is helpful to: have a local `pullsecret` file created; specify CPU and memory requirements, allowing 2 to 3 CPU and 2.5 to 7 GiB memory for CRC internal purposes (depending on your platform and CRC version); also specify a DNS server, for example: `crc start -p ./pullsecret -c 5 -m 11264 --nameserver 1.1.1.1`.
-
-### Step 1: (Optional / AWS) Deploy a Self-Managed OpenShift Container Platform onto AWS
-
-This step requires the following:
+This requires the following:
 - a free Red Hat account. You can create one [here](https://developers.redhat.com/login ), if needed.
 - a command console on your host platform with Internet access. The examples here are for Linux, but MacOS is also supported.
-- a designated working directory for the OpenShift cluster installation. The automated install process creates files here that are required later for deleting the OpenShift cluster.
-    ```
-    mkdir ~/workspace; cd ~/workspace
-    ```
+- a designated working directory for the OpenShift cluster installation.
+>**Important:** The automated install process creates files here that are required later for deleting the OpenShift cluster. Use a dedicated directory and do not delete any temporary files.
+
+```
+mkdir ~/workspace; cd ~/workspace
+```
 
 To deploy the container platform in AWS, do the following:
 1. If you haven't already, log in to your RedHat account.
@@ -143,8 +103,28 @@ To deploy the container platform in AWS, do the following:
 9. [Install](https://docs.openshift.com/container-platform/latest/installing/installing_aws/installing-aws-default.html#cli-installing-cli_installing-aws-default) the `oc` client CLI tool.
 10. Verify that your cluster is working correctly by following the hints from step 8, including verifying access to the OpenShift web-console.
 
+#### Deleting the AWS OpenShift Container Platform Deployment
 
-### Step 2: (Optional / ECR) Use a Private Image Registry
+If you need to delete your [AWS OpenShift Container Platform deployment](#deploy-a-production-ready-openshift-container-platform-onto-aws), run the following commands:
+
+```
+cd ~/workspace
+./openshift-install help # Check options
+./openshift-install destroy cluster
+```
+
+This will remove all resources of the deployment.
+
+### Deploy CodeReady Containers for OpenShift
+
+If you are using CodeReady Containers, follow the [getting started instructions](https://developers.redhat.com/products/codeready-containers/getting-started) to stand up a working CodeReady Containers deployment that supports Linux, MacOS, and Windows.
+
+At the `crc start` step it is helpful to:
+* have a local copy of the OpenShift `pullsecret` file created; 
+* specify CPU and memory requirements, allowing 2 to 3 CPU and 2.5 to 7 GiB memory for CRC internal purposes (depending on your platform and CRC version); 
+* also specify a DNS server, for example: `crc start -p ./pullsecret -c 5 -m 11264 --nameserver 1.1.1.1`.
+
+### Using a Private Image Registry for broker and Prometheus exporter images
 
 By default, the deployment scripts pull the Solace PubSub+ image from the [Red Hat containerized products catalog](https://catalog.redhat.com/software/container-stacks/search?q=solace). If the OpenShift worker nodes have Internet access, no further configuration is required.
 
@@ -160,11 +140,11 @@ However, if you need to use a private image registry, such as AWS ECR, you must 
        --from-file=.dockerconfigjson=$(readlink -f ~/.docker/config.json) \
        --type=kubernetes.io/dockerconfigjson
     ```
-4. Use the pull secret you just created (`<my-pullsecret>`) in the deployment section, Step 3, below.
+4. Use the pull secret you just created (`<my-pullsecret>`) in the broker deployment manifest.
 
-For additional information, see the [Using private registries](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#using-private-registries) and [Using ImagePullSecrets for signed images](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#using-imagepullsecrets-for-signed-images) sections of the Solace Kubernetes Quickstart documentation.
+For additional information, see the [Using private registries](https://github.com/SolaceDev/pubsubplus-kubernetes-operator/blob/v1.0.0/docs/EventBrokerOperatorUserGuide.md#using-a-private-registry) section of the general Event Broker in Kubernetes documentation.
 
-#### Using CodeReady Containers
+#### Using AWS ECR with CodeReady Containers
 If you are using CodeReady Containers, you may need to perform a workaround if the ECR login fails on the console (e.g., on Windows). In this case, do the following:
 1. Log into the OpenShift node: `oc get node` 
 2. Run the `oc debug node/<reported-node-name>` command.
@@ -179,311 +159,34 @@ If you are using CodeReady Containers, you may need to perform a workaround if t
 5. Run `podman pull <your-ECR-image>` to load the image locally on the CRC node. 
     After you exit the node, you can use your ECR image URL and tag for the deployment. There is no need for a pull secret in this case.
 
-### Step 3, Option 1: Deploy using Helm
+## Deployment considerations
 
-Using Helm to deploy your cluster offers more flexibility in terms of event broker deployment options, compared to those offered by OpenShift templates (see [Option 2](#step-3-option-2-deploy-using-openshift-templates)).
+Consult the [Deployment Planning](https://github.com/SolaceDev/pubsubplus-kubernetes-operator/blob/v1.0.0/docs/EventBrokerOperatorUserGuide.md#deployment-planning) section of the general Event Broker in Kubernetes documentation when planning your deployment.
 
-Additional information is provided in the following documents:
-- [Solace PubSub+ on Kubernetes Deployment Guide](//github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md)
-- [Kubernetes Deployment Quick Start Guide](//github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/README.md)
+The following sections only apply to the OpenShift platform.
 
-This deployment uses PubSub+ Software Event Broker Helm charts for OpenShift. You can customize it by overriding the [default chart parameters](//github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/tree/master/pubsubplus#configuration).
+### Broker Spec defaults in OpenShift
 
-Consult the [Deployment Considerations](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#pubsub-software-event-broker-deployment-considerations) section of the general Event Broker in Kubernetes Documentation when planning your deployment.
+The Operator will detect if (1) OpenShift platform is used and (2) the name of the OpenShift project (namespace) for the broker deployment. It will automatically adjust defaults to use for following parameters. It is always possible to overwrite defaults by explicitly specifying the parameters.
 
-To use broker TLS ports, you'll need to [configure certificates on the broker](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#enabling-use-of-tls-to-access-broker-services) or add [OpenShift's service CA bundle to the PubSub+ service](https://docs.openshift.com/container-platform/latest/security/certificates/service-serving-certificate.html#add-service-certificate-apiservice_service-serving-certificate).
+| OpenShift project (namespace) | Broker Spec Parameter | General Kubernetes defaults (for information) | OpenShift defaults |
+| --- | --- | --- | --- |
+| Any, excluding `default` - Note: it is recommended to NOT use the `default` project | `spec.securityContext.runAsUser` | 1000001| Not set (OpenShift will set it according to the OpenShift project settings ) |
+|| `spec.securityContext.fsGroup` | 1000002 | Not set, as for the `runAsUser` |
+| `default` - Note: not recommended | `spec.securityContext.runAsUser` | 1000001 | 1000001 |
+|| `spec.securityContext.fsGroup` | 1000002 | 1000002 |
+| All OpenShift projects | `spec.image` | solace/solace-pubsub-standard | registry.connect.redhat.com/solace/pubsubplus-standard |
+| | `spec.monitoring.image` | solace/solace-prometheus-exporter | registry.connect.redhat.com/solace/pubsubplus-prometheus-exporter |
 
-PubSub+ Software Event Broker Helm charts for OpenShift differ from the general PubSub+ Helm charts:
-* The `securityContext.enabled` parameter is set to `false` by default, indicating not to use the provided pod security context but to let OpenShift set it using SecurityContextConstraints (SCC). By default OpenShift will use the "restricted" SCC.
-* By default the latest [Red Hat certified image](https://catalog.redhat.com/software/container-stacks/search?q=solace) of PubSub+ Standard Edition is used from `registry.connect.redhat.com`. Use a different image tag if required or [use an image from a different registry](#step-2-optional--ecr-use-a-private-image-registry). If you're using a different image, add the `image.repository=<your-image-location>,image.tag=<your-image-tag>` values (comma-separated) to the `--set` commands below. Also specify a pull secret if required: `image.pullSecretName=<my-pullsecret>`. Consult the [Red Hat Knowledgebase](https://access.redhat.com/RegistryAuthentication#registry-service-accounts-for-shared-environments-4) if you run into issues with pulling the PubSub+ image.
+While it is not configurable through a broker spec parameter, the Operator will also similarly adjust the `runAsUser` settings for the Prometheus exporter pod.
 
-The broker can be [vertically scaled](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#deployment-scaling ) using the `solace.size` chart parameter.
+### Accessing Broker Services
 
-#### Steps:
-1. Install Helm. Use the [instructions from Helm](//github.com/helm/helm#install), or if you're using Linux simply run the following command:
-    ```bash
-      curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
-    ```
-     Helm is configured properly if the command `helm version` returns no error.
-2. Create a new project or switch to your existing project (do not use the `default` project as its loose permissions don't reflect a typical OpenShift environment):
-    ```
-    oc new-project solace-pubsubplus  # adjust your project name as needed here and in subsequent commands
-    ```
-3. Follow one of the examples below to deploy your cluster.
-
-    ##### For an _HA_ Deployment:
-    ```bash
-    # One-time action: Add the PubSub+ charts to local Helm
-    helm repo add openshift-helm-charts https://charts.openshift.io/
-    # Initiate the HA deployment - specify an admin password
-    helm install my-ha-release \
-      --set solace.redundancy=true,solace.usernameAdminPassword=<broker-admin-password> \
-      openshift-helm-charts/solace-pubsubplus-openshift
-    # Check the notes printed on screen
-    # Wait until all pods are running, ready, and the active event broker pod label is "active=true" 
-    oc get pods --show-labels -w
-    ```
-
-    ##### For a Single-Node, _Non-HA_ Deployment (Using a _Pull_ _Secret_):
-    ```bash
-    # One-time action: Add the PubSub+ charts to local Helm
-    helm repo add openshift-helm-charts https://charts.openshift.io/
-    # Initiate the non-HA deployment - specify an admin password
-    helm install my-nonha-release \
-      --set solace.redundancy=false,solace.usernameAdminPassword=<broker-admin-password> \
-      --set image.pullSecretName=<my-pullsecret> \
-      openshift-helm-charts/solace-pubsubplus-openshift
-    # Check the notes printed on screen
-    # Wait until the event broker pod is running, ready, and the pod label is "active=true" 
-    oc get pods --show-labels -w
-    ```
-
-    **Note**: As an alternative to longer `--set` parameters, it is possible to define the same parameter values in a YAML file:
-    ```yaml
-    # Create example values file - specify an admin password
-    echo "
-    solace:
-      redundancy: false,
-      usernameAdminPassword: <broker-admin-password>" > deployment-values.yaml
-    # Use values file
-    helm install my-release \
-      -f deployment-values.yaml \
-      openshift-helm-charts/solace-pubsubplus-openshift
-    ```
-
-### Step 3, Option 2: Deploy Using OpenShift Templates
-
-This option use an OpenShift template and doesn't require Helm. This option assumes that you have completed [Step 2](#step-2-optional-using-a-private-image-registry) if required.
-
-#### About the Template:
-- You can copy templates files from the GitHub location to your local disk, edit them, and use them from there.
-- Before you deploy, ensure that you determine your event broker [disk space requirements](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#disk-storage). The `BROKER_STORAGE_SIZE` parameter in the template has a default value of 30 gigabytes of disk space. You may need to update this value.
-- By default, the template provisions a broker supporting 100 connections. You can adjust `export system_scaling_maxconnectioncount` in the template to increase the number of connections, but you must also ensure that adequate resources are available to the pod(s) by adjusting both `cpu` and `memory` requests and limits. For details, refer to the [System Resource Requirements](https://docs.solace.com/Configuring-and-Managing/SW-Broker-Specific-Config/System-Resource-Requirements.htm) in the Solace documentation.
-- If using you are using [TLS to access broker services](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#enabling-use-of-tls-to-access-broker-services), you must configure a server key and certificate on the broker(s). Uncomment the related parts of the template file in your local copy and also specify a value for the `BROKER_TLS_CERT_SECRET` parameter.
-
-
-#### Steps:
-
-1. Define a strong password for the 'admin' user of the event broker, and then base64 encode the value:
-    ```
-    echo -n 'strong@dminPw!' | base64
-    ```
-    You will use this value as a parameter when you process the event broker OpenShift template.
-2. Create a new project or switch to your existing project (do not use the `default` project as its loose permissions don't reflect a typical OpenShift environment):
-    ```
-    oc new-project solace-pubsubplus    # adjust your project name as needed here and in subsequent commands
-    ```
-3. Follow one of the examples below to deploy your cluster.
-
-
-    ##### For a Single-Node, _Non-HA_ Deployment:
-    This example uses all default values.  You can omit default parameters.
-
-    ```
-    oc process -f https://raw.githubusercontent.com/SolaceProducts/pubsubplus-openshift-quickstart/master/templates/eventbroker_singlenode_template.yaml \
-        DEPLOYMENT_NAME=test-singlenode \
-        BROKER_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
-    # Wait until all pods are running and ready
-    oc get pods -w --show-labels
-    ```
-
-    ##### For an _HA_ Deployment:
-    In this example, we specify values for all parameters.
-
-    The `BROKER_IMAGE_REGISTRY_URL` and `BROKER_IMAGE_TAG` parameters default to **registry.connect.redhat.com/solace/pubsubplus-standard** and **latest**, respectively.
-
-    ```
-    oc process -f https://raw.githubusercontent.com/SolaceProducts/pubsubplus-openshift-quickstart/master/templates/eventbroker_ha_template.yaml \
-        DEPLOYMENT_NAME=test-ha \
-        BROKER_IMAGE_REGISTRY_URL=<replace with your Docker Registry URL> \
-        BROKER_IMAGE_TAG=<replace with your Solace PubSub+ Docker image tag> \
-        BROKER_IMAGE_REGISTRY_PULLSECRET=<my-pullsecret>
-        BROKER_STORAGE_SIZE=30Gi \
-        BROKER_TLS_CERT_SECRET=<my-tls-server-secret>  # See notes above \
-        BROKER_ADMIN_PASSWORD=<base64 encoded password> | oc create -f -
-    # Wait until all pods are running and ready
-    oc get pods -w --show-labels
-    ```
-
-  
-## Validating the Deployment
-
-If you encounter any issues with your deployment, refer to the [Kubernetes Troubleshooting Guide](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#troubleshooting) for help. Substitute any `kubectl` commands with `oc` commands. Before retrying a deployment, ensure to delete PVCs remaining from the unsuccessful deployment. Use the `oc get pvc` command to obtain a listing.
-
-From the console, validate your deployment by running the following command:
-```
-$ oc get statefulset,service,pods,pvc,pv --show-labels
-```
-The output should look like the following:
-```
-NAME                                         READY   AGE   LABELS
-statefulset.apps/my-release-pubsubplus   3/3     23h   app.kubernetes.io/instance=my-release,app.kubernetes.io/managed-by=Helm,app.kubernetes.io/name=pubsubplus,helm.sh/chart=pubsubplus-2.4.0
-
-NAME                                          TYPE           CLUSTER-IP       EXTERNAL-IP                                                                  PORT(S)                                                                                                                                                                                                                                                              AGE   LABELS
-service/my-release-pubsubplus             LoadBalancer   172.30.129.136   ac4917b2be7734df09a296f5da4dce38-1140440410.eu-central-1.elb.amazonaws.com   2222:31020/TCP,8080:30035/TCP,1943:30695/TCP,55555:30166/TCP,55003:30756/TCP,55443:32303/TCP,55556:31861/TCP,8008:31233/TCP,1443:32104/TCP,9000:30811/TCP,9443:30173/TCP,5672:31234/TCP,5671:31165/TCP,1883:32291/TCP,8883:32292/TCP,8000:32086/TCP,8443:31426/TCP   23h   app.kubernetes.io/instance=my-release,app.kubernetes.io/managed-by=Helm,app.kubernetes.io/name=pubsubplus,helm.sh/chart=pubsubplus-2.4.0
-service/my-release-pubsubplus-discovery   ClusterIP      None             <none>                                                                       8080/TCP,8741/TCP,8300/TCP,8301/TCP,8302/TCP                                                                                                                                                                                                                         23h   app.kubernetes.io/instance=my-release,app.kubernetes.io/managed-by=Helm,app.kubernetes.io/name=pubsubplus,helm.sh/chart=pubsubplus-2.4.0
-
-NAME                              READY   STATUS    RESTARTS   AGE   LABELS
-pod/my-release-pubsubplus-0   1/1     Running   0          23h   active=true,app.kubernetes.io/instance=my-release,app.kubernetes.io/name=pubsubplus,controller-revision-hash=my-release-pubsubplus-68d69ffb5,statefulset.kubernetes.io/pod-name=my-release-pubsubplus-0
-pod/my-release-pubsubplus-1   1/1     Running   0          23h   active=false,app.kubernetes.io/instance=my-release,app.kubernetes.io/name=pubsubplus,controller-revision-hash=my-release-pubsubplus-68d69ffb5,statefulset.kubernetes.io/pod-name=my-release-pubsubplus-1
-pod/my-release-pubsubplus-2   1/1     Running   0          23h   app.kubernetes.io/instance=my-release,app.kubernetes.io/name=pubsubplus,controller-revision-hash=my-release-pubsubplus-68d69ffb5,statefulset.kubernetes.io/pod-name=my-release-pubsubplus-2
-
-NAME                                                     STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE   LABELS
-persistentvolumeclaim/data-my-release-pubsubplus-0   Bound    pvc-eb2c8a52-85d4-4bc2-a73d-884559a4e463   10Gi       RWO            gp2            23h   app.kubernetes.io/instance=my-release,app.kubernetes.io/name=pubsubplus
-persistentvolumeclaim/data-my-release-pubsubplus-1   Bound    pvc-ab428fa6-4786-4419-a814-a801a0860861   10Gi       RWO            gp2            23h   app.kubernetes.io/instance=my-release,app.kubernetes.io/name=pubsubplus
-persistentvolumeclaim/data-my-release-pubsubplus-2   Bound    pvc-3d77864d-3f90-42fe-939d-8a9324a62e20   10Gi       RWO            gp2            23h   app.kubernetes.io/instance=my-release,app.kubernetes.io/name=pubsubplus
-
-NAME                                                        CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                                            STORAGECLASS   REASON   AGE   LABELS
-persistentvolume/pvc-3d77864d-3f90-42fe-939d-8a9324a62e20   10Gi       RWO            Delete           Bound    solace-pubsubplus/data-my-release-pubsubplus-2   gp2                     23h   failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1a
-persistentvolume/pvc-ab428fa6-4786-4419-a814-a801a0860861   10Gi       RWO            Delete           Bound    solace-pubsubplus/data-my-release-pubsubplus-1   gp2                     23h   failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1c
-persistentvolume/pvc-eb2c8a52-85d4-4bc2-a73d-884559a4e463   10Gi       RWO            Delete           Bound    solace-pubsubplus/data-my-release-pubsubplus-0   gp2                     23h   failure-domain.beta.kubernetes.io/region=eu-central-1,failure-domain.beta.kubernetes.io/zone=eu-central-1b
-
-[ec2-user@ip-10-0-23-198 ~]$
-[ec2-user@ip-10-0-23-198 ~]$
-[ec2-user@ip-10-0-23-198 ~]$ oc describe svc my-release-pubsubplus
-Name:                     my-release-pubsubplus
-Namespace:                solace-pubsubplus
-Labels:                   app.kubernetes.io/instance=my-release
-                          app.kubernetes.io/managed-by=Helm
-                          app.kubernetes.io/name=pubsubplus
-                          helm.sh/chart=pubsubplus-2.4.0
-Annotations:              meta.helm.sh/release-name: my-release
-                          meta.helm.sh/release-namespace: solace-pubsubplus
-Selector:                 active=true,app.kubernetes.io/instance=my-release,app.kubernetes.io/name=pubsubplus
-Type:                     LoadBalancer
-IP:                       172.30.129.136
-LoadBalancer Ingress:     ac4917b2be7734df09a296f5da4dce38-1140440410.eu-central-1.elb.amazonaws.com
-Port:                     tcp-ssh  2222/TCP
-TargetPort:               2222/TCP
-NodePort:                 tcp-ssh  31020/TCP
-Endpoints:                10.129.2.14:2222
-Port:                     tcp-semp  8080/TCP
-TargetPort:               8080/TCP
-NodePort:                 tcp-semp  30035/TCP
-Endpoints:                10.129.2.14:8080
-Port:                     tls-semp  1943/TCP
-TargetPort:               1943/TCP
-NodePort:                 tls-semp  30695/TCP
-Endpoints:                10.129.2.14:1943
-Port:                     tcp-smf  55555/TCP
-TargetPort:               55555/TCP
-NodePort:                 tcp-smf  30166/TCP
-Endpoints:                10.129.2.14:55555
-Port:                     tcp-smfcomp  55003/TCP
-TargetPort:               55003/TCP
-NodePort:                 tcp-smfcomp  30756/TCP
-Endpoints:                10.129.2.14:55003
-Port:                     tls-smf  55443/TCP
-TargetPort:               55443/TCP
-NodePort:                 tls-smf  32303/TCP
-Endpoints:                10.129.2.14:55443
-Port:                     tcp-smfroute  55556/TCP
-TargetPort:               55556/TCP
-NodePort:                 tcp-smfroute  31861/TCP
-Endpoints:                10.129.2.14:55556
-Port:                     tcp-web  8008/TCP
-TargetPort:               8008/TCP
-NodePort:                 tcp-web  31233/TCP
-Endpoints:                10.129.2.14:8008
-Port:                     tls-web  1443/TCP
-TargetPort:               1443/TCP
-NodePort:                 tls-web  32104/TCP
-Endpoints:                10.129.2.14:1443
-Port:                     tcp-rest  9000/TCP
-TargetPort:               9000/TCP
-NodePort:                 tcp-rest  30811/TCP
-Endpoints:                10.129.2.14:9000
-Port:                     tls-rest  9443/TCP
-TargetPort:               9443/TCP
-NodePort:                 tls-rest  30173/TCP
-Endpoints:                10.129.2.14:9443
-Port:                     tcp-amqp  5672/TCP
-TargetPort:               5672/TCP
-NodePort:                 tcp-amqp  31234/TCP
-Endpoints:                10.129.2.14:5672
-Port:                     tls-amqp  5671/TCP
-TargetPort:               5671/TCP
-NodePort:                 tls-amqp  31165/TCP
-Endpoints:                10.129.2.14:5671
-Port:                     tcp-mqtt  1883/TCP
-TargetPort:               1883/TCP
-NodePort:                 tcp-mqtt  32291/TCP
-Endpoints:                10.129.2.14:1883
-Port:                     tls-mqtt  8883/TCP
-TargetPort:               8883/TCP
-NodePort:                 tls-mqtt  32292/TCP
-Endpoints:                10.129.2.14:8883
-Port:                     tcp-mqttweb  8000/TCP
-TargetPort:               8000/TCP
-NodePort:                 tcp-mqttweb  32086/TCP
-Endpoints:                10.129.2.14:8000
-Port:                     tls-mqttweb  8443/TCP
-TargetPort:               8443/TCP
-NodePort:                 tls-mqttweb  31426/TCP
-Endpoints:                10.129.2.14:8443
-Session Affinity:         None
-External Traffic Policy:  Cluster
-Events:                   <none>
-```
-
-Find the **'LoadBalancer Ingress'** value listed in the service description above. This is the publicly accessible Solace Connection URI for messaging clients and management. In the example, it is `ac4917b2be7734df09a296f5da4dce38-1140440410.eu-central-1.elb.amazonaws.com`.
-
-> **Note**: There is no external Load Balancer support with CodeReady Containers. Services are accessed through NodePorts instead. To access the brokers, use the NodePort port numbers together with the CodeReady Containers' public IP addresses, which can be obtained by running the `crc ip` command.
-
-### Viewing the Bringup Logs
-
-To see the deployment events, navigate to:
-
-- **OpenShift UI > (Your Project) > Applications > Stateful Sets > ((name)-pubsubplus) > Events**
-
-You can access the log stack for individual event broker pods from the OpenShift UI, by navigating to:
-
-- **OpenShift UI > (Your Project) > Applications > Stateful Sets > ((name)-pubsubplus) > Pods > ((name)-solace-(N)) > Logs**
-
-    Where **(N)** above is the ordinal of the HA role of the PubSub+ broker:
-    - 0: Primary event broker
-    - 1: Backup event broker
-    - 2: Monitor event broker
-
-![alt text](/docs/images/Solace-Pod-Log-Stack.png "Event Broker Pod Log Stack")
-
-
-## Gaining Admin and SSH Access to the Event Broker
-
-To access the event brokers, use the Solace Connection URI associated with the load balancer generated by the OpenShift template. As described in the introduction, you access the brokers through the load balancer service, which always point to the active event broker. The default port is 2222 for CLI and 8080 for SEMP/[Solace PubSub+ Broker Manager](https://docs.solace.com/Solace-PubSub-Manager/PubSub-Manager-Overview.htm).
-
-If you deployed OpenShift in AWS, then the Solace OpenShift QuickStart will have created an EC2 Load Balancer to front the event broker / OpenShift service.  The Load Balancer public DNS name can be found in the AWS EC2 console in the 'Load Balancers' section.
-
-To launch Solace CLI or SSH into the individual event broker instances from the OpenShift CLI, use the following commands:
-
-```
-# CLI access
-oc exec -it XXX-XXX-pubsubplus-X -- cli   # adjust pod name to your deployment
-# shell access
-oc exec -it XXX-XXX-pubsubplus-X -- bash  # adjust pod name to your deployment
-```
-
-You can also gain access to the Solace CLI and container shell for individual event broker instances from the OpenShift UI.  A web-based terminal emulator is available from the OpenShift UI. Navigate to an individual event broker Pod using the OpenShift UI:
-
-- **OpenShift UI > (Your Project) > Applications > Stateful Sets > ((name)-pubsubplus) > Pods > ((name)-pubsubplus-(N)) > Terminal**
-
-Once you have launched the terminal emulator to the event broker pod you can access the Solace CLI by executing the following command:
-
-```
-/usr/sw/loads/currentload/bin/cli -A
-```
-
-![alt text](/docs/images/Solace-Primary-Pod-Terminal-CLI.png "Event Broker CLI via OpenShift UI Terminal emulator")
-
-See the [Solace Kubernetes Quickstart README](//github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#gaining-admin-access-to-the-event-broker ) for more details, including admin and SSH access to the individual event brokers.
-
-## Exposing PubSub+ Services
-
-The principles of exposing services described in the [PubSub+ in Kubernetes documentation](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#exposing-the-pubsub-software-event-broker-services) apply:
+The principles of exposing services described in the [general Kubernetes documentation](https://github.com/SolaceDev/pubsubplus-kubernetes-operator/blob/v1.0.0/docs/EventBrokerOperatorUserGuide.md#accessing-broker-services) apply:
 * LoadBalancer is the default service type and can be used to externally expose all broker services. This is an option for OpenShift as well and will not be further discussed here.
 * Ingress and its equivalent, OpenShift Routes, can be used to expose specific services.
 
-### Routes
+#### Routes
 
  OpenShift has a default production-ready [ingress controller setup based on HAProxy](https://docs.openshift.com/container-platform/latest/networking/understanding-networking.html#nw-ne-openshift-ingress_understanding-networking). Using Routes is the recommended OpenShift-native way to configure Ingress. Refer to the OpenShift documentation for [more information on Ingress and Routes](https://docs.openshift.com/container-platform/latest/networking/understanding-networking.html#nw-ne-openshift-ingress_understanding-networking) and [how to configure Routes](https://docs.openshift.com/container-platform/latest/networking/routes/route-configuration.html).
 
@@ -548,67 +251,46 @@ Here the example PubSub+ SMF messaging service can be accessed at `tcps://smf.my
 
 The API client must support and use the SNI extension of the TLS handshake to provide the hostname to the OpenShift router for routing the request to the right backend broker.
 
-## Testing PubSub+ Services
+### Security Considerations
 
-A simple option for testing data traffic though the newly created event broker instance is the [SDKPerf tool](https://docs.solace.com/SDKPerf/SDKPerf.htm). Another option to quickly check messaging is [Try Me!](https://docs.solace.com/Solace-PubSub-Manager/PubSub-Manager-Overview.htm#Test-Messages), which is integrated into the [Solace PubSub+ Broker Manager](https://docs.solace.com/Solace-PubSub-Manager/PubSub-Manager-Overview.htm).
+The event broker deployment does not require any special OpenShift Security Context; the default most restrictive ["restricted-v2" SCC](https://docs.openshift.com/container-platform/latest/authentication/managing-security-context-constraints.html) can be used.
 
-To try building a client, visit the Solace Developer Portal and select your preferred programming language to [send and receive messages](http://dev.solace.com/get-started/send-receive-messages/ ). For each language there are samples that will help you get started.
+### Helm-based Deployment
 
->**Note**: The Host to be used is the Solace Connection URI.
+We recommend using the PubSub+ Event Broker Operator. An alternative method using Helm is described and available from an [earlier version of this repo](https://github.com/SolaceProducts/pubsubplus-openshift-quickstart/tree/v3.2.0).
 
-## Deleting a Deployment
-You can delete just the PubSub+ deployment, or tear down your entire AWS OpenShift Container Platform.
+## Exposing Metrics to Prometheus
 
-### Delete the PubSub+ Deployment
+OpenShift ships with an integrated customized Prometheus deployment, however with restrictions:
+* Monitoring must be enabled for user-defined projects, only default platform monitoring is enabled by default
+* The Grafana UI has been removed in OpenShift 4.11. Only built-in Dashboards are available.
 
-To delete the deployment or to start over from Step 3 in a clean state, do the following:
+Monitoring must be enabled for user-defined projects by [creating a `user-workload-monitoring-config` ConfigMap object](https://docs.openshift.com/container-platform/latest/monitoring/enabling-monitoring-for-user-defined-projects.html) in the `openshift-user-workload-monitoring` project.
 
-- If you used [Step 3, Option 1 (Helm)](#step-3-option-1-deploy-using-helm) to deploy, execute the following commands: 
+After this, the only step required to [connect the broker metrics with Prometheus](https://github.com/SolaceDev/pubsubplus-kubernetes-operator/blob/v1.0.0/docs/EventBrokerOperatorUserGuide.md#connecting-with-prometheus) is to [create a ServiceMonitor object](https://github.com/SolaceDev/pubsubplus-kubernetes-operator/blob/v1.0.0/docs/EventBrokerOperatorUserGuide.md#creating-a-servicemonitor-object) in the project where the broker has been deployed.
 
-    ```
-    helm list            # lists the releases (deployments)
-    helm delete XXX-XXX  # deletes instances related to your deployment - "my-release" in the example above
-    ```
+Check the OpenShift admin console in "Administrator" view to verify that the event broker deployment monitoring endpoint has been connected to Prometheus:
+![alt text](/docs/images/PrometheusTargets.png "Prometheus targets")
 
-- If you used [Step 3, Option 2 (OpenShift templates)](#step-3-option-2-deploy-using-openshift-templates) to deploy, run the following:
+Regarding Grafana UI, enabling custom Dashboards requires the community Grafana Operator installed from OpenShift's OperatorHub and then connected to OpenShift Prometheus via a GrafanaDataSource.
 
-    ```
-    oc process -f <template-used> DEPLOYMENT_NAME=<deploymentname> | oc delete -f -
-    ```
+## Broker Deployment in OpenShift using the Operator
 
-> **Note:** The commands above do not delete the dynamic Persistent Volumes (PVs) and related Persistent Volume Claims (PVCs). If you recreate the deployment with the same name and keep the original PVCs, the original volumes will be mounted with the existing configuration. 
+### Quick Start
 
-To delete the PVCs (which also deletes the PVs), run the following commands:
+Refer to the [Quick Start guide](/README.md) in the root of this repo. It provides information about [installing the Operator](/README.md#step-2-install-the-pubsub-event-broker-operator) and [deploying the PubSub+ Event Broker](/README.md#step-3-deploy-the-solace-pubsub-software-event-broker).
 
-```
-# List PVCs
-oc get pvc
-# Delete unneeded PVCs
-oc delete pvc <pvc-name>
-```
+# Additional Resources
 
-To remove the project or to start over in a clean state, delete the project using the OpenShift console or the command line: 
-```
-oc delete project solace-pubsubplus   # adjust your project name as needed
-```
-For more details, refer to the [OpenShift Projects](https://docs.openshift.com/container-platform/latest/welcome/index.html) documentation.
+For more information about Solace technology in general please visit these resources:
 
-### Deleting the AWS OpenShift Container Platform Deployment
+- The Solace Developer Portal website at: http://dev.solace.com
+- Understanding [Solace technology.](http://dev.solace.com/tech/)
+- Ask the [Solace community](http://dev.solace.com/community/).
 
-To delete your OpenShift Container Platform deployment that was set up at [Step 1](#step-1-optional--aws-deploy-a-self-managed-openshift-container-platform-onto-aws), run the following commands:
+# Appendix: Using NFS for Persistent Storage
 
-```
-cd ~/workspace
-./openshift-install help # Check options
-./openshift-install destroy cluster
-```
-
-This will remove all resources of the deployment.
-
-
-## Experimental: Using NFS for Persistent Storage
-
-> **Important:** This is only provided for information only as NFS is currently not supported for PubSub+ production deployment. 
+> **Important:** This section is provided for information only as NFS is currently not supported for PubSub+ production deployment. 
 
 The NFS server shall be configured with "root_squash" option.
 
@@ -646,11 +328,3 @@ If you're using a template to deploy, locate the volume mount for `softAdb` in t
 #  mountPath: /usr/sw/internalSpool/softAdb
 #  subPath: softAdb
 ```
-
-## Resources
-
-For more information about Solace technology in general please visit these resources:
-
-- The Solace Developer Portal website at: http://dev.solace.com
-- Understanding [Solace technology.](http://dev.solace.com/tech/)
-- Ask the [Solace community](http://dev.solace.com/community/).
