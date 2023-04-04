@@ -1,14 +1,14 @@
-# Deploying a Solace PubSub+ Software Event Broker using Operator onto an OpenShift 4 Platform
+# Deploying a Solace PubSub+ Software Event Broker Onto an OpenShift 4 Platform Using Operator
 
-This document provides OpenShift-specific information for deploying the [Solace PubSub+ Software Event Broker](https://solace.com/products/event-broker/software/) on OpenShift, using the Solace PubSub+ Event Broker Operator (Operator). It complements and should be used together with the [PubSub+ Operator User Guide on general Kubernetes](https://github.com/SolaceDev/pubsubplus-kubernetes-operator/blob/v1.0.0/docs/EventBrokerOperatorUserGuide.md).
+This document provides platform-specific information for deploying the [Solace PubSub+ Software Event Broker](https://solace.com/products/event-broker/software/) on OpenShift, using the Solace PubSub+ Event Broker Operator (Operator). It complements and should be used together with the [Solace PubSub+ Event Broker Operator User Guide](https://github.com/SolaceDev/pubsubplus-kubernetes-operator/blob/v1.0.0/docs/EventBrokerOperatorUserGuide.md), which has instructions for Kubernetes in general.
 
 Contents:
-- [Deploying a Solace PubSub+ Software Event Broker using Operator onto an OpenShift 4 Platform](#deploying-a-solace-pubsub-software-event-broker-using-operator-onto-an-openshift-4-platform)
+- [Deploying a Solace PubSub+ Software Event Broker Onto an OpenShift 4 Platform Using Operator](#deploying-a-solace-pubsub-software-event-broker-onto-an-openshift-4-platform-using-operator)
   - [Production Deployment Architecture](#production-deployment-architecture)
   - [OpenShift Platform Setup Examples](#openshift-platform-setup-examples)
-    - [Deploy a Production-ready OpenShift Container Platform onto AWS](#deploy-a-production-ready-openshift-container-platform-onto-aws)
+    - [Deploying a Production-Ready OpenShift Container Platform onto AWS](#deploying-a-production-ready-openshift-container-platform-onto-aws)
       - [Deleting the AWS OpenShift Container Platform Deployment](#deleting-the-aws-openshift-container-platform-deployment)
-    - [Deploy CodeReady Containers for OpenShift](#deploy-codeready-containers-for-openshift)
+    - [Deploying CodeReady Containers for OpenShift](#deploying-codeready-containers-for-openshift)
     - [Using a Private Image Registry for broker and Prometheus exporter images](#using-a-private-image-registry-for-broker-and-prometheus-exporter-images)
       - [Using AWS ECR with CodeReady Containers](#using-aws-ecr-with-codeready-containers)
   - [Deployment considerations](#deployment-considerations)
@@ -30,12 +30,12 @@ Contents:
 ## Production Deployment Architecture
 
 The following diagram shows an example of an HA group deployment of PubSub+ software event brokers in AWS:
+
 ![alt text](/docs/images/network_diagram.jpg "Network Diagram")
 
-<br/>
 The key parts to note in the diagram above are:
 - the three PubSub+ Container instances in OpenShift pods, deployed on OpenShift (worker) nodes
-- the cloud load balancer exposing the event router's services and management interface
+- the cloud load balancer exposing the event broker's services and management interface
 - the OpenShift master nodes(s)
 - the CLI console that hosts the `oc` OpenShift CLI utility client
 
@@ -43,15 +43,15 @@ The key parts to note in the diagram above are:
 
 You can skip this section if you already have your own OpenShift environment available.
 
-There are [multiple ways](https://www.openshift.com/try ) to get to an OpenShift platform. We provide a distibuted Production-ready example that uses the Red Hat OpenShift Container Platform for deploying an HA group of software event brokers, but the concepts are transferable to other compatible platforms.
+There are [multiple ways](https://www.openshift.com/try ) to set up an OpenShift platform. This section provides a distributed production-ready example that uses the Red Hat OpenShift Container Platform for deploying an HA group of software event brokers, but the concepts are transferable to other compatible platforms.
 
-We also give tips for how to set up a simple single-node deployment using [CodeReady Containers](https://developers.redhat.com/products/codeready-containers/overview ) (the equivalent of MiniShift for OpenShift 4) for development, testing, or proof of concept purposes.
+This section also give tips for how to set up a simple single-node deployment using [CodeReady Containers](https://developers.redhat.com/products/codeready-containers/overview ) (the equivalent of MiniShift for OpenShift 4) for development, testing, or proof of concept purposes.
 
-The last sub-section describes how to use a private image registry,such as AWS ECR, together with OpenShift.
+The last sub-section describes how to use a private image registry, such as AWS ECR, together with OpenShift.
 
-### Deploy a Production-ready OpenShift Container Platform onto AWS
+### Deploying a Production-Ready OpenShift Container Platform onto AWS
 
-This requires the following:
+This procedure requires the following:
 - a free Red Hat account. You can create one [here](https://developers.redhat.com/login ), if needed.
 - a command console on your host platform with Internet access. The examples here are for Linux, but MacOS is also supported.
 - a designated working directory for the OpenShift cluster installation.
@@ -71,11 +71,11 @@ To deploy the container platform in AWS, do the following:
     tar -xvf openshift-install-linux.tar.gz    # Adjust the filename if needed
     rm openshift-install-linux.tar.gz
     ```
-5. Run the utility to create an install configuration. Provide the necessary information at the prompts, including the Pull Secret from the RedHat instructions page. This will create the file `install-config.yaml` with the [installation configuration parameters](https://docs.openshift.com/container-platform/latest/installing/installing_aws/installing-aws-customizations.html#installation-aws-config-yaml_installing-aws-customizations), most importantly the configuration for the worker and master nodes.
+5. Run the utility to create an install configuration. Provide the necessary information at the prompts, including the pull secret from the RedHat instructions page. The utility creates the `install-config.yaml` file with the [installation configuration parameters](https://docs.openshift.com/container-platform/latest/installing/installing_aws/installing-aws-customizations.html#installation-aws-config-yaml_installing-aws-customizations), most importantly the configuration for the worker and master nodes.
     ```
     ./openshift-install create install-config --dir=.
     ```
-6. Edit the `install-config.yaml` file to update the worker node AWS machine type to meet the [minimum CPU and Memory requirements](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#cpu-and-memory-requirements) for the targeted PubSub+ Software Event Broker configuration. When you select an [EC2 instance type](https://aws.amazon.com/ec2/instance-types/), allow at least 1 CPU and 1 GiB memory for OpenShift purposes that cannot be used by the broker. The following is an example updated configuration:
+6. Edit the `install-config.yaml` file to update the AWS machine type of the worker node to meet the [minimum CPU and Memory requirements](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#cpu-and-memory-requirements) for the targeted PubSub+ Software Event Broker configuration. When you select an [EC2 instance type](https://aws.amazon.com/ec2/instance-types/), allow at least 1 CPU and 1 GiB memory for OpenShift purposes that cannot be used by the broker. The following is an example of an updated configuration:
     ```
     ...
     compute:
@@ -101,7 +101,7 @@ To deploy the container platform in AWS, do the following:
     INFO Login to the console with user: "kubeadmin", and password: "CKGc9-XUT6J-PDtWp-d4DSQ"
     ```
 9. [Install](https://docs.openshift.com/container-platform/latest/installing/installing_aws/installing-aws-default.html#cli-installing-cli_installing-aws-default) the `oc` client CLI tool.
-10. Verify that your cluster is working correctly by following the hints from step 8, including verifying access to the OpenShift web-console.
+10. Verify that your cluster is working correctly by following the hints from Step 8, including verifying access to the OpenShift web-console.
 
 #### Deleting the AWS OpenShift Container Platform Deployment
 
@@ -113,9 +113,9 @@ cd ~/workspace
 ./openshift-install destroy cluster
 ```
 
-This will remove all resources of the deployment.
+These commands remove all resources of the deployment.
 
-### Deploy CodeReady Containers for OpenShift
+### Deploying CodeReady Containers for OpenShift
 
 If you are using CodeReady Containers, follow the [getting started instructions](https://developers.redhat.com/products/codeready-containers/getting-started) to stand up a working CodeReady Containers deployment that supports Linux, MacOS, and Windows.
 
@@ -124,16 +124,17 @@ At the `crc start` step it is helpful to:
 * specify CPU and memory requirements, allowing 2 to 3 CPU and 2.5 to 7 GiB memory for CRC internal purposes (depending on your platform and CRC version); 
 * also specify a DNS server, for example: `crc start -p ./pullsecret -c 5 -m 11264 --nameserver 1.1.1.1`.
 
-### Using a Private Image Registry for broker and Prometheus exporter images
+### Using a Private Image Registry for Broker and Prometheus Exporter Images
 
 By default, the deployment scripts pull the Solace PubSub+ image from the [Red Hat containerized products catalog](https://catalog.redhat.com/software/container-stacks/search?q=solace). If the OpenShift worker nodes have Internet access, no further configuration is required.
 
 However, if you need to use a private image registry, such as AWS ECR, you must supply a pull secret to enable access to the registry. The steps that follow show how to use AWS ECR for the broker image.
 
 1. Download a free trial of the the Solace PubSub+ Enterprise Evaluation Edition by going to the **Docker** section of the [Solace Downloads](https://solace.com/downloads/?fwp_downloads_types=pubsub-enterprise-evaluation) page, or obtain an image from Solace Support.
-2. Push the broker image to the private registry. Follow the specific procedures for the registry you are using. For ECR, see [Using Amazon ECR with the AWS CLI](https://docs.aws.amazon.com/AmazonECR/latest/userguide/getting-started-cli.html).
-    >Note: If you are advised to run `aws ecr get-login-password` as part of the "Authenticate to your registry" step and it fails, try running `$(aws ecr get-login --region <your-registry-region> --no-include-email)` instead.
-    ![alt text](/docs/images/ECR-Registry.png "ECR Registry")
+2. Push the broker image to the private registry. Follow the specific procedures for the registry you are using. For ECR, see the diagram below as well as the instructions in [Using Amazon ECR with the AWS CLI](https://docs.aws.amazon.com/AmazonECR/latest/userguide/getting-started-cli.html).<br /><br />
+    ![alt text](/docs/images/ECR-Registry.png "ECR Registry")<br />
+    >Note: If you are advised to run `aws ecr get-login-password` as part of the "Authenticate to your registry" step and it fails, try running `$(aws ecr get-login --region <your-registry-region> --no-include-email)` instead. 
+
 3. Create a pull secret from the registry information in the Docker configuration. This assumes that the ECR login happened on the same machine:
     ```
     oc create secret generic <my-pullsecret> \
@@ -142,10 +143,10 @@ However, if you need to use a private image registry, such as AWS ECR, you must 
     ```
 4. Use the pull secret you just created (`<my-pullsecret>`) in the broker deployment manifest.
 
-For additional information, see the [Using private registries](https://github.com/SolaceDev/pubsubplus-kubernetes-operator/blob/v1.0.0/docs/EventBrokerOperatorUserGuide.md#using-a-private-registry) section of the general Event Broker in Kubernetes documentation.
+For additional information, see the [Using private registries](https://github.com/SolaceDev/pubsubplus-kubernetes-operator/blob/v1.0.0/docs/EventBrokerOperatorUserGuide.md#using-a-private-registry) section of the *Solace PubSub+ Event Broker Operator User Guide*.
 
 #### Using AWS ECR with CodeReady Containers
-If you are using CodeReady Containers, you may need to perform a workaround if the ECR login fails on the console (e.g., on Windows). In this case, do the following:
+If you are using CodeReady Containers, you might need to perform a workaround if the ECR login fails on the console (e.g., on Windows). In this case, do the following:
 1. Log into the OpenShift node: `oc get node` 
 2. Run the `oc debug node/<reported-node-name>` command.
 3. At the prompt, run the `chroot /host` command.
@@ -159,73 +160,75 @@ If you are using CodeReady Containers, you may need to perform a workaround if t
 5. Run `podman pull <your-ECR-image>` to load the image locally on the CRC node. 
     After you exit the node, you can use your ECR image URL and tag for the deployment. There is no need for a pull secret in this case.
 
-## Deployment considerations
+## Deployment Considerations
 
-Consult the [Deployment Planning](https://github.com/SolaceDev/pubsubplus-kubernetes-operator/blob/v1.0.0/docs/EventBrokerOperatorUserGuide.md#deployment-planning) section of the general Event Broker in Kubernetes documentation when planning your deployment.
+Consult the [Deployment Planning](https://github.com/SolaceDev/pubsubplus-kubernetes-operator/blob/v1.0.0/docs/EventBrokerOperatorUserGuide.md#deployment-planning) section of the general *Solace PubSub+ Event Broker Operator User Guide* when planning your deployment.
 
-The following sections only apply to the OpenShift platform.
+The following sections apply only to the OpenShift platform.
 
-### Broker Spec defaults in OpenShift
+### Broker Spec Defaults in OpenShift
 
-The Operator will detect if (1) OpenShift platform is used and (2) the name of the OpenShift project (namespace) for the broker deployment. It will automatically adjust defaults to use for following parameters. It is always possible to overwrite defaults by explicitly specifying the parameters.
+The Operator detects (1) whether the OpenShift platform is used and (2) the name of the OpenShift project (namespace) for the broker deployment. It automatically adjusts the default values for the parameters listed in the table below. You can override the defaults by explicitly specifying the parameters.
 
-| OpenShift project (namespace) | Broker Spec Parameter | General Kubernetes defaults (for information) | OpenShift defaults |
+| OpenShift Project (Namespace) | Broker Spec Parameter | General Kubernetes Defaults (for information only) | OpenShift Defaults |
 | --- | --- | --- | --- |
-| Any, excluding `default` - Note: it is recommended to NOT use the `default` project | `spec.securityContext.runAsUser` | 1000001| Not set (OpenShift will set it according to the OpenShift project settings ) |
-|| `spec.securityContext.fsGroup` | 1000002 | Not set, as for the `runAsUser` |
-| `default` - Note: not recommended | `spec.securityContext.runAsUser` | 1000001 | 1000001 |
+| Any, excluding `default`. <br /><br />**Note:** We recommend that you do NOT use the `default` project. | `spec.securityContext.runAsUser` | 1000001| Not set (OpenShift sets it according to the OpenShift project settings) |
+|| `spec.securityContext.fsGroup` | 1000002 | Not set (OpenShift sets it according to the OpenShift project settings) |
+| `default` <br /><br />**Note:** Not recommended | `spec.securityContext.runAsUser` | 1000001 | 1000001 |
 || `spec.securityContext.fsGroup` | 1000002 | 1000002 |
 | All OpenShift projects | `spec.image` | solace/solace-pubsub-standard | registry.connect.redhat.com/solace/pubsubplus-standard |
 | | `spec.monitoring.image` | solace/solace-prometheus-exporter | registry.connect.redhat.com/solace/pubsubplus-prometheus-exporter |
 
-While it is not configurable through a broker spec parameter, the Operator will also similarly adjust the `runAsUser` settings for the Prometheus exporter pod.
+Although `runAsUser` cannot be configured using a broker spec parameter, the Operator similarly adjusts the `runAsUser` settings for the Prometheus exporter pod.
 
 ### Accessing Broker Services
 
-The principles of exposing services described in the [general Kubernetes documentation](https://github.com/SolaceDev/pubsubplus-kubernetes-operator/blob/v1.0.0/docs/EventBrokerOperatorUserGuide.md#accessing-broker-services) apply:
+The principles for exposing services that are described in the [Solace PubSub+ Event Broker Operator User Guide](https://github.com/SolaceDev/pubsubplus-kubernetes-operator/blob/v1.0.0/docs/EventBrokerOperatorUserGuide.md#accessing-broker-services) also apply here:
 * LoadBalancer is the default service type and can be used to externally expose all broker services. This is an option for OpenShift as well and will not be further discussed here.
 * Ingress and its equivalent, OpenShift Routes, can be used to expose specific services.
 
 #### Routes
 
- OpenShift has a default production-ready [ingress controller setup based on HAProxy](https://docs.openshift.com/container-platform/latest/networking/understanding-networking.html#nw-ne-openshift-ingress_understanding-networking). Using Routes is the recommended OpenShift-native way to configure Ingress. Refer to the OpenShift documentation for [more information on Ingress and Routes](https://docs.openshift.com/container-platform/latest/networking/understanding-networking.html#nw-ne-openshift-ingress_understanding-networking) and [how to configure Routes](https://docs.openshift.com/container-platform/latest/networking/routes/route-configuration.html).
+ OpenShift has a default production-ready [ingress controller setup](https://docs.openshift.com/container-platform/latest/networking/understanding-networking.html#nw-ne-openshift-ingress_understanding-networking) based on HAProxy. Using Routes is the recommended OpenShift-native way to configure Ingress. Refer to the OpenShift documentation for more information on [Ingress and Routes](https://docs.openshift.com/container-platform/latest/networking/understanding-networking.html#nw-ne-openshift-ingress_understanding-networking) and [how to configure Routes](https://docs.openshift.com/container-platform/latest/networking/routes/route-configuration.html).
 
- The same [table provided for Ingress in the Kubernetes quickstart](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#using-ingress-to-access-event-broker-services) applies to PubSub+ services vs. route types: HTTP-type broker services can be exposed with TLS edge-terminated or re-encrypt, or without TLS. General TCP services can be exposed using TLS-passthrough to the broker Pods.
+ The same table provided for Ingress in the [Solace Kubernetes Quickstart](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/master/docs/PubSubPlusK8SDeployment.md#using-ingress-to-access-event-broker-services) applies here. HTTP-type broker services can be exposed with TLS (edge-terminated or re-encrypt) or without TLS. General TCP services can be exposed using TLS-passthrough to the broker Pods.
 
- The controller's external (router default) IP address can be determined from looking up the external-IP of the `router-default` service, by running `oc get svc -n openshift-ingress`. OpenShift can automatically assign DNS-resolvable unique host names and TLS-certificates when using Routes (except for TLS-passthrough). It is also possible to assign to the services user-defined host names, for which the user must ensure they DNS-resolve to the router IP, and related TLS-certificates include those hostnames in the CN and/or SAN fields. Note: if a PubSub+ service client requires hostnames provided in the SAN field then user-defined TLS certificates must be used as OpenShift-generated certificates only use CN.
+ The controller's external (router default) IP address can be determined from looking up the external-IP of the `router-default` service, by running `oc get svc -n openshift-ingress`. OpenShift can automatically assign DNS-resolvable unique host names and TLS-certificates when using Routes (except for TLS-passthrough). It is also possible to assign user-defined host names to the services, but you must ensure that they DNS-resolve to the router IP, and that any related TLS-certificates include those hostnames in the CN and/or SAN fields. 
+ 
+>Note: If a PubSub+ service client requires that hostnames are provided in the SAN field, you must use user-defined TLS certificates, because OpenShift-generated certificates only use the CN field.
 
-The followings provide examples for each router type. Replace `<my-pubsubplus-service>` with the name of the service of your deployment. The port name must match the `service.ports` name in the PubSub+ `values.yaml` file.
-Additional services can be exposed by additional route for each.
+The following sections provide examples for each router type. Replace `<my-pubsubplus-service>` with the name of the service of your deployment. The port name must match the `service.ports` name in the PubSub+ `values.yaml` file.
+Additional services can be exposed by an additional route for each.
 
-##### HTTP, no TLS
+##### HTTP With No TLS
 
-This will create an HTTP route to the REST service at path `/`:
+The following commands create an HTTP route to the REST service at path `/`:
 ```bash
 oc expose svc <my-pubsubplus-service> --port tcp-rest \
     --name my-broker-rest-service --path /
 # Query the route to get the generated host for accessing the service
 oc get route my-broker-rest-service -o template --template='{{.spec.host}}'
 ```
-External requests shall be targeted to the host at the HTTP port (80) and the specified path.
+External requests are targeted to the host at the HTTP port (80) and the specified path.
 
-##### HTTPS with TLS terminate at ingress
+##### HTTPS With TLS (Terminate at Ingress)
 
 Terminating TLS at the router is called "edge" in OpenShift. The target port is the backend broker's non-TLS service port.
 ```bash
 oc create route edge my-broker-rest-service-tls-edge \
     --service <my-pubsubplus-service> \
     --port tcp-rest \
-    --path /    # path is optional and shall not be used for SEMP service
+    --path /    # path is optional and must not be used for SEMP service
 # Query the route to get the generated host for accessing the service
 oc get route my-broker-rest-service-tls-edge -o template --template='{{.spec.host}}'
 ```
-External requests shall be targeted to the host at the TLS port (443) and the specified path.
+External requests are targeted to the host at the TLS port (443) and the specified path.
 
-> Note: above will use OpenShift's generated TLS certificate which is self-signed by default and includes a wildcard hostname in the CN field. To use user-defined TLS certificates with more control instead, refer to the [OpenShift documentation](https://docs.openshift.com/container-platform/latest/networking/routes/secured-routes.html#nw-ingress-creating-an-edge-route-with-a-custom-certificate_secured-routes)
+> Note: The example above uses OpenShift's generated TLS certificate, which is self-signed by default and includes a wildcard hostname in the CN field. To use user-defined TLS certificates with more control instead, refer to the [OpenShift documentation](https://docs.openshift.com/container-platform/latest/networking/routes/secured-routes.html#nw-ingress-creating-an-edge-route-with-a-custom-certificate_secured-routes).
 
-##### HTTPS with TLS re-encrypt at ingress
+##### HTTPS with TLS (Re-encrypt at Ingress)
 
-Re-encrypt requires TLS configured at the backend PubSub+ broker. The target port is now the broker's TLS service port. The broker's CA certificate must be provided in the `--dest-ca-cert` parameter, so the router can trust the broker.
+Re-encrypt requires that TLS is configured on the backend PubSub+ broker. The target port is now the broker's TLS service port. The broker's CA certificate must be provided in the `--dest-ca-cert` parameter, so that the router can trust the broker.
 ```bash
 oc create route reencrypt my-broker-rest-service-tls-reencrypt \
     --service <my-pubsubplus-service> \
@@ -237,9 +240,9 @@ oc get route my-broker-rest-service-tls-reencrypt -o template --template='{{.spe
 ```
 The TLS certificate note in the previous section is also applicable here.
 
-##### General TCP over TLS with passthrough to broker
+##### General TCP over TLS with Passthrough to Broker
 
-Passthrough requires TLS-certificate configured on the backend PubSub+ broker that validates all virtual host names for the services exposed, in the CN and/or SAN fields.
+Passthrough requires a TLS-certificate configured on the backend PubSub+ broker that validates all virtual host names for the services exposed, in the CN and/or SAN fields.
 
 ```bash
 oc create route passthrough my-broker-smf-service-tls-passthrough \
@@ -247,7 +250,7 @@ oc create route passthrough my-broker-smf-service-tls-passthrough \
     --port tls-smf \
     --hostname smf.mybroker.com
 ```
-Here the example PubSub+ SMF messaging service can be accessed at `tcps://smf.mybroker.com:443`. Also, `smf.mybroker.com` must resolve to the router's external IP as discussed above and the broker certificate shall include `*.mybroker.com` in the CN and/or SAN fields.
+Here the example PubSub+ SMF messaging service can be accessed at `tcps://smf.mybroker.com:443`. Also, `smf.mybroker.com` must resolve to the router's external IP as discussed above and the broker certificate must include `*.mybroker.com` in the CN and/or SAN fields.
 
 The API client must support and use the SNI extension of the TLS handshake to provide the hostname to the OpenShift router for routing the request to the right backend broker.
 
@@ -261,24 +264,25 @@ We recommend using the PubSub+ Event Broker Operator. An alternative method usin
 
 ## Exposing Metrics to Prometheus
 
-OpenShift ships with an integrated customized Prometheus deployment, however with restrictions:
-* Monitoring must be enabled for user-defined projects, only default platform monitoring is enabled by default
+OpenShift ships with an integrated customized Prometheus deployment, with the following restrictions:
+* Monitoring must be enabled for user-defined projects. Only default platform monitoring is enabled by default.
 * The Grafana UI has been removed in OpenShift 4.11. Only built-in Dashboards are available.
 
 Monitoring must be enabled for user-defined projects by [creating a `user-workload-monitoring-config` ConfigMap object](https://docs.openshift.com/container-platform/latest/monitoring/enabling-monitoring-for-user-defined-projects.html) in the `openshift-user-workload-monitoring` project.
 
 After this, the only step required to [connect the broker metrics with Prometheus](https://github.com/SolaceDev/pubsubplus-kubernetes-operator/blob/v1.0.0/docs/EventBrokerOperatorUserGuide.md#connecting-with-prometheus) is to [create a ServiceMonitor object](https://github.com/SolaceDev/pubsubplus-kubernetes-operator/blob/v1.0.0/docs/EventBrokerOperatorUserGuide.md#creating-a-servicemonitor-object) in the project where the broker has been deployed.
 
-Check the OpenShift admin console in "Administrator" view to verify that the event broker deployment monitoring endpoint has been connected to Prometheus:
+Check the OpenShift admin console in "Administrator" view to verify that the monitoring endpoint for the event broker deployment has been connected to Prometheus:
+
 ![alt text](/docs/images/PrometheusTargets.png "Prometheus targets")
 
-Regarding Grafana UI, enabling custom Dashboards requires the community Grafana Operator installed from OpenShift's OperatorHub and then connected to OpenShift Prometheus via a GrafanaDataSource.
+To enable custom Dashboards in the Grafana UI, you must install the community Grafana Operator from OpenShift's OperatorHub and then connect it to OpenShift Prometheus via a GrafanaDataSource.
 
-## Broker Deployment in OpenShift using the Operator
+## Broker Deployment in OpenShift Using the Operator
 
 ### Quick Start
 
-Refer to the [Quick Start guide](/README.md) in the root of this repo. It provides information about [installing the Operator](/README.md#step-2-install-the-pubsub-event-broker-operator) and [deploying the PubSub+ Event Broker](/README.md#step-3-deploy-the-solace-pubsub-software-event-broker).
+Refer to the [Quick Start Guide](/README.md) in the root of this repo. It provides information about [installing the Operator](/README.md#step-2-install-the-pubsub-event-broker-operator) and [deploying the PubSub+ Event Broker](/README.md#step-3-deploy-the-solace-pubsub-software-event-broker).
 
 # Additional Resources
 
@@ -290,9 +294,9 @@ For more information about Solace technology in general please visit these resou
 
 # Appendix: Using NFS for Persistent Storage
 
-> **Important:** This section is provided for information only as NFS is currently not supported for PubSub+ production deployment. 
+> **Important:** This section is provided for information only—NFS is currently not supported for PubSub+ production deployments. 
 
-The NFS server shall be configured with "root_squash" option.
+The NFS server must be configured with the "root_squash" option.
 
 For an example deployment, specify the storage class from your NFS deployment ("nfs" in this example) in the `storage.useStorageClass` parameter and ensure `storage.slow` is set to `true`.
 
@@ -303,7 +307,7 @@ The Helm (NFS Server Provisioner)[https://github.com/helm/charts/tree/master/sta
     ```
     sudo oc apply -f https://raw.githubusercontent.com/kubernetes-incubator/external-storage/master/nfs/deploy/kubernetes/scc.yaml
     ```
-2. Install the NFS helm chart, which will create all dependencies:
+2. Install the NFS helm chart, which creates all dependencies:
     ```
     helm install stable/nfs-server-provisioner nfs-test --set persistence.enabled=true,persistence.size=100Gi
     ```
