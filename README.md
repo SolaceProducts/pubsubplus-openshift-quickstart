@@ -1,5 +1,3 @@
-[![Actions Status](https://github.com/Solace/pubsubplus-openshift-quickstart/workflows/build/badge.svg?branch=master)](https://github.com/SolaceProducts/pubsubplus-openshift-quickstart/actions?query=workflow%3Abuild+branch%3Amaster)
-
 # Deploying a Solace PubSub+ Software Event Broker using Operator onto an OpenShift 4 Platform
 
 The Solace PubSub+ Event Broker Operator (Operator) is a Kubernetes-native method to install and manage the lifecycle of a PubSub+ Software Event Broker on any Kubernetes platform including OpenShift.
@@ -10,7 +8,7 @@ This repository extends the [Solace PubSub+ Event Broker Operator on Kubernetes]
 
 Contents:
 - [Deploying a Solace PubSub+ Software Event Broker using Operator onto an OpenShift 4 Platform](#deploying-a-solace-pubsub-software-event-broker-using-operator-onto-an-openshift-4-platform)
-  - [Description of the Solace PubSub+ Software Event Broker](#solace-pubsub-software-event-broker)
+  - [Solace PubSub+ Software Event Broker](#solace-pubsub-software-event-broker)
   - [Overview](#overview)
   - [Step 1: Set Up OpenShift](#step-1-set-up-openshift)
   - [Step 2: Install the PubSub+ Event Broker Operator](#step-2-install-the-pubsub-event-broker-operator)
@@ -40,62 +38,7 @@ There are [multiple ways](https://www.openshift.com/try ) to set up an OpenShift
 
 ## Step 2: Install the PubSub+ Event Broker Operator
 
-The certified PubSub+ Event Broker Operator is available in OpenShift from the integrated OperatorHub. Follow [Adding Operators to a cluster](https://docs.openshift.com/container-platform/latest/operators/admin/olm-adding-operators-to-cluster.html) in the OpenShift documentation to locate and install the "PubSub+ Event Broker Operator".
-
-```bash
-# BEGIN: For internal use only, DELETE when publishing
-# Pre-requisite: Docker login into the private registry that hosts the Operator image
-# Run: docker login ghcr.io/solacedev, test locally to ensure it works: docker pull ghcr.io/solacedev/pubsubplus-eventbroker-operator:test
-
-# Create CatalogSource. First need to create pullsecret
-oc create secret generic regcred --from-file=.dockerconfigjson=${HOME}/.docker/config.json --type=kubernetes.io/dockerconfigjson -n openshift-marketplace
-# Apply manifest - note the namespace "openshift-marketplace"
-cat <<EOF | oc apply -f -
-apiVersion: operators.coreos.com/v1alpha1
-kind: CatalogSource
-metadata:
-  name: solace-catalog
-  namespace: openshift-marketplace
-spec:
-  sourceType: grpc
-  image: ghcr.io/solacedev/pubsubplus-eventbroker-operator-v1beta1-catalog:latest
-  grpcPodConfig:
-    securityContextConfig: restricted
-  secrets:
-  - regcred
-  displayName: Solace Catalog
-  publisher: Solace
-  updateStrategy:
-    registryPoll:
-      interval: 10m
-EOF
-# Wait about a minute. Test if PackageManifest has been created
-oc get packagemanifest -n openshift-marketplace | grep pubsubplus
-
-# Create pullsecret here - note the namespace "openshift-operators"
-oc create secret generic regcred --from-file=.dockerconfigjson=${HOME}/.docker/config.json --type=kubernetes.io/dockerconfigjson -n openshift-operators
-# Now use the Console or CLI, refer to the OpenShift documentation.
-# CLI example: create a subscription
-cat <<EOF | oc apply -f -
-apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: sub-to-pubsubplus-eventbroker-operator
-  namespace: openshift-operators
-spec:
-  channel: stable
-  name: pubsubplus-eventbroker-operator
-  source: solace-catalog
-  sourceNamespace: openshift-marketplace
-  installPlanApproval: Automatic
-EOF
-# Wait a few minutes then check status of the InstallPlan
-kubectl get ip -n openshift-operators
-# Check if operator pod is starting in operators namespace
-kubectl get pods -n openshift-operators --watch
-
-# END: internal use
-```
+The certified PubSub+ Event Broker Operator is available in OpenShift from the [integrated OperatorHub catalog](https://catalog.redhat.com/software/search?p=1&vendor_name=Solace%20Corporation). Follow [Adding Operators to a cluster](https://docs.openshift.com/container-platform/latest/operators/admin/olm-adding-operators-to-cluster.html) in the OpenShift documentation to locate and install the "PubSub+ Event Broker Operator".
 
 ## Step 3: Deploy the PubSub+ Software Event Broker
 
@@ -104,7 +47,7 @@ Create a new OpenShift project. It is not recommended to use the `default` proje
 oc new-project solace-pubsubplus
 ```
 
-From here follow the steps in the [Solace PubSub+ Event Broker Operator Quick Start Guide](https://github.com/SolaceDev/pubsubplus-kubernetes-operator#3-install-the-solace-pubsub-software-event-broker-with-default-configuration) to deploy a single-node or an HA event broker.
+From here follow the steps in the [Solace PubSub+ Event Broker Operator Quick Start Guide](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart#3-pubsub-software-event-broker-deployment-examples) to deploy a single-node or an HA event broker.
 
 >Note: the Operator recognizes the OpenShift environment and adjusts the default deployment `spec` parameters for the event broker, including the use of certified RedHat images. For more information, refer to the [detailed documentation](docs/PubSubPlusOpenShiftDeployment.md#broker-spec-defaults-in-openshift) in this repo.
 

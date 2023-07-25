@@ -1,6 +1,6 @@
 # Deploying a Solace PubSub+ Software Event Broker Onto an OpenShift 4 Platform Using Operator
 
-This document provides platform-specific information for deploying the [Solace PubSub+ Software Event Broker](https://solace.com/products/event-broker/software/) on OpenShift, using the Solace PubSub+ Event Broker Operator (Operator). It complements and should be used together with the [Solace PubSub+ Event Broker Operator User Guide](https://github.com/SolaceDev/pubsubplus-kubernetes-operator/blob/v1.0.0/docs/EventBrokerOperatorUserGuide.md), which has instructions for Kubernetes in general.
+This document provides platform-specific information for deploying the [Solace PubSub+ Software Event Broker](https://solace.com/products/event-broker/software/) on OpenShift, using the Solace PubSub+ Event Broker Operator (Operator). It complements and should be used together with the [Solace PubSub+ Event Broker Operator User Guide](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/main/docs/EventBrokerOperatorUserGuide.md), which has instructions for Kubernetes in general.
 
 Contents:
 - [Deploying a Solace PubSub+ Software Event Broker Onto an OpenShift 4 Platform Using Operator](#deploying-a-solace-pubsub-software-event-broker-onto-an-openshift-4-platform-using-operator)
@@ -9,20 +9,20 @@ Contents:
     - [Deploying a Production-Ready OpenShift Container Platform onto AWS](#deploying-a-production-ready-openshift-container-platform-onto-aws)
       - [Deleting the AWS OpenShift Container Platform Deployment](#deleting-the-aws-openshift-container-platform-deployment)
     - [Deploying CodeReady Containers for OpenShift](#deploying-codeready-containers-for-openshift)
-    - [Using a Private Image Registry for broker and Prometheus exporter images](#using-a-private-image-registry-for-broker-and-prometheus-exporter-images)
+    - [Using a Private Image Registry for Broker and Prometheus Exporter Images](#using-a-private-image-registry-for-broker-and-prometheus-exporter-images)
       - [Using AWS ECR with CodeReady Containers](#using-aws-ecr-with-codeready-containers)
-  - [Deployment considerations](#deployment-considerations)
-    - [Broker Spec defaults in OpenShift](#broker-spec-defaults-in-openshift)
+  - [Deployment Considerations](#deployment-considerations)
+    - [Broker Spec Defaults in OpenShift](#broker-spec-defaults-in-openshift)
     - [Accessing Broker Services](#accessing-broker-services)
       - [Routes](#routes)
-        - [HTTP, no TLS](#http-no-tls)
-        - [HTTPS with TLS terminate at ingress](#https-with-tls-terminate-at-ingress)
-        - [HTTPS with TLS re-encrypt at ingress](#https-with-tls-re-encrypt-at-ingress)
-        - [General TCP over TLS with passthrough to broker](#general-tcp-over-tls-with-passthrough-to-broker)
+        - [HTTP With No TLS](#http-with-no-tls)
+        - [HTTPS With TLS (Terminate at Ingress)](#https-with-tls-terminate-at-ingress)
+        - [HTTPS with TLS (Re-encrypt at Ingress)](#https-with-tls-re-encrypt-at-ingress)
+        - [General TCP over TLS with Passthrough to Broker](#general-tcp-over-tls-with-passthrough-to-broker)
     - [Security Considerations](#security-considerations)
     - [Helm-based Deployment](#helm-based-deployment)
   - [Exposing Metrics to Prometheus](#exposing-metrics-to-prometheus)
-  - [Broker Deployment in OpenShift using the Operator](#broker-deployment-in-openshift-using-the-operator)
+  - [Broker Deployment in OpenShift Using the Operator](#broker-deployment-in-openshift-using-the-operator)
     - [Quick Start](#quick-start)
 - [Additional Resources](#additional-resources)
 - [Appendix: Using NFS for Persistent Storage](#appendix-using-nfs-for-persistent-storage)
@@ -143,7 +143,7 @@ However, if you need to use a private image registry, such as AWS ECR, you must 
     ```
 4. Use the pull secret you just created (`<my-pullsecret>`) in the broker deployment manifest.
 
-For additional information, see the [Using private registries](https://github.com/SolaceDev/pubsubplus-kubernetes-operator/blob/v1.0.0/docs/EventBrokerOperatorUserGuide.md#using-a-private-registry) section of the *Solace PubSub+ Event Broker Operator User Guide*.
+For additional information, see the [Using private registries](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/main/docs/EventBrokerOperatorUserGuide.md#using-a-private-registry) section of the *Solace PubSub+ Event Broker Operator User Guide*.
 
 #### Using AWS ECR with CodeReady Containers
 If you are using CodeReady Containers, you might need to perform a workaround if the ECR login fails on the console (e.g., on Windows). In this case, do the following:
@@ -162,7 +162,7 @@ If you are using CodeReady Containers, you might need to perform a workaround if
 
 ## Deployment Considerations
 
-Consult the [Deployment Planning](https://github.com/SolaceDev/pubsubplus-kubernetes-operator/blob/v1.0.0/docs/EventBrokerOperatorUserGuide.md#deployment-planning) section of the general *Solace PubSub+ Event Broker Operator User Guide* when planning your deployment.
+Consult the [Deployment Planning](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/main/docs/EventBrokerOperatorUserGuide.md#deployment-planning) section of the general *Solace PubSub+ Event Broker Operator User Guide* when planning your deployment.
 
 The following sections apply only to the OpenShift platform.
 
@@ -183,7 +183,7 @@ Although `runAsUser` cannot be configured using a broker spec parameter, the Ope
 
 ### Accessing Broker Services
 
-The principles for exposing services that are described in the [Solace PubSub+ Event Broker Operator User Guide](https://github.com/SolaceDev/pubsubplus-kubernetes-operator/blob/v1.0.0/docs/EventBrokerOperatorUserGuide.md#accessing-broker-services) also apply here:
+The principles for exposing services that are described in the [Solace PubSub+ Event Broker Operator User Guide](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/main/docs/EventBrokerOperatorUserGuide.md#accessing-broker-services) also apply here:
 * LoadBalancer is the default service type and can be used to externally expose all broker services. This is an option for OpenShift as well and will not be further discussed here.
 * Ingress and its equivalent, OpenShift Routes, can be used to expose specific services.
 
@@ -270,7 +270,7 @@ OpenShift ships with an integrated customized Prometheus deployment, with the fo
 
 Monitoring must be enabled for user-defined projects by [creating a `user-workload-monitoring-config` ConfigMap object](https://docs.openshift.com/container-platform/latest/monitoring/enabling-monitoring-for-user-defined-projects.html) in the `openshift-user-workload-monitoring` project.
 
-After this, the only step required to [connect the broker metrics with Prometheus](https://github.com/SolaceDev/pubsubplus-kubernetes-operator/blob/v1.0.0/docs/EventBrokerOperatorUserGuide.md#connecting-with-prometheus) is to [create a ServiceMonitor object](https://github.com/SolaceDev/pubsubplus-kubernetes-operator/blob/v1.0.0/docs/EventBrokerOperatorUserGuide.md#creating-a-servicemonitor-object) in the project where the broker has been deployed.
+After this, the only step required to [connect the broker metrics with Prometheus](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/main/docs/EventBrokerOperatorUserGuide.md#connecting-with-prometheus) is to [create a ServiceMonitor object](https://github.com/SolaceProducts/pubsubplus-kubernetes-quickstart/blob/main/docs/EventBrokerOperatorUserGuide.md#creating-a-servicemonitor-object) in the project where the broker has been deployed.
 
 Check the OpenShift admin console in "Administrator" view to verify that the monitoring endpoint for the event broker deployment has been connected to Prometheus:
 
