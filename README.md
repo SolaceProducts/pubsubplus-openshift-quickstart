@@ -24,7 +24,7 @@ Solace [PubSub+ Platform](https://solace.com/products/platform/) is a complete e
 
 ## Overview
 
-This project is a best practice template intended for development and demo purposes. It has been tested using OpenShift v4.12. The tested and recommended PubSub+ Software Event Broker version is 10.2.
+This project is a best practice template intended for development and demo purposes. It has been tested using OpenShift v4.13. The tested and recommended PubSub+ Software Event Broker version is 10.4.
 
 This document provides a quick getting started guide to install the broker in various configurations onto an OpenShift 4 platform.
 
