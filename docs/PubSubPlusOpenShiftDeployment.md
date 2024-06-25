@@ -200,6 +200,8 @@ The principles for exposing services that are described in the [Solace PubSub+ E
 The following sections provide examples for each router type. Replace `<my-pubsubplus-service>` with the name of the service of your deployment. The port name must match the `service.ports` name in the PubSub+ `values.yaml` file.
 Additional services can be exposed by an additional route for each.
 
+> Note: When configuring Routes to connect two PubSub+ Event Broker services for [Message VPN Bridges](https://docs.solace.com/Features/VPN/Message-VPN-Bridges-Overview.htm), the service needs to be accessible from every other PubSub+ Event Broker service.
+
 ##### HTTP With No TLS
 
 The following commands create an HTTP route to the REST service at path `/`:
