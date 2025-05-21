@@ -45,7 +45,7 @@ You can skip this section if you already have your own OpenShift environment ava
 
 There are [multiple ways](https://www.openshift.com/try ) to set up an OpenShift platform. This section provides a distributed production-ready example that uses the Red Hat OpenShift Container Platform for deploying an HA group of software event brokers, but the concepts are transferable to other compatible platforms.
 
-This section also give tips for how to set up a simple single-node deployment using [CodeReady Containers](https://developers.redhat.com/products/codeready-containers/overview ) (the equivalent of MiniShift for OpenShift 4) for development, testing, or proof of concept purposes.
+This section also give tips for how to set up a simple single-node deployment using [CodeReady Containers](https://www.redhat.com/en/blog/codeready-containers) (the equivalent of MiniShift for OpenShift 4) for development, testing, or proof of concept purposes.
 
 The last sub-section describes how to use a private image registry, such as AWS ECR, together with OpenShift.
 
@@ -117,7 +117,7 @@ These commands remove all resources of the deployment.
 
 ### Deploying CodeReady Containers for OpenShift
 
-If you are using CodeReady Containers, follow the [getting started instructions](https://developers.redhat.com/products/codeready-containers/getting-started) to stand up a working CodeReady Containers deployment that supports Linux, MacOS, and Windows.
+If you are using CodeReady Containers, follow the [getting started instructions](https://www.redhat.com/en/blog/codeready-containers) to stand up a working CodeReady Containers deployment that supports Linux, MacOS, and Windows.
 
 At the `crc start` step it is helpful to:
 * have a local copy of the OpenShift `pullsecret` file created; 
